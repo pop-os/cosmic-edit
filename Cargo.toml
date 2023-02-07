@@ -1,0 +1,31 @@
+[package]
+name = "cosmic-text-editor"
+version = "0.1.0"
+authors = ["Jeremy Soller <jeremy@system76.com>"]
+edition = "2021"
+
+[dependencies]
+env_logger = "0.9"
+fontdb = "0.9"
+lazy_static = "1.4"
+log = "0.4"
+
+[dependencies.cosmic-text]
+version = "0.7"
+features = ["syntect"]
+
+[dependencies.libcosmic]
+git = "https://github.com/pop-os/libcosmic"
+rev = "843919e44f0a00c33c29358359be5b4bfa41ab00"
+default-features = false
+features = ["winit_softbuffer"]
+
+[dependencies.rfd]
+version = "0.10"
+#TODO: iced portal
+#default-features = false
+#features = ["xdg-portal"]
+
+[features]
+default = []
+vi = ["cosmic-text/vi"]
