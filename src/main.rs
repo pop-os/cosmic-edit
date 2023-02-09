@@ -207,11 +207,23 @@ impl Application for Window {
                 }
             },
             Message::Save => {
+                let mut title_opt = None;
+
                 match self.active_tab_mut() {
-                    Some(tab) => tab.save(),
+                    Some(tab) => {
+                        if tab.path_opt.is_none() {
+                            tab.path_opt = rfd::FileDialog::new().save_file();
+                            title_opt = Some(tab.title());
+                        }
+                        tab.save();
+                    },
                     None => {
                         log::info!("TODO: NO TAB OPEN");
                     },
+                }
+
+                if let Some(title) = title_opt {
+                    self.tab_model.text_set(self.tab_model.active(), title);
                 }
             },
             Message::Tab(entity) => self.tab_model.activate(entity),
