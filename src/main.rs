@@ -3,18 +3,21 @@
 use cosmic::{
     iced::{
         self,
-        widget::{column, horizontal_space, pick_list, row},
+        widget::{column, container, horizontal_space, pick_list, row, text},
         Alignment, Application, Color, Command, Length,
     },
     settings,
     theme::{self, Theme},
-    widget::{button, toggler},
+    widget::{button, segmented_button, toggler, view_switcher},
     Element,
 };
 use cosmic_text::{
     Attrs, AttrsList, Buffer, Edit, FontSystem, Metrics, SyntaxEditor, SyntaxSystem, Wrap,
 };
 use std::{env, fs, path::PathBuf, sync::Mutex};
+
+use self::menu_list::MenuList;
+mod menu_list;
 
 use self::text_box::text_box;
 mod text_box;
@@ -34,15 +37,14 @@ static FONT_SIZES: &'static [Metrics] = &[
 ];
 
 fn main() -> cosmic::iced::Result {
-    env_logger::init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let mut settings = settings();
     settings.window.min_size = Some((400, 100));
     Window::run(settings)
 }
 
-pub struct Window {
-    theme: Theme,
+pub struct Tab {
     path_opt: Option<PathBuf>,
     attrs: Attrs<'static>,
     #[cfg(not(feature = "vi"))]
@@ -51,14 +53,29 @@ pub struct Window {
     editor: Mutex<cosmic_text::ViEditor<'static>>,
 }
 
-#[allow(dead_code)]
-#[derive(Clone, Copy, Debug)]
-pub enum Message {
-    Open,
-    Save,
-}
+impl Tab {
+    pub fn new() -> Self {
+        let attrs = cosmic_text::Attrs::new()
+            .monospaced(true)
+            .family(cosmic_text::Family::Monospace);
 
-impl Window {
+        let editor = SyntaxEditor::new(
+            Buffer::new(&FONT_SYSTEM, FONT_SIZES[1 /* Body */]),
+            &SYNTAX_SYSTEM,
+            "base16-eighties.dark",
+        )
+        .unwrap();
+
+        #[cfg(feature = "vi")]
+        let editor = cosmic_text::ViEditor::new(editor);
+
+        Self {
+            path_opt: None,
+            attrs,
+            editor: Mutex::new(editor),
+        }
+    }
+
     pub fn open(&mut self, path: PathBuf) {
         let mut editor = self.editor.lock().unwrap();
         match editor.load_text(&path, self.attrs) {
@@ -72,6 +89,66 @@ impl Window {
             }
         }
     }
+
+    pub fn save(&mut self) {
+        if let Some(path) = &self.path_opt {
+            let editor = self.editor.lock().unwrap();
+            let mut text = String::new();
+            for line in editor.buffer().lines.iter() {
+                text.push_str(line.text());
+                text.push('\n');
+            }
+            match fs::write(path, text) {
+                Ok(()) => {
+                    log::info!("saved '{}'", path.display());
+                }
+                Err(err) => {
+                    log::error!("failed to save '{}': {}", path.display(), err);
+                }
+            }
+        } else {
+            log::warn!("tab has no path yet");
+        }
+    }
+
+    pub fn title(&self) -> String {
+        //TODO: show full title when there is a conflict
+        if let Some(path) = &self.path_opt {
+            match path.file_name() {
+                Some(file_name_os) => match file_name_os.to_str() {
+                    Some(file_name) => file_name.to_string(),
+                    None => format!("{}", path.display()),
+                },
+                None => format!("{}", path.display()),
+            }
+        } else {
+            "New document".to_string()
+        }
+    }
+}
+
+pub struct Window {
+    theme: Theme,
+    tab_model: segmented_button::SingleSelectModel,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug)]
+pub enum Message {
+    Open,
+    Save,
+    Tab(segmented_button::Entity),
+    Todo,
+}
+
+impl Window {
+    pub fn active_tab(&self) -> Option<&Tab> {
+        self.tab_model.active_data()
+    }
+
+    pub fn active_tab_mut(&mut self) -> Option<&mut Tab> {
+        self.tab_model.active_data_mut()
+    }
 }
 
 impl Application for Window {
@@ -81,32 +158,27 @@ impl Application for Window {
     type Theme = Theme;
 
     fn new(_flags: ()) -> (Self, Command<Self::Message>) {
-        let attrs = cosmic_text::Attrs::new()
-            .monospaced(true)
-            .family(cosmic_text::Family::Monospace);
+        let mut tab_model = segmented_button::Model::builder()
+            .build();
 
-        let mut editor = SyntaxEditor::new(
-            Buffer::new(&FONT_SYSTEM, FONT_SIZES[1 /* Body */]),
-            &SYNTAX_SYSTEM,
-            "base16-eighties.dark",
-        )
-        .unwrap();
-
-        #[cfg(feature = "vi")]
-        let mut editor = cosmic_text::ViEditor::new(editor);
-
-        update_attrs(&mut editor, attrs);
-
-        let mut window = Window {
-            theme: Theme::Dark,
-            path_opt: None,
-            attrs,
-            editor: Mutex::new(editor),
-        };
+        let mut tab = Tab::new();
         if let Some(arg) = env::args().nth(1) {
-            window.open(PathBuf::from(arg));
+            tab.open(PathBuf::from(arg));
         }
-        (window, Command::none())
+
+        tab_model.insert()
+            .text(tab.title())
+            .icon("text-x-generic")
+            .data(tab)
+            .activate();
+
+        (
+            Window {
+                theme: Theme::Dark,
+                tab_model,
+            },
+            Command::none()
+        )
     }
 
     fn theme(&self) -> Theme {
@@ -114,14 +186,9 @@ impl Application for Window {
     }
 
     fn title(&self) -> String {
-        if let Some(path) = &self.path_opt {
-            format!(
-                "COSMIC Text - {} - {}",
-                FONT_SYSTEM.locale(),
-                path.display()
-            )
-        } else {
-            format!("COSMIC Text - {}", FONT_SYSTEM.locale())
+        match self.active_tab() {
+            Some(tab) => tab.title(),
+            None => format!("COSMIC Text Editor"),
         }
     }
 
@@ -129,57 +196,84 @@ impl Application for Window {
         match message {
             Message::Open => {
                 if let Some(path) = rfd::FileDialog::new().pick_file() {
-                    self.open(path);
+                    let mut tab = Tab::new();
+                    tab.open(path);
+
+                    self.tab_model.insert()
+                        .text(tab.title())
+                        .icon("text-x-generic")
+                        .data(tab)
+                        .activate();
                 }
-            }
+            },
             Message::Save => {
-                if let Some(path) = &self.path_opt {
-                    let editor = self.editor.lock().unwrap();
-                    let mut text = String::new();
-                    for line in editor.buffer().lines.iter() {
-                        text.push_str(line.text());
-                        text.push('\n');
-                    }
-                    match fs::write(path, text) {
-                        Ok(()) => {
-                            log::info!("saved '{}'", path.display());
-                        }
-                        Err(err) => {
-                            log::error!("failed to save '{}': {}", path.display(), err);
-                        }
-                    }
+                match self.active_tab_mut() {
+                    Some(tab) => tab.save(),
+                    None => {
+                        log::info!("TODO: NO TAB OPEN");
+                    },
                 }
-            }
+            },
+            Message::Tab(entity) => self.tab_model.activate(entity),
+            Message::Todo => {
+                log::info!("TODO");
+            },
         }
 
         Command::none()
     }
 
     fn view(&self) -> Element<Message> {
-        let content: Element<_> = column![
-            row![
-                button(theme::Button::Secondary)
-                    .text("Open")
-                    .on_press(Message::Open),
-                button(theme::Button::Secondary)
-                    .text("Save")
-                    .on_press(Message::Save),
-            ]
-            .align_items(Alignment::Center)
-            .spacing(8),
-            text_box(&self.editor)
+        let menu_bar = row![
+            MenuList::new(vec!["Open", "Save"], None, |item| {
+                match item {
+                    "Open" => Message::Open,
+                    "Save" => Message::Save,
+                    _ => Message::Todo
+                }
+            })
+                .padding(8)
+                .placeholder("File")
+            ,
+            MenuList::new(vec!["Todo"], None, |_| Message::Todo)
+                .padding(8)
+                .placeholder("Edit")
+            ,
+            MenuList::new(vec!["Todo"], None, |_| Message::Todo)
+                .padding(8)
+                .placeholder("View")
+            ,
+            MenuList::new(vec!["Todo"], None, |_| Message::Todo)
+                .padding(8)
+                .placeholder("Help")
+            ,
         ]
-        .spacing(8)
-        .padding(16)
-        .into();
+        .align_items(Alignment::Start)
+        .padding(4)
+        .spacing(16);
 
-        // Uncomment to debug layout: content.explain(Color::WHITE)
+        let tab_bar = view_switcher::horizontal(&self.tab_model)
+            .on_activate(Message::Tab)
+            .width(Length::Shrink);
+
+        let content: Element<_> = column![
+            menu_bar,
+            column![
+                tab_bar,
+                match self.active_tab() {
+                    Some(tab) => {
+                        text_box(&tab.editor)
+                            .padding(8)
+                    },
+                    None => {
+                        panic!("TODO: No tab open");
+                    },
+                }
+            ].padding([0, 16])
+        ].into();
+
+        // Uncomment to debug layout:
+        //content.explain(Color::WHITE)
         content
     }
-}
-
-fn update_attrs<'a, T: Edit<'a>>(editor: &mut T, attrs: Attrs<'a>) {
-    editor.buffer_mut().lines.iter_mut().for_each(|line| {
-        line.set_attrs_list(AttrsList::new(attrs));
-    });
 }
