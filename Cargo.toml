@@ -3,6 +3,7 @@ name = "cosmic-text-editor"
 version = "0.1.0"
 authors = ["Jeremy Soller <jeremy@system76.com>"]
 edition = "2021"
+license = "GPL-3.0-only"
 
 [dependencies]
 env_logger = "0.9"

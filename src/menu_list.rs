@@ -1,4 +1,5 @@
-//! Display a dropdown list of selectable values.
+// SPDX-License-Identifier: GPL-3.0-only
+
 use cosmic::iced::{Background, Color};
 use cosmic::iced_native::alignment;
 use cosmic::iced_native::event::{self, Event};
