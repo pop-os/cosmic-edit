@@ -14,8 +14,7 @@ use cosmic::iced_native::widget::container;
 use cosmic::iced_native::widget::scrollable;
 use cosmic::iced_native::widget::tree::{self, Tree};
 use cosmic::iced_native::{
-    Clipboard, Element, Layout, Length, Padding, Point, Rectangle, Shell, Size,
-    Widget,
+    Clipboard, Element, Layout, Length, Padding, Point, Rectangle, Shell, Size, Widget,
 };
 use std::borrow::Cow;
 
@@ -98,12 +97,8 @@ where
     T: ToString + Eq,
     [T]: ToOwned<Owned = Vec<T>>,
     Renderer: text::Renderer,
-    Renderer::Theme: StyleSheet
-        + scrollable::StyleSheet
-        + menu::StyleSheet
-        + container::StyleSheet,
-    <Renderer::Theme as menu::StyleSheet>::Style:
-        From<<Renderer::Theme as StyleSheet>::Style>,
+    Renderer::Theme: StyleSheet + scrollable::StyleSheet + menu::StyleSheet + container::StyleSheet,
+    <Renderer::Theme as menu::StyleSheet>::Style: From<<Renderer::Theme as StyleSheet>::Style>,
 {
     /// The default padding of a [`MenuList`].
     pub const DEFAULT_PADDING: Padding = Padding::new(5);
@@ -159,28 +154,20 @@ where
     }
 
     /// Sets the style of the [`MenuList`].
-    pub fn style(
-        mut self,
-        style: impl Into<<Renderer::Theme as StyleSheet>::Style>,
-    ) -> Self {
+    pub fn style(mut self, style: impl Into<<Renderer::Theme as StyleSheet>::Style>) -> Self {
         self.style = style.into();
         self
     }
 }
 
-impl<'a, T: 'a, Message, Renderer> Widget<Message, Renderer>
-    for MenuList<'a, T, Message, Renderer>
+impl<'a, T: 'a, Message, Renderer> Widget<Message, Renderer> for MenuList<'a, T, Message, Renderer>
 where
     T: Clone + ToString + Eq + 'static,
     [T]: ToOwned<Owned = Vec<T>>,
     Message: 'a,
     Renderer: text::Renderer + 'a,
-    Renderer::Theme: StyleSheet
-        + scrollable::StyleSheet
-        + menu::StyleSheet
-        + container::StyleSheet,
-    <Renderer::Theme as menu::StyleSheet>::Style:
-        From<<Renderer::Theme as StyleSheet>::Style>,
+    Renderer::Theme: StyleSheet + scrollable::StyleSheet + menu::StyleSheet + container::StyleSheet,
+    <Renderer::Theme as menu::StyleSheet>::Style: From<<Renderer::Theme as StyleSheet>::Style>,
 {
     fn tag(&self) -> tree::Tag {
         tree::Tag::of::<State<T>>()
@@ -198,11 +185,7 @@ where
         Length::Shrink
     }
 
-    fn layout(
-        &self,
-        renderer: &Renderer,
-        limits: &layout::Limits,
-    ) -> layout::Node {
+    fn layout(&self, renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         layout(
             renderer,
             limits,
@@ -300,12 +283,8 @@ where
     [T]: ToOwned<Owned = Vec<T>>,
     Message: 'a,
     Renderer: text::Renderer + 'a,
-    Renderer::Theme: StyleSheet
-        + scrollable::StyleSheet
-        + menu::StyleSheet
-        + container::StyleSheet,
-    <Renderer::Theme as menu::StyleSheet>::Style:
-        From<<Renderer::Theme as StyleSheet>::Style>,
+    Renderer::Theme: StyleSheet + scrollable::StyleSheet + menu::StyleSheet + container::StyleSheet,
+    <Renderer::Theme as menu::StyleSheet>::Style: From<<Renderer::Theme as StyleSheet>::Style>,
 {
     fn from(menu_list: MenuList<'a, T, Message, Renderer>) -> Self {
         Self::new(menu_list)
@@ -381,10 +360,7 @@ where
     };
 
     let size = {
-        let intrinsic = Size::new(
-            max_width as f32,
-            f32::from(text_size),
-        );
+        let intrinsic = Size::new(max_width as f32, f32::from(text_size));
 
         limits.resolve(intrinsic).pad(padding)
     };
@@ -420,8 +396,7 @@ where
                 event::Status::Captured
             } else if layout.bounds().contains(cursor_position) {
                 state.is_open = true;
-                state.hovered_option =
-                    options.iter().position(|option| Some(option) == selected);
+                state.hovered_option = options.iter().position(|option| Some(option) == selected);
 
                 event::Status::Captured
             } else {
@@ -493,10 +468,7 @@ where
 }
 
 /// Returns the current [`mouse::Interaction`] of a [`MenuList`].
-pub fn mouse_interaction(
-    layout: Layout<'_>,
-    cursor_position: Point,
-) -> mouse::Interaction {
+pub fn mouse_interaction(layout: Layout<'_>, cursor_position: Point) -> mouse::Interaction {
     let bounds = layout.bounds();
     let is_mouse_over = bounds.contains(cursor_position);
 
@@ -522,12 +494,8 @@ where
     T: Clone + ToString,
     Message: 'a,
     Renderer: text::Renderer + 'a,
-    Renderer::Theme: StyleSheet
-        + scrollable::StyleSheet
-        + menu::StyleSheet
-        + container::StyleSheet,
-    <Renderer::Theme as menu::StyleSheet>::Style:
-        From<<Renderer::Theme as StyleSheet>::Style>,
+    Renderer::Theme: StyleSheet + scrollable::StyleSheet + menu::StyleSheet + container::StyleSheet,
+    <Renderer::Theme as menu::StyleSheet>::Style: From<<Renderer::Theme as StyleSheet>::Style>,
 {
     if state.is_open {
         let bounds = layout.bounds();
@@ -548,8 +516,7 @@ where
 
             let labels = options.iter().map(ToString::to_string);
 
-            let labels_width =
-                labels.map(|label| measure(&label)).max().unwrap_or(100);
+            let labels_width = labels.map(|label| measure(&label)).max().unwrap_or(100);
 
             labels_width as u16 + padding.left + padding.right
         };
@@ -612,8 +579,7 @@ pub fn draw<T, Renderer>(
     let label = selected.map(ToString::to_string);
 
     if let Some(label) = label.as_deref().or(placeholder) {
-        let text_size =
-            f32::from(text_size.unwrap_or_else(|| renderer.default_size()));
+        let text_size = f32::from(text_size.unwrap_or_else(|| renderer.default_size()));
 
         renderer.fill_text(Text {
             content: label,

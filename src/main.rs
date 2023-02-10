@@ -158,15 +158,15 @@ impl Application for Window {
     type Theme = Theme;
 
     fn new(_flags: ()) -> (Self, Command<Self::Message>) {
-        let mut tab_model = segmented_button::Model::builder()
-            .build();
+        let mut tab_model = segmented_button::Model::builder().build();
 
         let mut tab = Tab::new();
         if let Some(arg) = env::args().nth(1) {
             tab.open(PathBuf::from(arg));
         }
 
-        tab_model.insert()
+        tab_model
+            .insert()
             .text(tab.title())
             .icon("text-x-generic")
             .data(tab)
@@ -177,7 +177,7 @@ impl Application for Window {
                 theme: Theme::Dark,
                 tab_model,
             },
-            Command::none()
+            Command::none(),
         )
     }
 
@@ -199,13 +199,14 @@ impl Application for Window {
                     let mut tab = Tab::new();
                     tab.open(path);
 
-                    self.tab_model.insert()
+                    self.tab_model
+                        .insert()
                         .text(tab.title())
                         .icon("text-x-generic")
                         .data(tab)
                         .activate();
                 }
-            },
+            }
             Message::Save => {
                 let mut title_opt = None;
 
@@ -216,20 +217,20 @@ impl Application for Window {
                             title_opt = Some(tab.title());
                         }
                         tab.save();
-                    },
+                    }
                     None => {
                         log::info!("TODO: NO TAB OPEN");
-                    },
+                    }
                 }
 
                 if let Some(title) = title_opt {
                     self.tab_model.text_set(self.tab_model.active(), title);
                 }
-            },
+            }
             Message::Tab(entity) => self.tab_model.activate(entity),
             Message::Todo => {
                 log::info!("TODO");
-            },
+            }
         }
 
         Command::none()
@@ -241,24 +242,20 @@ impl Application for Window {
                 match item {
                     "Open" => Message::Open,
                     "Save" => Message::Save,
-                    _ => Message::Todo
+                    _ => Message::Todo,
                 }
             })
-                .padding(8)
-                .placeholder("File")
-            ,
+            .padding(8)
+            .placeholder("File"),
             MenuList::new(vec!["Todo"], None, |_| Message::Todo)
                 .padding(8)
-                .placeholder("Edit")
-            ,
+                .placeholder("Edit"),
             MenuList::new(vec!["Todo"], None, |_| Message::Todo)
                 .padding(8)
-                .placeholder("View")
-            ,
+                .placeholder("View"),
             MenuList::new(vec!["Todo"], None, |_| Message::Todo)
                 .padding(8)
-                .placeholder("Help")
-            ,
+                .placeholder("Help"),
         ]
         .align_items(Alignment::Start)
         .padding(4)
@@ -274,15 +271,16 @@ impl Application for Window {
                 tab_bar,
                 match self.active_tab() {
                     Some(tab) => {
-                        text_box(&tab.editor)
-                            .padding(8)
-                    },
+                        text_box(&tab.editor).padding(8)
+                    }
                     None => {
                         panic!("TODO: No tab open");
-                    },
+                    }
                 }
-            ].padding([0, 16])
-        ].into();
+            ]
+            .padding([0, 16])
+        ]
+        .into();
 
         // Uncomment to debug layout:
         //content.explain(Color::WHITE)
