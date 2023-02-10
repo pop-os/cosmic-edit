@@ -101,7 +101,7 @@ where
     <Renderer::Theme as menu::StyleSheet>::Style: From<<Renderer::Theme as StyleSheet>::Style>,
 {
     /// The default padding of a [`MenuList`].
-    pub const DEFAULT_PADDING: Padding = Padding::new(5);
+    pub const DEFAULT_PADDING: Padding = Padding::new(8);
 
     /// Creates a new [`MenuList`] with the given list of options, the current
     /// selected value, and the message to produce when an option is selected.

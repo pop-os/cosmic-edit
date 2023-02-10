@@ -248,13 +248,10 @@ impl Application for Window {
             .padding(8)
             .placeholder("File"),
             MenuList::new(vec!["Todo"], None, |_| Message::Todo)
-                .padding(8)
                 .placeholder("Edit"),
             MenuList::new(vec!["Todo"], None, |_| Message::Todo)
-                .padding(8)
                 .placeholder("View"),
             MenuList::new(vec!["Todo"], None, |_| Message::Todo)
-                .padding(8)
                 .placeholder("Help"),
         ]
         .align_items(Alignment::Start)
