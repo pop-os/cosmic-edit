@@ -137,7 +137,8 @@ pub struct Window {
 pub enum Message {
     Open,
     Save,
-    Tab(segmented_button::Entity),
+    TabActivate(segmented_button::Entity),
+    TabClose(segmented_button::Entity),
     Todo,
 }
 
@@ -169,7 +170,9 @@ impl Application for Window {
             .insert()
             .text(tab.title())
             .icon("text-x-generic")
+            .icon_color(None)
             .data(tab)
+            .closable()
             .activate();
 
         (
@@ -203,7 +206,9 @@ impl Application for Window {
                         .insert()
                         .text(tab.title())
                         .icon("text-x-generic")
+                        .icon_color(None)
                         .data(tab)
+                        .closable()
                         .activate();
                 }
             }
@@ -227,7 +232,8 @@ impl Application for Window {
                     self.tab_model.text_set(self.tab_model.active(), title);
                 }
             }
-            Message::Tab(entity) => self.tab_model.activate(entity),
+            Message::TabActivate(entity) => self.tab_model.activate(entity),
+            Message::TabClose(entity) => self.tab_model.remove(entity),
             Message::Todo => {
                 log::info!("TODO");
             }
@@ -259,7 +265,8 @@ impl Application for Window {
         .spacing(16);
 
         let tab_bar = view_switcher::horizontal(&self.tab_model)
-            .on_activate(Message::Tab)
+            .on_activate(Message::TabActivate)
+            .on_close(Message::TabClose)
             .width(Length::Shrink);
 
         let content: Element<_> = column![
