@@ -7,7 +7,7 @@ use cosmic::{
         Alignment, Application, Color, Command, Length,
     },
     settings,
-    theme::{self, Theme},
+    theme::{self, Theme, ThemeType},
     widget::{button, segmented_button, toggler, view_switcher},
     Element,
 };
@@ -174,7 +174,7 @@ impl Application for Window {
 
         (
             Window {
-                theme: Theme::Dark,
+                theme: Theme::dark(),
                 tab_model,
             },
             Command::none(),
