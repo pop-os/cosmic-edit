@@ -23,17 +23,17 @@ use self::text_box::text_box;
 mod text_box;
 
 lazy_static::lazy_static! {
-    static ref FONT_SYSTEM: FontSystem = FontSystem::new();
+    static ref FONT_SYSTEM: Mutex<FontSystem> = Mutex::new(FontSystem::new());
     static ref SYNTAX_SYSTEM: SyntaxSystem = SyntaxSystem::new();
 }
 
 static FONT_SIZES: &'static [Metrics] = &[
-    Metrics::new(10, 14), // Caption
-    Metrics::new(14, 20), // Body
-    Metrics::new(20, 28), // Title 4
-    Metrics::new(24, 32), // Title 3
-    Metrics::new(28, 36), // Title 2
-    Metrics::new(32, 44), // Title 1
+    Metrics::new(10.0, 14.0), // Caption
+    Metrics::new(14.0, 20.0), // Body
+    Metrics::new(20.0, 28.0), // Title 4
+    Metrics::new(24.0, 32.0), // Title 3
+    Metrics::new(28.0, 36.0), // Title 2
+    Metrics::new(32.0, 44.0), // Title 1
 ];
 
 fn main() -> cosmic::iced::Result {
@@ -60,7 +60,7 @@ impl Tab {
             .family(cosmic_text::Family::Monospace);
 
         let editor = SyntaxEditor::new(
-            Buffer::new(&FONT_SYSTEM, FONT_SIZES[1 /* Body */]),
+            Buffer::new(&mut FONT_SYSTEM.lock().unwrap(), FONT_SIZES[1 /* Body */]),
             &SYNTAX_SYSTEM,
             "base16-eighties.dark",
         )
@@ -78,6 +78,8 @@ impl Tab {
 
     pub fn open(&mut self, path: PathBuf) {
         let mut editor = self.editor.lock().unwrap();
+        let mut font_system = FONT_SYSTEM.lock().unwrap();
+        let mut editor = editor.borrow_with(&mut font_system);
         match editor.load_text(&path, self.attrs) {
             Ok(()) => {
                 log::info!("opened '{}'", path.display());

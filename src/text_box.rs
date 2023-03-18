@@ -17,6 +17,8 @@ use cosmic::{
 use cosmic_text::{Action, Edit, SwashCache};
 use std::{cmp, sync::Mutex, time::Instant};
 
+use crate::FONT_SYSTEM;
+
 pub struct Appearance {
     background_color: Option<Color>,
     text_color: Color,
@@ -117,7 +119,7 @@ impl<'a, 'editor, Editor, Message, Renderer> Widget<Message, Renderer> for TextB
 where
     Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
     Renderer::Theme: StyleSheet,
-    Editor: Edit<'editor>,
+    Editor: Edit,
 {
     fn tag(&self) -> tree::Tag {
         tree::Tag::of::<State>()
@@ -140,7 +142,10 @@ where
 
         //TODO: allow lazy shape
         let mut editor = self.editor.lock().unwrap();
-        editor.buffer_mut().shape_until(i32::max_value());
+        editor
+            .borrow_with(&mut FONT_SYSTEM.lock().unwrap())
+            .buffer_mut()
+            .shape_until(i32::max_value());
 
         let mut layout_lines = 0;
         for line in editor.buffer().lines.iter() {
@@ -150,7 +155,7 @@ where
             }
         }
 
-        let height = layout_lines as f32 * editor.buffer().metrics().line_height as f32;
+        let height = layout_lines as f32 * editor.buffer().metrics().line_height;
         let size = Size::new(limits.max().width, height);
         log::info!("size {:?}", size);
 
@@ -211,7 +216,11 @@ where
             - self.padding.horizontal() as i32;
         let view_h = cmp::min(viewport.height as i32, layout.bounds().height as i32)
             - self.padding.vertical() as i32;
-        editor.buffer_mut().set_size(view_w, view_h);
+
+        let mut font_system = FONT_SYSTEM.lock().unwrap();
+        let mut editor = editor.borrow_with(&mut font_system);
+
+        editor.buffer_mut().set_size(view_w as f32, view_h as f32);
 
         editor.shape_as_needed();
 
@@ -281,6 +290,8 @@ where
     ) -> Status {
         let state = tree.state.downcast_mut::<State>();
         let mut editor = self.editor.lock().unwrap();
+        let mut font_system = FONT_SYSTEM.lock().unwrap();
+        let mut editor = editor.borrow_with(&mut font_system);
 
         let mut status = Status::Ignored;
         match event {
@@ -388,7 +399,7 @@ impl<'a, 'editor, Editor, Message, Renderer> From<TextBox<'a, Editor>>
 where
     Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
     Renderer::Theme: StyleSheet,
-    Editor: Edit<'editor>,
+    Editor: Edit,
 {
     fn from(text_box: TextBox<'a, Editor>) -> Self {
         Self::new(text_box)
@@ -397,7 +408,7 @@ where
 
 pub struct State {
     is_dragging: bool,
-    cache: Mutex<SwashCache<'static>>,
+    cache: Mutex<SwashCache>,
 }
 
 impl State {
@@ -405,7 +416,7 @@ impl State {
     pub fn new() -> State {
         State {
             is_dragging: false,
-            cache: Mutex::new(SwashCache::new(&crate::FONT_SYSTEM)),
+            cache: Mutex::new(SwashCache::new()),
         }
     }
 }
