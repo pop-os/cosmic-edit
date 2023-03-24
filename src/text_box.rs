@@ -182,11 +182,13 @@ where
         tree: &widget::Tree,
         renderer: &mut Renderer,
         theme: &Renderer::Theme,
-        _style: &renderer::Style,
+        style: &renderer::Style,
         layout: Layout<'_>,
         _cursor_position: Point,
         viewport: &Rectangle,
     ) {
+        let instant = Instant::now();
+
         let state = tree.state.downcast_ref::<State>();
 
         let appearance = theme.appearance();
@@ -217,54 +219,41 @@ where
         let view_h = cmp::min(viewport.height as i32, layout.bounds().height as i32)
             - self.padding.vertical() as i32;
 
+        let image_w = (view_w as f64 * style.scale_factor) as i32;
+        let image_h = (view_h as f64 * style.scale_factor) as i32;
+
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
 
-        editor.buffer_mut().set_size(view_w as f32, view_h as f32);
+        // Scale metrics
+        let metrics = editor.buffer().metrics();
+        editor.buffer_mut().set_metrics(metrics.scale(style.scale_factor as f32));
 
+        // Set size
+        editor.buffer_mut().set_size(image_w as f32, image_h as f32);
+
+        // Shape and layout
         editor.shape_as_needed();
 
-        let instant = Instant::now();
-
-        let mut pixels = vec![0; view_w as usize * view_h as usize * 4];
-
+        // Draw to pixel buffer
+        let mut pixels = vec![0; image_w as usize * image_h as usize * 4];
         editor.draw(
             &mut state.cache.lock().unwrap(),
             text_color,
             |x, y, w, h, color| {
-                if w <= 0 || h <= 0 {
-                    // Do not draw invalid sized rectangles
-                    return;
-                }
-
-                if w > 1 || h > 1 {
-                    // Draw rectangles with optimized quad renderer
-                    renderer.fill_quad(
-                        renderer::Quad {
-                            bounds: Rectangle::new(
-                                layout.position()
-                                    + [x as f32, y as f32].into()
-                                    + [self.padding.left as f32, self.padding.top as f32].into(),
-                                Size::new(w as f32, h as f32),
-                            ),
-                            border_radius: 0.0.into(),
-                            border_width: 0.0,
-                            border_color: Color::TRANSPARENT,
-                        },
-                        Color::from_rgba8(
-                            color.r(),
-                            color.g(),
-                            color.b(),
-                            (color.a() as f32) / 255.0,
-                        ),
-                    );
-                } else {
-                    draw_pixel(&mut pixels, view_w, view_h, x, y, color);
+                //TODO: improve performance
+                for row in 0..h as i32 {
+                    for col in 0..w as i32 {
+                        draw_pixel(&mut pixels, image_w, image_h, x + col, y + row, color);
+                    }
                 }
             },
         );
 
-        let handle = image::Handle::from_pixels(view_w as u32, view_h as u32, pixels);
+        // Restore original metrics
+        editor.buffer_mut().set_metrics(metrics);
+
+        let handle = image::Handle::from_pixels(image_w as u32, image_h as u32, pixels);
         image::Renderer::draw(
             renderer,
             handle,

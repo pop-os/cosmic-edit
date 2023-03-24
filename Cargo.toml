@@ -18,6 +18,7 @@ features = ["syntect"]
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
+branch = "scale-factor"
 default-features = false
 features = ["winit_softbuffer"]
 #path = "../libcosmic"
