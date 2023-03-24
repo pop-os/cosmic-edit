@@ -18,7 +18,7 @@ features = ["syntect"]
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
-rev = "f0ab457"
+rev = "035ec88"
 default-features = false
 features = ["winit_softbuffer"]
 #path = "../libcosmic"
