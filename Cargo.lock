@@ -1414,7 +1414,7 @@ checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 [[package]]
 name = "iced"
 version = "0.6.0"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "iced_core",
  "iced_dyrend",
@@ -1432,7 +1432,7 @@ dependencies = [
 [[package]]
 name = "iced_core"
 version = "0.6.2"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "bitflags",
  "palette",
@@ -1442,7 +1442,7 @@ dependencies = [
 [[package]]
 name = "iced_dyrend"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "iced_glow",
  "iced_graphics",
@@ -1456,7 +1456,7 @@ dependencies = [
 [[package]]
 name = "iced_futures"
 version = "0.5.1"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "futures",
  "log",
@@ -1467,7 +1467,7 @@ dependencies = [
 [[package]]
 name = "iced_glow"
 version = "0.5.1"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "bytemuck",
  "euclid",
@@ -1482,7 +1482,7 @@ dependencies = [
 [[package]]
 name = "iced_graphics"
 version = "0.5.0"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "bitflags",
  "bytemuck",
@@ -1502,7 +1502,7 @@ dependencies = [
 [[package]]
 name = "iced_lazy"
 version = "0.3.0"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "iced_native",
  "ouroboros 0.13.0",
@@ -1511,7 +1511,7 @@ dependencies = [
 [[package]]
 name = "iced_native"
 version = "0.7.0"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "iced_core",
  "iced_futures",
@@ -1524,7 +1524,7 @@ dependencies = [
 [[package]]
 name = "iced_softbuffer"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "cosmic-text",
  "iced_graphics",
@@ -1539,7 +1539,7 @@ dependencies = [
 [[package]]
 name = "iced_style"
 version = "0.5.1"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "iced_core",
  "once_cell",
@@ -1549,7 +1549,7 @@ dependencies = [
 [[package]]
 name = "iced_wgpu"
 version = "0.7.0"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "bitflags",
  "bytemuck",
@@ -1569,7 +1569,7 @@ dependencies = [
 [[package]]
 name = "iced_winit"
 version = "0.6.0"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "iced_futures",
  "iced_graphics",
@@ -1726,7 +1726,7 @@ checksum = "99227334921fae1a979cf0bfdfcc6b3e5ce376ef57e16fb6fb3ea2ed6095f80c"
 [[package]]
 name = "libcosmic"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/libcosmic?branch=scale-factor#6ce220e64cb82ecb2f65dfdc0a1304cdf9fcb958"
+source = "git+https://github.com/pop-os/libcosmic?rev=f0ab457#f0ab457393b7b70c8a16b06e15a765f7a869a986"
 dependencies = [
  "apply",
  "cosmic-theme",
