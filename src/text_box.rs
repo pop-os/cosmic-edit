@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::{
-    iced_native::{
-        clipboard::Clipboard,
+    iced::{
         event::{Event, Status},
-        image,
         keyboard::{Event as KeyEvent, KeyCode},
-        layout::{self, Layout},
         mouse::{self, Button, Event as MouseEvent, ScrollDelta},
+        Color, Element, Length, Padding, Rectangle, Size,
+    },
+    iced_core::{
+        clipboard::Clipboard,
+        image,
+        layout::{self, Layout},
         renderer,
         widget::{self, tree, Widget},
-        Padding, {Color, Element, Length, Point, Rectangle, Shell, Size},
+        Shell,
     },
     theme::{Theme, ThemeType},
 };
@@ -39,6 +42,11 @@ impl StyleSheet for Theme {
                 background_color: Some(Color::from_rgb8(0xFC, 0xFC, 0xFC)),
                 text_color: Color::from_rgb8(0x00, 0x00, 0x00),
             },
+            //TODO: what to return for these?
+            _ => Appearance {
+                background_color: Some(Color::from_rgb8(0x34, 0x34, 0x34)),
+                text_color: Color::from_rgb8(0xFF, 0xFF, 0xFF),
+            },
         }
     }
 }
@@ -52,7 +60,7 @@ impl<'a, Editor> TextBox<'a, Editor> {
     pub fn new(editor: &'a Mutex<Editor>) -> Self {
         Self {
             editor,
-            padding: Padding::new(0),
+            padding: Padding::new(0.0),
         }
     }
 
@@ -166,11 +174,11 @@ where
         &self,
         _tree: &widget::Tree,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor_position: mouse::Cursor,
         _viewport: &Rectangle,
         _renderer: &Renderer,
     ) -> mouse::Interaction {
-        if layout.bounds().contains(cursor_position) {
+        if cursor_position.is_over(layout.bounds()) {
             mouse::Interaction::Text
         } else {
             mouse::Interaction::Idle
@@ -184,7 +192,7 @@ where
         theme: &Renderer::Theme,
         style: &renderer::Style,
         layout: Layout<'_>,
-        _cursor_position: Point,
+        _cursor_position: mouse::Cursor,
         viewport: &Rectangle,
     ) {
         let instant = Instant::now();
@@ -219,15 +227,20 @@ where
         let view_h = cmp::min(viewport.height as i32, layout.bounds().height as i32)
             - self.padding.vertical() as i32;
 
-        let image_w = (view_w as f64 * style.scale_factor) as i32;
-        let image_h = (view_h as f64 * style.scale_factor) as i32;
+        //TODO: scale factor from style
+        let scale_factor = 1.0;
+
+        let image_w = (view_w as f64 * scale_factor) as i32;
+        let image_h = (view_h as f64 * scale_factor) as i32;
 
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
 
         // Scale metrics
         let metrics = editor.buffer().metrics();
-        editor.buffer_mut().set_metrics(metrics.scale(style.scale_factor as f32));
+        editor
+            .buffer_mut()
+            .set_metrics(metrics.scale(scale_factor as f32));
 
         // Set size
         editor.buffer_mut().set_size(image_w as f32, image_h as f32);
@@ -272,7 +285,7 @@ where
         tree: &mut widget::Tree,
         event: Event,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor_position: mouse::Cursor,
         _renderer: &Renderer,
         _clipboard: &mut dyn Clipboard,
         _shell: &mut Shell<'_, Message>,
@@ -343,11 +356,10 @@ where
                 status = Status::Captured;
             }
             Event::Mouse(MouseEvent::ButtonPressed(Button::Left)) => {
-                if layout.bounds().contains(cursor_position) {
+                if let Some(p) = cursor_position.position_in(layout.bounds()) {
                     editor.action(Action::Click {
-                        x: (cursor_position.x - layout.bounds().x) as i32
-                            - self.padding.left as i32,
-                        y: (cursor_position.y - layout.bounds().y) as i32 - self.padding.top as i32,
+                        x: p.x as i32 - self.padding.left as i32,
+                        y: p.y as i32 - self.padding.top as i32,
                     });
                     state.is_dragging = true;
                     status = Status::Captured;
@@ -359,11 +371,12 @@ where
             }
             Event::Mouse(MouseEvent::CursorMoved { .. }) => {
                 if state.is_dragging {
-                    editor.action(Action::Drag {
-                        x: (cursor_position.x - layout.bounds().x) as i32
-                            - self.padding.left as i32,
-                        y: (cursor_position.y - layout.bounds().y) as i32 - self.padding.top as i32,
-                    });
+                    if let Some(p) = cursor_position.position() {
+                        editor.action(Action::Drag {
+                            x: (p.x - layout.bounds().x) as i32 - self.padding.left as i32,
+                            y: (p.y - layout.bounds().y) as i32 - self.padding.top as i32,
+                        });
+                    }
                     status = Status::Captured;
                 }
             }

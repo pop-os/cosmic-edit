@@ -2,11 +2,10 @@
 
 use cosmic::{
     iced::{
-        self,
+        self, settings,
         widget::{column, container, horizontal_space, pick_list, row, text},
         Alignment, Application, Color, Command, Length,
     },
-    settings,
     theme::{self, Theme, ThemeType},
     widget::{button, segmented_button, toggler, view_switcher},
     Element,
@@ -39,7 +38,7 @@ static FONT_SIZES: &'static [Metrics] = &[
 fn main() -> cosmic::iced::Result {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    let mut settings = settings();
+    let mut settings = settings::Settings::default();
     settings.window.min_size = Some((400, 100));
     Window::run(settings)
 }
@@ -55,9 +54,7 @@ pub struct Tab {
 
 impl Tab {
     pub fn new() -> Self {
-        let attrs = cosmic_text::Attrs::new()
-            .monospaced(true)
-            .family(cosmic_text::Family::Monospace);
+        let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Monospace);
 
         let editor = SyntaxEditor::new(
             Buffer::new(&mut FONT_SYSTEM.lock().unwrap(), FONT_SIZES[1 /* Body */]),
@@ -186,10 +183,6 @@ impl Application for Window {
         )
     }
 
-    fn theme(&self) -> Theme {
-        self.theme
-    }
-
     fn title(&self) -> String {
         match self.active_tab() {
             Some(tab) => tab.title(),
@@ -255,12 +248,9 @@ impl Application for Window {
             })
             .padding(8)
             .placeholder("File"),
-            MenuList::new(vec!["Todo"], None, |_| Message::Todo)
-                .placeholder("Edit"),
-            MenuList::new(vec!["Todo"], None, |_| Message::Todo)
-                .placeholder("View"),
-            MenuList::new(vec!["Todo"], None, |_| Message::Todo)
-                .placeholder("Help"),
+            MenuList::new(vec!["Todo"], None, |_| Message::Todo).placeholder("Edit"),
+            MenuList::new(vec!["Todo"], None, |_| Message::Todo).placeholder("View"),
+            MenuList::new(vec!["Todo"], None, |_| Message::Todo).placeholder("Help"),
         ]
         .align_items(Alignment::Start)
         .padding(4)

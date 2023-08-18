@@ -1,21 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use cosmic::iced::{Background, Color};
-use cosmic::iced_native::alignment;
-use cosmic::iced_native::event::{self, Event};
-use cosmic::iced_native::keyboard;
-use cosmic::iced_native::layout;
-use cosmic::iced_native::mouse;
-use cosmic::iced_native::overlay;
-use cosmic::iced_native::overlay::menu::{self, Menu};
-use cosmic::iced_native::renderer;
-use cosmic::iced_native::text::{self, Text};
-use cosmic::iced_native::touch;
-use cosmic::iced_native::widget::container;
-use cosmic::iced_native::widget::scrollable;
-use cosmic::iced_native::widget::tree::{self, Tree};
-use cosmic::iced_native::{
-    Clipboard, Element, Layout, Length, Padding, Point, Rectangle, Shell, Size, Widget,
+use cosmic::{
+    iced::{
+        alignment,
+        event::{self, Event},
+        keyboard, mouse, overlay,
+        overlay::menu::{self, Menu},
+        touch,
+        widget::container,
+        widget::scrollable,
+        Background, Color, Element, Length, Padding, Rectangle, Size,
+    },
+    iced_core::{
+        clipboard::Clipboard,
+        layout::{self, Layout},
+        renderer,
+        text::{self, LineHeight, Shaping, Text},
+        widget::tree::{self, Tree},
+        Shell, Widget,
+    },
 };
 use std::borrow::Cow;
 
@@ -98,11 +101,12 @@ where
     T: ToString + Eq,
     [T]: ToOwned<Owned = Vec<T>>,
     Renderer: text::Renderer,
+    <Renderer as text::Renderer>::Font: std::default::Default,
     Renderer::Theme: StyleSheet + scrollable::StyleSheet + menu::StyleSheet + container::StyleSheet,
     <Renderer::Theme as menu::StyleSheet>::Style: From<<Renderer::Theme as StyleSheet>::Style>,
 {
     /// The default padding of a [`MenuList`].
-    pub const DEFAULT_PADDING: Padding = Padding::new(8);
+    pub const DEFAULT_PADDING: Padding = Padding::new(8.0);
 
     /// Creates a new [`MenuList`] with the given list of options, the current
     /// selected value, and the message to produce when an option is selected.
@@ -204,7 +208,7 @@ where
         tree: &mut Tree,
         event: Event,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor_position: mouse::Cursor,
         _renderer: &Renderer,
         _clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
@@ -225,7 +229,7 @@ where
         &self,
         _tree: &Tree,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor_position: mouse::Cursor,
         _viewport: &Rectangle,
         _renderer: &Renderer,
     ) -> mouse::Interaction {
@@ -239,7 +243,7 @@ where
         theme: &Renderer::Theme,
         _style: &renderer::Style,
         layout: Layout<'_>,
-        cursor_position: Point,
+        cursor_position: mouse::Cursor,
         _viewport: &Rectangle,
     ) {
         draw(
@@ -257,7 +261,7 @@ where
     }
 
     fn overlay<'b>(
-        &'b self,
+        &'b mut self,
         tree: &'b mut Tree,
         layout: Layout<'_>,
         renderer: &Renderer,
@@ -340,16 +344,18 @@ where
 
     let limits = limits.width(width).height(Length::Shrink).pad(padding);
 
-    let text_size = text_size.unwrap_or_else(|| renderer.default_size());
+    let text_size = text_size.unwrap_or_else(|| renderer.default_size() as u16);
 
     let max_width = match width {
         Length::Shrink => {
             let measure = |label: &str| -> u32 {
                 let (width, _) = renderer.measure(
                     label,
-                    text_size,
+                    text_size as f32,
+                    LineHeight::default(),
                     font.clone(),
                     Size::new(f32::INFINITY, f32::INFINITY),
+                    Shaping::Advanced,
                 );
 
                 width.round() as u32
@@ -374,7 +380,7 @@ where
 pub fn update<'a, T, Message>(
     event: Event,
     layout: Layout<'_>,
-    cursor_position: Point,
+    cursor_position: mouse::Cursor,
     shell: &mut Shell<'_, Message>,
     on_selected: &dyn Fn(T) -> Message,
     selected: Option<&T>,
@@ -395,7 +401,7 @@ where
                 state.is_open = false;
 
                 event::Status::Captured
-            } else if layout.bounds().contains(cursor_position) {
+            } else if cursor_position.is_over(layout.bounds()) {
                 state.is_open = true;
                 state.hovered_option = options.iter().position(|option| Some(option) == selected);
 
@@ -420,7 +426,7 @@ where
             let state = state();
 
             if state.keyboard_modifiers.command()
-                && layout.bounds().contains(cursor_position)
+                && cursor_position.is_over(layout.bounds())
                 && !state.is_open
             {
                 fn find_next<'a, T: PartialEq>(
@@ -469,9 +475,9 @@ where
 }
 
 /// Returns the current [`mouse::Interaction`] of a [`MenuList`].
-pub fn mouse_interaction(layout: Layout<'_>, cursor_position: Point) -> mouse::Interaction {
+pub fn mouse_interaction(layout: Layout<'_>, cursor_position: mouse::Cursor) -> mouse::Interaction {
     let bounds = layout.bounds();
-    let is_mouse_over = bounds.contains(cursor_position);
+    let is_mouse_over = cursor_position.is_over(bounds);
 
     if is_mouse_over {
         mouse::Interaction::Pointer
@@ -501,15 +507,17 @@ where
     if state.is_open {
         let bounds = layout.bounds();
 
-        let text_size = text_size.unwrap_or_else(|| renderer.default_size());
+        let text_size = text_size.unwrap_or_else(|| renderer.default_size() as u16);
 
         let width = {
             let measure = |label: &str| -> u32 {
                 let (width, _) = renderer.measure(
                     label,
-                    text_size,
+                    text_size as f32,
+                    LineHeight::default(),
                     font.clone(),
                     Size::new(f32::INFINITY, f32::INFINITY),
+                    Shaping::Advanced,
                 );
 
                 width.round() as u32
@@ -519,7 +527,7 @@ where
 
             let labels_width = labels.map(|label| measure(&label)).max().unwrap_or(100);
 
-            labels_width as u16 + padding.left + padding.right
+            labels_width as f32 + padding.left + padding.right
         };
 
         let menu = Menu::new(
@@ -545,7 +553,7 @@ pub fn draw<T, Renderer>(
     renderer: &mut Renderer,
     theme: &Renderer::Theme,
     layout: Layout<'_>,
-    cursor_position: Point,
+    cursor_position: mouse::Cursor,
     padding: Padding,
     text_size: Option<u16>,
     font: &Renderer::Font,
@@ -558,7 +566,7 @@ pub fn draw<T, Renderer>(
     T: ToString,
 {
     let bounds = layout.bounds();
-    let is_mouse_over = bounds.contains(cursor_position);
+    let is_mouse_over = cursor_position.is_over(bounds);
     let is_selected = selected.is_some();
 
     let style = if is_mouse_over {
@@ -580,25 +588,27 @@ pub fn draw<T, Renderer>(
     let label = selected.map(ToString::to_string);
 
     if let Some(label) = label.as_deref().or(placeholder) {
-        let text_size = f32::from(text_size.unwrap_or_else(|| renderer.default_size()));
+        let text_size = text_size.map_or_else(|| renderer.default_size(), f32::from);
 
         renderer.fill_text(Text {
             content: label,
-            size: text_size,
-            font: font.clone(),
-            color: if is_selected {
-                style.text_color
-            } else {
-                style.placeholder_color
-            },
             bounds: Rectangle {
                 x: bounds.x + f32::from(padding.left),
                 y: bounds.center_y() - text_size / 2.0,
                 width: bounds.width - f32::from(padding.horizontal()),
                 height: text_size,
             },
+            size: text_size,
+            line_height: LineHeight::default(),
+            color: if is_selected {
+                style.text_color
+            } else {
+                style.placeholder_color
+            },
+            font: font.clone(),
             horizontal_alignment: alignment::Horizontal::Left,
             vertical_alignment: alignment::Vertical::Top,
+            shaping: Shaping::Advanced,
         });
     }
 }
