@@ -13,12 +13,11 @@ log = "0.4"
 
 [dependencies.cosmic-text]
 git = "https://github.com/pop-os/cosmic-text"
-rev = "fedeeea9d307093fac880802e17e107b456e5de9"
 features = ["syntect"]
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
-rev = "a8ce524baa58f4fb2db2e26a5fc0899b63d688b5"
+branch = "theme-dark-light-switching"
 default-features = false
 features = ["winit"]
 #path = "../libcosmic"

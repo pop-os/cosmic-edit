@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::{
+    app::{self, Command, Core, Settings},
+    executor,
     iced::{
-        self, settings,
+        self,
         widget::{column, container, horizontal_space, pick_list, row, text},
-        Alignment, Application, Color, Command, Length,
+        Alignment, Color, Length,
     },
     theme::{self, Theme, ThemeType},
-    widget::{button, segmented_button, toggler, view_switcher},
-    Element,
+    widget::{button, icon, segmented_button, toggler, view_switcher},
+    ApplicationExt, Element,
 };
 use cosmic_text::{
     Attrs, AttrsList, Buffer, Edit, FontSystem, Metrics, SyntaxEditor, SyntaxSystem, Wrap,
@@ -35,12 +37,15 @@ static FONT_SIZES: &'static [Metrics] = &[
     Metrics::new(32.0, 44.0), // Title 1
 ];
 
-fn main() -> cosmic::iced::Result {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    let mut settings = settings::Settings::default();
-    settings.window.min_size = Some((400, 100));
-    Window::run(settings)
+    let settings = Settings::default();
+    //TODO: settings.window.min_size = Some((400, 100));
+    let flags = ();
+    cosmic::app::run::<App>(settings, flags)?;
+
+    Ok(())
 }
 
 pub struct Tab {
@@ -126,8 +131,8 @@ impl Tab {
     }
 }
 
-pub struct Window {
-    theme: Theme,
+pub struct App {
+    core: Core,
     tab_model: segmented_button::SingleSelectModel,
 }
 
@@ -141,7 +146,7 @@ pub enum Message {
     Todo,
 }
 
-impl Window {
+impl App {
     pub fn active_tab(&self) -> Option<&Tab> {
         self.tab_model.active_data()
     }
@@ -149,62 +154,74 @@ impl Window {
     pub fn active_tab_mut(&mut self) -> Option<&mut Tab> {
         self.tab_model.active_data_mut()
     }
-}
 
-impl Application for Window {
-    type Executor = iced::executor::Default;
-    type Flags = ();
-    type Message = Message;
-    type Theme = Theme;
-
-    fn new(_flags: ()) -> (Self, Command<Self::Message>) {
-        let mut tab_model = segmented_button::Model::builder().build();
-
+    pub fn open_tab(&mut self, path_opt: Option<PathBuf>) {
         let mut tab = Tab::new();
-        if let Some(arg) = env::args().nth(1) {
-            tab.open(PathBuf::from(arg));
+        if let Some(path) = path_opt {
+            tab.open(path);
         }
-
-        tab_model
+        self.tab_model
             .insert()
             .text(tab.title())
-            .icon("text-x-generic")
-            .icon_color(None)
+            .icon(icon::from_name("text-x-generic").icon())
             .data(tab)
             .closable()
             .activate();
-
-        (
-            Window {
-                theme: Theme::dark(),
-                tab_model,
-            },
-            Command::none(),
-        )
     }
 
-    fn title(&self) -> String {
-        match self.active_tab() {
+    pub fn update_title(&mut self) -> Command<Message> {
+        let title = match self.active_tab() {
             Some(tab) => tab.title(),
-            None => format!("COSMIC Text Editor"),
-        }
+            None => format!("No Open File"),
+        };
+        let window_title = format!("{title} - COSMIC Text Editor");
+        self.core.window.header_title = title.clone();
+        self.set_title(window_title)
+    }
+}
+
+/// Implement [`cosmic::Application`] to integrate with COSMIC.
+impl cosmic::Application for App {
+    /// Default async executor to use with the app.
+    type Executor = executor::Default;
+
+    /// Argument received [`cosmic::Application::new`].
+    type Flags = ();
+
+    /// Message type specific to our [`App`].
+    type Message = Message;
+
+    /// The unique application ID to supply to the window manager.
+    const APP_ID: &'static str = "com.system76.CosmicTextEditor";
+
+    fn core(&self) -> &Core {
+        &self.core
     }
 
-    fn update(&mut self, message: Message) -> iced::Command<Self::Message> {
+    fn core_mut(&mut self) -> &mut Core {
+        &mut self.core
+    }
+
+    /// Creates the application, and optionally emits command on initialize.
+    fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
+        let mut tab_model = segmented_button::Model::builder().build();
+
+        let mut app = App { core, tab_model };
+
+        for path in env::args().skip(1) {
+            app.open_tab(Some(PathBuf::from(path)));
+        }
+
+        let command = app.update_title();
+        (app, command)
+    }
+
+    fn update(&mut self, message: Message) -> Command<Self::Message> {
         match message {
             Message::Open => {
                 if let Some(path) = rfd::FileDialog::new().pick_file() {
-                    let mut tab = Tab::new();
-                    tab.open(path);
-
-                    self.tab_model
-                        .insert()
-                        .text(tab.title())
-                        .icon("text-x-generic")
-                        .icon_color(None)
-                        .data(tab)
-                        .closable()
-                        .activate();
+                    self.open_tab(Some(path));
+                    return self.update_title();
                 }
             }
             Message::Save => {
@@ -219,7 +236,7 @@ impl Application for Window {
                         tab.save();
                     }
                     None => {
-                        log::info!("TODO: NO TAB OPEN");
+                        log::warn!("TODO: NO TAB OPEN");
                     }
                 }
 
@@ -227,10 +244,32 @@ impl Application for Window {
                     self.tab_model.text_set(self.tab_model.active(), title);
                 }
             }
-            Message::TabActivate(entity) => self.tab_model.activate(entity),
-            Message::TabClose(entity) => self.tab_model.remove(entity),
+            Message::TabActivate(entity) => {
+                self.tab_model.activate(entity);
+                return self.update_title();
+            }
+            Message::TabClose(entity) => {
+                // Activate closest item
+                if let Some(position) = self.tab_model.position(entity) {
+                    if position > 0 {
+                        self.tab_model.activate_position(position - 1);
+                    } else {
+                        self.tab_model.activate_position(position + 1);
+                    }
+                }
+
+                // Remove item
+                self.tab_model.remove(entity);
+
+                // If that was the last tab, make a new empty one
+                if self.tab_model.iter().next().is_none() {
+                    self.open_tab(None);
+                }
+
+                return self.update_title();
+            }
             Message::Todo => {
-                log::info!("TODO");
+                log::warn!("TODO");
             }
         }
 
@@ -261,22 +300,16 @@ impl Application for Window {
             .on_close(Message::TabClose)
             .width(Length::Shrink);
 
-        let content: Element<_> = column![
-            menu_bar,
-            column![
-                tab_bar,
-                match self.active_tab() {
-                    Some(tab) => {
-                        text_box(&tab.editor).padding(8)
-                    }
-                    None => {
-                        panic!("TODO: No tab open");
-                    }
-                }
-            ]
-            .padding([0, 16])
-        ]
-        .into();
+        let active_tab: Element<_> = match self.active_tab() {
+            Some(tab) => text_box(&tab.editor).padding(8).into(),
+            None => {
+                log::warn!("TODO: No tab open");
+                text("no tab active").into()
+            }
+        };
+
+        let content: Element<_> =
+            column![menu_bar, column![tab_bar, active_tab,].padding([0, 16])].into();
 
         // Uncomment to debug layout:
         //content.explain(Color::WHITE)

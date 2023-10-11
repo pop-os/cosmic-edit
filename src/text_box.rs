@@ -289,6 +289,7 @@ where
         _renderer: &Renderer,
         _clipboard: &mut dyn Clipboard,
         _shell: &mut Shell<'_, Message>,
+        _viewport: &Rectangle<f32>,
     ) -> Status {
         let state = tree.state.downcast_mut::<State>();
         let mut editor = self.editor.lock().unwrap();

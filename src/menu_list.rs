@@ -212,6 +212,7 @@ where
         _renderer: &Renderer,
         _clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
+        _viewport: &Rectangle<f32>,
     ) -> event::Status {
         update(
             event,
@@ -276,6 +277,7 @@ where
             self.text_size,
             self.font.clone(),
             &self.options,
+            &self.on_selected,
             self.style.clone(),
         )
     }
@@ -349,7 +351,7 @@ where
     let max_width = match width {
         Length::Shrink => {
             let measure = |label: &str| -> u32 {
-                let (width, _) = renderer.measure(
+                let size = renderer.measure(
                     label,
                     text_size as f32,
                     LineHeight::default(),
@@ -358,7 +360,7 @@ where
                     Shaping::Advanced,
                 );
 
-                width.round() as u32
+                size.width.round() as u32
             };
 
             placeholder.map(measure).unwrap_or(100)
@@ -495,6 +497,7 @@ pub fn overlay<'a, T, Message, Renderer>(
     text_size: Option<u16>,
     font: Renderer::Font,
     options: &'a [T],
+    on_selected: &'a dyn Fn(T) -> Message,
     style: <Renderer::Theme as StyleSheet>::Style,
 ) -> Option<overlay::Element<'a, Message, Renderer>>
 where
@@ -511,7 +514,7 @@ where
 
         let width = {
             let measure = |label: &str| -> u32 {
-                let (width, _) = renderer.measure(
+                let size = renderer.measure(
                     label,
                     text_size as f32,
                     LineHeight::default(),
@@ -520,7 +523,7 @@ where
                     Shaping::Advanced,
                 );
 
-                width.round() as u32
+                size.width.round() as u32
             };
 
             let labels = options.iter().map(ToString::to_string);
@@ -534,7 +537,12 @@ where
             &mut state.menu,
             options,
             &mut state.hovered_option,
-            &mut state.last_selection,
+            |option| {
+                state.is_open = false;
+
+                (on_selected)(option)
+            },
+            None,
         )
         .width(width)
         .padding(padding)
