@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::{
-    app::{self, Command, Core, Settings},
+    app::{Command, Core, Settings},
     executor,
     iced::{
-        self,
-        widget::{column, container, horizontal_space, pick_list, row, text},
-        Alignment, Color, Length,
+        widget::{column, row, text},
+        Alignment, Length,
     },
-    theme::{self, Theme, ThemeType},
-    widget::{button, icon, segmented_button, toggler, view_switcher},
+    widget::{icon, segmented_button, view_switcher},
     ApplicationExt, Element,
 };
-use cosmic_text::{
-    Attrs, AttrsList, Buffer, Edit, FontSystem, Metrics, SyntaxEditor, SyntaxSystem, Wrap,
-};
+use cosmic_text::{Attrs, Buffer, Edit, FontSystem, Metrics, SyntaxEditor, SyntaxSystem};
 use std::{env, fs, path::PathBuf, sync::Mutex};
 
 use self::menu_list::MenuList;
@@ -204,12 +200,18 @@ impl cosmic::Application for App {
 
     /// Creates the application, and optionally emits command on initialize.
     fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        let mut tab_model = segmented_button::Model::builder().build();
-
-        let mut app = App { core, tab_model };
+        let mut app = App {
+            core,
+            tab_model: segmented_button::Model::builder().build(),
+        };
 
         for path in env::args().skip(1) {
             app.open_tab(Some(PathBuf::from(path)));
+        }
+
+        // Open an empty file if no arguments provided
+        if app.tab_model.iter().next().is_none() {
+            app.open_tab(None);
         }
 
         let command = app.update_title();

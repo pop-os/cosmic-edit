@@ -74,20 +74,7 @@ pub fn text_box<'a, Editor>(editor: &'a Mutex<Editor>) -> TextBox<'a, Editor> {
     TextBox::new(editor)
 }
 
-fn draw_pixel(
-    buffer: &mut [u8],
-    width: i32,
-    height: i32,
-    x: i32,
-    y: i32,
-    color: cosmic_text::Color,
-) {
-    let alpha = (color.0 >> 24) & 0xFF;
-    if alpha == 0 {
-        // Do not draw if alpha is zero
-        return;
-    }
-
+fn draw_pixel(buffer: &mut [u32], width: i32, height: i32, x: i32, y: i32, color: u32) {
     if y < 0 || y >= height {
         // Skip if y out of bounds
         return;
@@ -98,29 +85,72 @@ fn draw_pixel(
         return;
     }
 
-    let offset = (y as usize * width as usize + x as usize) * 4;
-
-    let mut current = buffer[offset + 2] as u32
-        | (buffer[offset + 1] as u32) << 8
-        | (buffer[offset + 0] as u32) << 16
-        | (buffer[offset + 3] as u32) << 24;
-
-    if alpha >= 255 || current == 0 {
-        // Alpha is 100% or current is null, replace with no blending
-        current = color.0;
-    } else {
-        // Alpha blend with current value
-        let n_alpha = 255 - alpha;
-        let rb = ((n_alpha * (current & 0x00FF00FF)) + (alpha * (color.0 & 0x00FF00FF))) >> 8;
-        let ag = (n_alpha * ((current & 0xFF00FF00) >> 8))
-            + (alpha * (0x01000000 | ((color.0 & 0x0000FF00) >> 8)));
-        current = (rb & 0x00FF00FF) | (ag & 0xFF00FF00);
+    let alpha = (color >> 24) & 0xFF;
+    if alpha == 0 {
+        // Do not draw if alpha is zero
+        return;
     }
+}
 
-    buffer[offset + 2] = current as u8;
-    buffer[offset + 1] = (current >> 8) as u8;
-    buffer[offset + 0] = (current >> 16) as u8;
-    buffer[offset + 3] = (current >> 24) as u8;
+//TODO: improve performance
+fn draw_rect(
+    buffer: &mut [u32],
+    image_w: i32,
+    image_h: i32,
+    start_x: i32,
+    start_y: i32,
+    w: i32,
+    h: i32,
+    color: u32,
+) {
+    let alpha = (color >> 24) & 0xFF;
+    if alpha == 0 {
+        // Do not draw if alpha is zero
+        return;
+    } else if alpha >= 255 {
+        // Handle overwrite
+        for y in start_y..start_y + h {
+            if y < 0 || y >= image_h {
+                // Skip if y out of bounds
+                continue;
+            }
+
+            let line_offset = y as usize * image_w as usize;
+            for x in start_x..start_x + w {
+                if x < 0 || x >= image_w {
+                    // Skip if x out of bounds
+                    continue;
+                }
+
+                let offset = line_offset + x as usize;
+                buffer[offset] = color;
+            }
+        }
+    } else {
+        let n_alpha = 255 - alpha;
+        for y in start_y..start_y + h {
+            if y < 0 || y >= image_h {
+                // Skip if y out of bounds
+                continue;
+            }
+
+            let line_offset = y as usize * image_w as usize;
+            for x in start_x..start_x + w {
+                if x < 0 || x >= image_w {
+                    // Skip if x out of bounds
+                    continue;
+                }
+
+                // Alpha blend with current value
+                let offset = line_offset + x as usize;
+                let current = buffer[offset];
+                let rb = ((n_alpha * (current & 0x00FF00FF)) + (alpha * (color & 0x00FF00FF))) >> 8;
+                let ag = (n_alpha * ((current & 0xFF00FF00) >> 8))
+                    + (alpha * (0x01000000 | ((color & 0x0000FF00) >> 8)));
+                buffer[offset] = (rb & 0x00FF00FF) | (ag & 0xFF00FF00);
+            }
+        }
+    }
 }
 
 impl<'a, 'editor, Editor, Message, Renderer> Widget<Message, Renderer> for TextBox<'a, Editor>
@@ -250,18 +280,19 @@ where
 
         // Draw to pixel buffer
         let mut pixels = vec![0; image_w as usize * image_h as usize * 4];
-        editor.draw(
-            &mut state.cache.lock().unwrap(),
-            text_color,
-            |x, y, w, h, color| {
-                //TODO: improve performance
-                for row in 0..h as i32 {
-                    for col in 0..w as i32 {
-                        draw_pixel(&mut pixels, image_w, image_h, x + col, y + row, color);
-                    }
-                }
-            },
-        );
+        {
+            let buffer = unsafe {
+                std::slice::from_raw_parts_mut(pixels.as_mut_ptr() as *mut u32, pixels.len() / 4)
+            };
+
+            editor.draw(
+                &mut state.cache.lock().unwrap(),
+                text_color,
+                |x, y, w, h, color| {
+                    draw_rect(buffer, image_w, image_h, x, y, w as i32, h as i32, color.0);
+                },
+            );
+        }
 
         // Restore original metrics
         editor.buffer_mut().set_metrics(metrics);
