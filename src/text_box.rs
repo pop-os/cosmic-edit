@@ -74,24 +74,6 @@ pub fn text_box<'a, Editor>(editor: &'a Mutex<Editor>) -> TextBox<'a, Editor> {
     TextBox::new(editor)
 }
 
-fn draw_pixel(buffer: &mut [u32], width: i32, height: i32, x: i32, y: i32, color: u32) {
-    if y < 0 || y >= height {
-        // Skip if y out of bounds
-        return;
-    }
-
-    if x < 0 || x >= width {
-        // Skip if x out of bounds
-        return;
-    }
-
-    let alpha = (color >> 24) & 0xFF;
-    if alpha == 0 {
-        // Do not draw if alpha is zero
-        return;
-    }
-}
-
 //TODO: improve performance
 fn draw_rect(
     buffer: &mut [u32],
@@ -266,11 +248,16 @@ where
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
 
+        /*TODO: have buffer able to scale during drawing
         // Scale metrics
         let metrics = editor.buffer().metrics();
         editor
             .buffer_mut()
             .set_metrics(metrics.scale(scale_factor as f32));
+
+        // Restore original metrics
+        editor.buffer_mut().set_metrics(metrics);
+        */
 
         // Set size
         editor.buffer_mut().set_size(image_w as f32, image_h as f32);
@@ -278,26 +265,34 @@ where
         // Shape and layout
         editor.shape_as_needed();
 
-        // Draw to pixel buffer
-        let mut pixels = vec![0; image_w as usize * image_h as usize * 4];
-        {
-            let buffer = unsafe {
-                std::slice::from_raw_parts_mut(pixels.as_mut_ptr() as *mut u32, pixels.len() / 4)
-            };
+        if editor.buffer().redraw() {
+            // Draw to pixel buffer
+            let mut pixels = vec![0; image_w as usize * image_h as usize * 4];
+            {
+                let buffer = unsafe {
+                    std::slice::from_raw_parts_mut(
+                        pixels.as_mut_ptr() as *mut u32,
+                        pixels.len() / 4,
+                    )
+                };
 
-            editor.draw(
-                &mut state.cache.lock().unwrap(),
-                text_color,
-                |x, y, w, h, color| {
-                    draw_rect(buffer, image_w, image_h, x, y, w as i32, h as i32, color.0);
-                },
-            );
+                editor.draw(
+                    &mut state.cache.lock().unwrap(),
+                    text_color,
+                    |x, y, w, h, color| {
+                        draw_rect(buffer, image_w, image_h, x, y, w as i32, h as i32, color.0);
+                    },
+                );
+            }
+
+            // Clear redraw flag
+            editor.buffer_mut().set_redraw(false);
+
+            *state.handle.lock().unwrap() =
+                image::Handle::from_pixels(image_w as u32, image_h as u32, pixels);
         }
 
-        // Restore original metrics
-        editor.buffer_mut().set_metrics(metrics);
-
-        let handle = image::Handle::from_pixels(image_w as u32, image_h as u32, pixels);
+        let handle = state.handle.lock().unwrap().clone();
         image::Renderer::draw(
             renderer,
             handle,
@@ -443,6 +438,7 @@ where
 pub struct State {
     is_dragging: bool,
     cache: Mutex<SwashCache>,
+    handle: Mutex<image::Handle>,
 }
 
 impl State {
@@ -451,6 +447,8 @@ impl State {
         State {
             is_dragging: false,
             cache: Mutex::new(SwashCache::new()),
+            //TODO: make option!
+            handle: Mutex::new(image::Handle::from_pixels(1, 1, vec![0, 0, 0, 0])),
         }
     }
 }
