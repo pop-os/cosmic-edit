@@ -177,7 +177,6 @@ where
 
         let height = layout_lines as f32 * editor.buffer().metrics().line_height;
         let size = Size::new(limits.max().width, height);
-        log::info!("size {:?}", size);
 
         layout::Node::new(limits.resolve(size))
     }
@@ -244,6 +243,11 @@ where
 
         let image_w = (view_w as f64 * scale_factor) as i32;
         let image_h = (view_h as f64 * scale_factor) as i32;
+        
+        if image_w <= 0 || image_h <= 0 {
+            // Zero sized image
+            return;
+        }
 
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);

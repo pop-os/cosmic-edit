@@ -19,7 +19,9 @@ features = ["syntect"]
 git = "https://github.com/pop-os/libcosmic"
 branch = "theme-dark-light-switching"
 default-features = false
-features = ["winit"]
+features = ["wayland"]
+#TODO: winit does not support size limits, resizing
+#features = ["winit"]
 #path = "../libcosmic"
 
 [dependencies.rfd]

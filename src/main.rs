@@ -5,7 +5,7 @@ use cosmic::{
     executor,
     iced::{
         widget::{column, row, text},
-        Alignment, Length,
+        Alignment, Length, Limits,
     },
     widget::{icon, segmented_button, view_switcher},
     ApplicationExt, Element,
@@ -36,8 +36,8 @@ static FONT_SIZES: &'static [Metrics] = &[
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    let settings = Settings::default();
-    //TODO: settings.window.min_size = Some((400, 100));
+    let settings = Settings::default()
+        .size_limits(Limits::NONE.min_width(400.0).min_height(200.0));
     let flags = ();
     cosmic::app::run::<App>(settings, flags)?;
 
