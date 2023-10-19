@@ -171,8 +171,8 @@ impl App {
             None => format!("No Open File"),
         };
         let window_title = format!("{title} - COSMIC Text Editor");
-        self.core.window.header_title = title.clone();
-        self.set_title(window_title)
+        self.set_header_title(title.clone());
+        self.set_window_title(window_title)
     }
 }
 
