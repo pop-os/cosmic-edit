@@ -243,7 +243,7 @@ where
 
         let image_w = (view_w as f64 * scale_factor) as i32;
         let image_h = (view_h as f64 * scale_factor) as i32;
-        
+
         if image_w <= 0 || image_h <= 0 {
             // Zero sized image
             return;
@@ -383,7 +383,12 @@ where
                 _ => (),
             },
             Event::Keyboard(KeyEvent::CharacterReceived(character)) => {
-                editor.action(Action::Insert(character));
+                match character {
+                    '\n' | '\r' => {}
+                    _ => {
+                        editor.action(Action::Insert(character));
+                    }
+                }
                 status = Status::Captured;
             }
             Event::Mouse(MouseEvent::ButtonPressed(Button::Left)) => {
