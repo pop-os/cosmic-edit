@@ -14,12 +14,15 @@ rfd = "0.12.0"
 
 [dependencies.cosmic-text]
 git = "https://github.com/pop-os/cosmic-text"
-features = ["syntect"]
+branch = "vi-editor"
+features = ["syntect", "vi"]
+#path = "../cosmic-text"
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
-features = ["wayland"]
+default-features = false
 
 [features]
-default = []
-vi = ["cosmic-text/vi"]
+default = ["wayland"]
+wayland = ["libcosmic/wayland"]
+winit = ["libcosmic/winit"]

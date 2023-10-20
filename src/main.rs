@@ -7,10 +7,12 @@ use cosmic::{
         widget::{column, row, text},
         Alignment, Length, Limits,
     },
-    widget::{icon, segmented_button, view_switcher},
+    widget::{self, icon, segmented_button, view_switcher},
     ApplicationExt, Element,
 };
-use cosmic_text::{Attrs, Buffer, Edit, FontSystem, Metrics, SyntaxEditor, SyntaxSystem};
+use cosmic_text::{
+    Attrs, Buffer, Edit, FontSystem, Metrics, SyntaxEditor, SyntaxSystem, ViEditor, ViMode,
+};
 use std::{env, fs, path::PathBuf, sync::Mutex};
 
 use self::menu_list::MenuList;
@@ -36,8 +38,7 @@ static FONT_SIZES: &'static [Metrics] = &[
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    let settings = Settings::default()
-        .size_limits(Limits::NONE.min_width(400.0).min_height(200.0));
+    let settings = Settings::default().size_limits(Limits::NONE.min_width(400.0).min_height(200.0));
     let flags = ();
     cosmic::app::run::<App>(settings, flags)?;
 
@@ -47,10 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 pub struct Tab {
     path_opt: Option<PathBuf>,
     attrs: Attrs<'static>,
-    #[cfg(not(feature = "vi"))]
-    editor: Mutex<SyntaxEditor<'static>>,
-    #[cfg(feature = "vi")]
-    editor: Mutex<cosmic_text::ViEditor<'static>>,
+    editor: Mutex<ViEditor<'static>>,
 }
 
 impl Tab {
@@ -64,8 +62,8 @@ impl Tab {
         )
         .unwrap();
 
-        #[cfg(feature = "vi")]
-        let editor = cosmic_text::ViEditor::new(editor);
+        let mut editor = ViEditor::new(editor);
+        editor.set_passthrough(false);
 
         Self {
             path_opt: None,
@@ -297,21 +295,49 @@ impl cosmic::Application for App {
         .padding(4)
         .spacing(16);
 
-        let tab_bar = view_switcher::horizontal(&self.tab_model)
-            .on_activate(Message::TabActivate)
-            .on_close(Message::TabClose)
-            .width(Length::Shrink);
+        let mut tab_column = widget::column::with_capacity(3).padding([0, 16]);
 
-        let active_tab: Element<_> = match self.active_tab() {
-            Some(tab) => text_box(&tab.editor).padding(8).into(),
+        tab_column = tab_column.push(
+            view_switcher::horizontal(&self.tab_model)
+                .on_activate(Message::TabActivate)
+                .on_close(Message::TabClose)
+                .width(Length::Shrink),
+        );
+
+        match self.active_tab() {
+            Some(tab) => {
+                tab_column = tab_column.push(text_box(&tab.editor).padding(8));
+                let status = match tab.editor.lock().unwrap().mode() {
+                    ViMode::Passthrough => {
+                        //TODO: status line
+                        String::new()
+                    }
+                    ViMode::Normal => {
+                        //TODO: status line
+                        String::new()
+                    }
+                    ViMode::Insert => {
+                        format!("-- INSERT --")
+                    }
+                    ViMode::Command { value } => {
+                        format!(":{value}|")
+                    }
+                    ViMode::Search { value, forwards } => {
+                        if *forwards {
+                            format!("/{value}|")
+                        } else {
+                            format!("?{value}|")
+                        }
+                    }
+                };
+                tab_column = tab_column.push(text(status).font(cosmic::font::Font::MONOSPACE));
+            }
             None => {
                 log::warn!("TODO: No tab open");
-                text("no tab active").into()
             }
         };
 
-        let content: Element<_> =
-            column![menu_bar, column![tab_bar, active_tab,].padding([0, 16])].into();
+        let content: Element<_> = column![menu_bar, tab_column].into();
 
         // Uncomment to debug layout:
         //content.explain(Color::WHITE)
