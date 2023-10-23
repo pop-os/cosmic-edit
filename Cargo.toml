@@ -1,5 +1,5 @@
 [package]
-name = "cosmic-text-editor"
+name = "cosmic-edit"
 version = "0.1.0"
 authors = ["Jeremy Soller <jeremy@system76.com>"]
 edition = "2021"
