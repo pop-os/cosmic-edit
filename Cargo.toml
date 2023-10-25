@@ -19,8 +19,9 @@ features = ["syntect", "vi"]
 #path = "../cosmic-text"
 
 [dependencies.libcosmic]
-git = "https://github.com/pop-os/libcosmic"
+#git = "https://github.com/pop-os/libcosmic"
 default-features = false
+path = "../libcosmic"
 
 [features]
 default = ["wayland"]

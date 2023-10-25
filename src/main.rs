@@ -7,13 +7,22 @@ use cosmic::{
         widget::{column, row, text},
         Alignment, Length, Limits,
     },
-    widget::{self, icon, segmented_button, view_switcher},
+    theme,
+    widget::{
+        self, button, icon,
+        menu::{MenuBar, MenuTree},
+        segmented_button, view_switcher,
+    },
     ApplicationExt, Element,
 };
 use cosmic_text::{
     Attrs, Buffer, Edit, FontSystem, Metrics, SyntaxEditor, SyntaxSystem, ViEditor, ViMode,
 };
-use std::{env, fs, path::PathBuf, sync::Mutex};
+use std::{
+    env, fs, io,
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 
 use self::menu_list::MenuList;
 mod menu_list;
@@ -43,6 +52,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     cosmic::app::run::<App>(settings, flags)?;
 
     Ok(())
+}
+
+pub struct Project {
+    path: PathBuf,
+    name: String,
+}
+
+impl Project {
+    pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
+        let path = fs::canonicalize(path)?;
+        let name = path
+            .file_name()
+            .ok_or(io::Error::new(
+                io::ErrorKind::Other,
+                format!("Path {:?} has no file name", path),
+            ))?
+            .to_str()
+            .ok_or(io::Error::new(
+                io::ErrorKind::Other,
+                format!("Path {:?} is not valid UTF-8", path),
+            ))?
+            .to_string();
+        Ok(Self { path, name })
+    }
 }
 
 pub struct Tab {
@@ -127,6 +160,7 @@ impl Tab {
 
 pub struct App {
     core: Core,
+    projects: Vec<Project>,
     tab_model: segmented_button::SingleSelectModel,
 }
 
@@ -147,6 +181,15 @@ impl App {
 
     pub fn active_tab_mut(&mut self) -> Option<&mut Tab> {
         self.tab_model.active_data_mut()
+    }
+
+    pub fn open_project<P: AsRef<Path>>(&mut self, path: P) {
+        match Project::new(&path) {
+            Ok(project) => self.projects.push(project),
+            Err(err) => {
+                log::error!("failed to open '{}': {}", path.as_ref().display(), err);
+            }
+        }
     }
 
     pub fn open_tab(&mut self, path_opt: Option<PathBuf>) {
@@ -200,11 +243,17 @@ impl cosmic::Application for App {
     fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
         let mut app = App {
             core,
+            projects: Vec::new(),
             tab_model: segmented_button::Model::builder().build(),
         };
 
-        for path in env::args().skip(1) {
-            app.open_tab(Some(PathBuf::from(path)));
+        for arg in env::args().skip(1) {
+            let path = PathBuf::from(arg);
+            if path.is_dir() {
+                app.open_project(path);
+            } else {
+                app.open_tab(Some(path));
+            }
         }
 
         // Open an empty file if no arguments provided
@@ -277,14 +326,25 @@ impl cosmic::Application for App {
     }
 
     fn view(&self) -> Element<Message> {
+        /*
         let menu_bar = row![
-            MenuList::new(vec!["Open", "Save"], None, |item| {
-                match item {
-                    "Open" => Message::Open,
-                    "Save" => Message::Save,
-                    _ => Message::Todo,
+            MenuList::new(
+                vec![
+                    "New file",
+                    "New window",
+                    "Open file...",
+                    "Save",
+                    "Save as..."
+                ],
+                None,
+                |item| {
+                    match item {
+                        "Open" => Message::Open,
+                        "Save" => Message::Save,
+                        _ => Message::Todo,
+                    }
                 }
-            })
+            )
             .padding(8)
             .placeholder("File"),
             MenuList::new(vec!["Todo"], None, |_| Message::Todo).placeholder("Edit"),
@@ -294,6 +354,14 @@ impl cosmic::Application for App {
         .align_items(Alignment::Start)
         .padding(4)
         .spacing(16);
+        */
+
+        //TODO: port macros menu_bar! and menu_tree!
+        let menu_bar: Element<_> = MenuBar::new(vec![MenuTree::with_children(
+            button("File"),
+            vec![MenuTree::new(button("New file"))],
+        )])
+        .into();
 
         let mut tab_column = widget::column::with_capacity(3).padding([0, 16]);
 
@@ -337,10 +405,22 @@ impl cosmic::Application for App {
             }
         };
 
-        let content: Element<_> = column![menu_bar, tab_column].into();
+        let mut project_row = widget::row::with_capacity(2);
+        if !self.projects.is_empty() {
+            /*TODO: project tree view
+            let mut project_list = widget::column::with_capacity(self.projects.len());
+            for project in self.projects.iter() {
+                project_list = project_list.push(widget::text(&project.name));
+            }
+            project_row = project_row.push(project_list);
+            */
+        }
+        project_row = project_row.push(tab_column);
+
+        let content: Element<_> = column![menu_bar, project_row].into();
 
         // Uncomment to debug layout:
-        //content.explain(Color::WHITE)
-        content
+        content.explain(cosmic::iced::Color::WHITE)
+        //content
     }
 }
