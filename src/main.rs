@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::{
-    app::{Command, Core, Settings},
+    app::{message, Command, Core, Settings},
     executor,
     iced::{
-        widget::{column, horizontal_rule, row, text},
+        widget::{column, horizontal_rule, horizontal_space, row, text},
         Alignment, Length, Limits,
     },
     theme,
@@ -165,10 +165,11 @@ pub struct App {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum Message {
     New,
-    Open,
+    OpenDialog,
+    Open(PathBuf),
     Save,
     TabActivate(segmented_button::Entity),
     TabClose(segmented_button::Entity),
@@ -272,11 +273,22 @@ impl cosmic::Application for App {
                 self.open_tab(None);
                 return self.update_title();
             }
-            Message::Open => {
-                if let Some(path) = rfd::FileDialog::new().pick_file() {
-                    self.open_tab(Some(path));
-                    return self.update_title();
-                }
+            Message::OpenDialog => {
+                return Command::perform(
+                    async {
+                        if let Some(handle) = rfd::AsyncFileDialog::new().pick_file().await {
+                            println!("{}", handle.path().display());
+                            message::app(Message::Open(handle.path().to_owned()))
+                        } else {
+                            message::none()
+                        }
+                    },
+                    |x| x,
+                );
+            }
+            Message::Open(path) => {
+                self.open_tab(Some(path));
+                return self.update_title();
             }
             Message::Save => {
                 let mut title_opt = None;
@@ -284,6 +296,7 @@ impl cosmic::Application for App {
                 match self.active_tab_mut() {
                     Some(tab) => {
                         if tab.path_opt.is_none() {
+                            //TODO: use async file dialog
                             tab.path_opt = rfd::FileDialog::new().save_file();
                             title_opt = Some(tab.title());
                         }
@@ -344,7 +357,7 @@ impl cosmic::Application for App {
                 None,
                 |item| {
                     match item {
-                        "Open" => Message::Open,
+                        "Open" => Message::OpenDialog,
                         "Save" => Message::Save,
                         _ => Message::Todo,
                     }
@@ -361,27 +374,59 @@ impl cosmic::Application for App {
         .spacing(16);
         */
 
-        //TODO: port macros menu_bar! and menu_tree!
-        let menu_button = |label| {
+        //TODO: port to libcosmic
+        let menu_root = |label| {
             button(label)
                 .padding([4, 12])
-                .style(theme::Button::AppletMenu)
+                .style(theme::Button::MenuRoot)
+        };
+        let menu_folder = |label| {
+            button(
+                row![text(label), horizontal_space(Length::Fill), text(">")]
+                    .align_items(Alignment::Center),
+            )
+            .height(Length::Fixed(32.0))
+            .padding([4, 12])
+            .width(Length::Fill)
+            .style(theme::Button::MenuItem)
         };
         let menu_item = |label, message| {
-            MenuTree::new(menu_button(label).on_press(message).width(Length::Fill))
+            MenuTree::new(
+                button(row![label].align_items(Alignment::Center))
+                    .height(Length::Fixed(32.0))
+                    .on_press(message)
+                    .padding([4, 12])
+                    .width(Length::Fill)
+                    .style(theme::Button::MenuItem),
+            )
+        };
+        let menu_key = |label, key, message| {
+            MenuTree::new(
+                button(
+                    row![text(label), horizontal_space(Length::Fill), text(key)]
+                        .align_items(Alignment::Center),
+                )
+                .height(Length::Fixed(32.0))
+                .on_press(message)
+                .padding([4, 12])
+                .style(theme::Button::MenuItem),
+            )
         };
         let menu_bar: Element<_> = MenuBar::new(vec![
             MenuTree::with_children(
-                menu_button("File"),
+                menu_root("File"),
                 vec![
-                    menu_item("New file", Message::New),
-                    menu_item("New window", Message::Todo),
+                    menu_key("New file", "Ctrl + N", Message::New),
+                    menu_key("New window", "Ctrl + Shift + N", Message::Todo),
                     MenuTree::new(horizontal_rule(1)),
-                    menu_item("Open file...", Message::Open),
-                    menu_item("Open recent >", Message::Todo),
+                    menu_key("Open file...", "Ctrl + O", Message::OpenDialog),
+                    MenuTree::with_children(
+                        menu_folder("Open recent"),
+                        vec![menu_item("TODO", Message::Todo)],
+                    ),
                     MenuTree::new(horizontal_rule(1)),
-                    menu_item("Save", Message::Save),
-                    menu_item("Save as...", Message::Todo),
+                    menu_key("Save", "Ctrl + S", Message::Save),
+                    menu_key("Save as...", "Ctrl + Shift + S", Message::Todo),
                     MenuTree::new(horizontal_rule(1)),
                     menu_item("Revert all changes", Message::Todo),
                     MenuTree::new(horizontal_rule(1)),
@@ -390,30 +435,30 @@ impl cosmic::Application for App {
                     menu_item("Encoding...", Message::Todo),
                     menu_item("Print", Message::Todo),
                     MenuTree::new(horizontal_rule(1)),
-                    menu_item("Quit", Message::Todo),
+                    menu_key("Quit", "Ctrl + Q", Message::Todo),
                 ],
             ),
             MenuTree::with_children(
-                menu_button("Edit"),
+                menu_root("Edit"),
                 vec![
-                    menu_item("Undo", Message::Todo),
-                    menu_item("Redo", Message::Todo),
+                    menu_key("Undo", "Ctrl + Z", Message::Todo),
+                    menu_key("Redo", "Ctrl + Shift + Z", Message::Todo),
                     MenuTree::new(horizontal_rule(1)),
-                    menu_item("Cut", Message::Todo),
-                    menu_item("Copy", Message::Todo),
-                    menu_item("Paste", Message::Todo),
+                    menu_key("Cut", "Ctrl + X", Message::Todo),
+                    menu_key("Copy", "Ctrl + C", Message::Todo),
+                    menu_key("Paste", "Ctrl + V", Message::Todo),
                     MenuTree::new(horizontal_rule(1)),
-                    menu_item("Find", Message::Todo),
-                    menu_item("Replace", Message::Todo),
+                    menu_key("Find", "Ctrl + F", Message::Todo),
+                    menu_key("Replace", "Ctrl + H", Message::Todo),
                     MenuTree::new(horizontal_rule(1)),
                     menu_item("Spell check...", Message::Todo),
                 ],
             ),
             MenuTree::with_children(
-                menu_button("View"),
+                menu_root("View"),
                 vec![
                     MenuTree::with_children(
-                        menu_button("Indentation").width(Length::Fill),
+                        menu_folder("Indentation"),
                         vec![
                             menu_item("Automatic indentation", Message::Todo),
                             MenuTree::new(horizontal_rule(1)),
@@ -432,7 +477,7 @@ impl cosmic::Application for App {
                     menu_item("Highlight current line", Message::Todo),
                     menu_item("Syntax highlighting...", Message::Todo),
                     MenuTree::new(horizontal_rule(1)),
-                    menu_item("Settings...", Message::Todo),
+                    menu_key("Settings...", "Ctrl + ,", Message::Todo),
                     MenuTree::new(horizontal_rule(1)),
                     menu_item("Keyboard shortcuts...", Message::Todo),
                     MenuTree::new(horizontal_rule(1)),
@@ -440,10 +485,10 @@ impl cosmic::Application for App {
                 ],
             ),
         ])
-        .cross_offset(12)
-        .item_height(ItemHeight::Dynamic(32))
-        .item_width(ItemWidth::Uniform(360))
-        .main_offset(12)
+        .cross_offset(0)
+        .item_height(ItemHeight::Dynamic(40))
+        .item_width(ItemWidth::Uniform(240))
+        .main_offset(0)
         .padding(8)
         .spacing(4.0)
         .into();
