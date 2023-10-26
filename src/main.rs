@@ -412,7 +412,20 @@ impl cosmic::Application for App {
             MenuTree::with_children(
                 menu_button("View"),
                 vec![
-                    menu_item("Indentation >", Message::Todo),
+                    MenuTree::with_children(
+                        menu_button("Indentation").width(Length::Fill),
+                        vec![
+                            menu_item("Automatic indentation", Message::Todo),
+                            MenuTree::new(horizontal_rule(1)),
+                            menu_item("Tab width: 1", Message::Todo),
+                            menu_item("Tab width: 2", Message::Todo),
+                            menu_item("Tab width: 4", Message::Todo),
+                            menu_item("Tab width: 8", Message::Todo),
+                            MenuTree::new(horizontal_rule(1)),
+                            menu_item("Convert indentation to spaces", Message::Todo),
+                            menu_item("Convert indentation to tabs", Message::Todo),
+                        ],
+                    ),
                     MenuTree::new(horizontal_rule(1)),
                     menu_item("Word wrap", Message::Todo),
                     menu_item("Show line numbers", Message::Todo),
