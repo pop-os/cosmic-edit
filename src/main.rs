@@ -4,45 +4,36 @@ use cosmic::{
     app::{message, Command, Core, Settings},
     executor,
     iced::{
-        widget::{column, horizontal_rule, horizontal_space, row, text},
-        Alignment, Length, Limits,
+        widget::{column, text},
+        Length, Limits,
     },
-    theme,
-    widget::{
-        self, button, icon,
-        menu::{ItemHeight, ItemWidth, MenuBar, MenuTree},
-        segmented_button, view_switcher,
-    },
+    widget::{self, icon, segmented_button, view_switcher},
     ApplicationExt, Element,
 };
-use cosmic_text::{
-    Attrs, Buffer, Edit, FontSystem, Metrics, SyntaxEditor, SyntaxSystem, ViEditor, ViMode,
-};
+use cosmic_text::{FontSystem, SyntaxSystem, ViMode};
 use std::{
-    env, fs, io,
+    env,
     path::{Path, PathBuf},
     sync::Mutex,
 };
 
-use self::menu_list::MenuList;
-mod menu_list;
+use self::menu::menu_bar;
+mod menu;
+
+use self::project::Project;
+mod project;
+
+use self::tab::Tab;
+mod tab;
 
 use self::text_box::text_box;
 mod text_box;
 
+//TODO: re-use iced FONT_SYSTEM
 lazy_static::lazy_static! {
     static ref FONT_SYSTEM: Mutex<FontSystem> = Mutex::new(FontSystem::new());
     static ref SYNTAX_SYSTEM: SyntaxSystem = SyntaxSystem::new();
 }
-
-static FONT_SIZES: &'static [Metrics] = &[
-    Metrics::new(10.0, 14.0), // Caption
-    Metrics::new(14.0, 20.0), // Body
-    Metrics::new(20.0, 28.0), // Title 4
-    Metrics::new(24.0, 32.0), // Title 3
-    Metrics::new(28.0, 36.0), // Title 2
-    Metrics::new(32.0, 44.0), // Title 1
-];
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
@@ -52,110 +43,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     cosmic::app::run::<App>(settings, flags)?;
 
     Ok(())
-}
-
-pub struct Project {
-    path: PathBuf,
-    name: String,
-}
-
-impl Project {
-    pub fn new<P: AsRef<Path>>(path: P) -> io::Result<Self> {
-        let path = fs::canonicalize(path)?;
-        let name = path
-            .file_name()
-            .ok_or(io::Error::new(
-                io::ErrorKind::Other,
-                format!("Path {:?} has no file name", path),
-            ))?
-            .to_str()
-            .ok_or(io::Error::new(
-                io::ErrorKind::Other,
-                format!("Path {:?} is not valid UTF-8", path),
-            ))?
-            .to_string();
-        Ok(Self { path, name })
-    }
-}
-
-pub struct Tab {
-    path_opt: Option<PathBuf>,
-    attrs: Attrs<'static>,
-    editor: Mutex<ViEditor<'static>>,
-}
-
-impl Tab {
-    pub fn new() -> Self {
-        let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Monospace);
-
-        let editor = SyntaxEditor::new(
-            Buffer::new(&mut FONT_SYSTEM.lock().unwrap(), FONT_SIZES[1 /* Body */]),
-            &SYNTAX_SYSTEM,
-            "base16-eighties.dark",
-        )
-        .unwrap();
-
-        let mut editor = ViEditor::new(editor);
-        editor.set_passthrough(false);
-
-        Self {
-            path_opt: None,
-            attrs,
-            editor: Mutex::new(editor),
-        }
-    }
-
-    pub fn open(&mut self, path: PathBuf) {
-        let mut editor = self.editor.lock().unwrap();
-        let mut font_system = FONT_SYSTEM.lock().unwrap();
-        let mut editor = editor.borrow_with(&mut font_system);
-        match editor.load_text(&path, self.attrs) {
-            Ok(()) => {
-                log::info!("opened '{}'", path.display());
-                self.path_opt = Some(path);
-            }
-            Err(err) => {
-                log::error!("failed to open '{}': {}", path.display(), err);
-                self.path_opt = None;
-            }
-        }
-    }
-
-    pub fn save(&mut self) {
-        if let Some(path) = &self.path_opt {
-            let editor = self.editor.lock().unwrap();
-            let mut text = String::new();
-            for line in editor.buffer().lines.iter() {
-                text.push_str(line.text());
-                text.push('\n');
-            }
-            match fs::write(path, text) {
-                Ok(()) => {
-                    log::info!("saved '{}'", path.display());
-                }
-                Err(err) => {
-                    log::error!("failed to save '{}': {}", path.display(), err);
-                }
-            }
-        } else {
-            log::warn!("tab has no path yet");
-        }
-    }
-
-    pub fn title(&self) -> String {
-        //TODO: show full title when there is a conflict
-        if let Some(path) = &self.path_opt {
-            match path.file_name() {
-                Some(file_name_os) => match file_name_os.to_str() {
-                    Some(file_name) => file_name.to_string(),
-                    None => format!("{}", path.display()),
-                },
-                None => format!("{}", path.display()),
-            }
-        } else {
-            "New document".to_string()
-        }
-    }
 }
 
 pub struct App {
@@ -344,154 +231,7 @@ impl cosmic::Application for App {
     }
 
     fn view(&self) -> Element<Message> {
-        /*
-        let menu_bar = row![
-            MenuList::new(
-                vec![
-                    "New file",
-                    "New window",
-                    "Open file...",
-                    "Save",
-                    "Save as..."
-                ],
-                None,
-                |item| {
-                    match item {
-                        "Open" => Message::OpenDialog,
-                        "Save" => Message::Save,
-                        _ => Message::Todo,
-                    }
-                }
-            )
-            .padding(8)
-            .placeholder("File"),
-            MenuList::new(vec!["Todo"], None, |_| Message::Todo).placeholder("Edit"),
-            MenuList::new(vec!["Todo"], None, |_| Message::Todo).placeholder("View"),
-            MenuList::new(vec!["Todo"], None, |_| Message::Todo).placeholder("Help"),
-        ]
-        .align_items(Alignment::Start)
-        .padding(4)
-        .spacing(16);
-        */
-
-        //TODO: port to libcosmic
-        let menu_root = |label| {
-            button(label)
-                .padding([4, 12])
-                .style(theme::Button::MenuRoot)
-        };
-        let menu_folder = |label| {
-            button(
-                row![text(label), horizontal_space(Length::Fill), text(">")]
-                    .align_items(Alignment::Center),
-            )
-            .height(Length::Fixed(32.0))
-            .padding([4, 12])
-            .width(Length::Fill)
-            .style(theme::Button::MenuItem)
-        };
-        let menu_item = |label, message| {
-            MenuTree::new(
-                button(row![label].align_items(Alignment::Center))
-                    .height(Length::Fixed(32.0))
-                    .on_press(message)
-                    .padding([4, 12])
-                    .width(Length::Fill)
-                    .style(theme::Button::MenuItem),
-            )
-        };
-        let menu_key = |label, key, message| {
-            MenuTree::new(
-                button(
-                    row![text(label), horizontal_space(Length::Fill), text(key)]
-                        .align_items(Alignment::Center),
-                )
-                .height(Length::Fixed(32.0))
-                .on_press(message)
-                .padding([4, 12])
-                .style(theme::Button::MenuItem),
-            )
-        };
-        let menu_bar: Element<_> = MenuBar::new(vec![
-            MenuTree::with_children(
-                menu_root("File"),
-                vec![
-                    menu_key("New file", "Ctrl + N", Message::New),
-                    menu_key("New window", "Ctrl + Shift + N", Message::Todo),
-                    MenuTree::new(horizontal_rule(1)),
-                    menu_key("Open file...", "Ctrl + O", Message::OpenDialog),
-                    MenuTree::with_children(
-                        menu_folder("Open recent"),
-                        vec![menu_item("TODO", Message::Todo)],
-                    ),
-                    MenuTree::new(horizontal_rule(1)),
-                    menu_key("Save", "Ctrl + S", Message::Save),
-                    menu_key("Save as...", "Ctrl + Shift + S", Message::Todo),
-                    MenuTree::new(horizontal_rule(1)),
-                    menu_item("Revert all changes", Message::Todo),
-                    MenuTree::new(horizontal_rule(1)),
-                    menu_item("Document statistics...", Message::Todo),
-                    menu_item("Document type...", Message::Todo),
-                    menu_item("Encoding...", Message::Todo),
-                    menu_item("Print", Message::Todo),
-                    MenuTree::new(horizontal_rule(1)),
-                    menu_key("Quit", "Ctrl + Q", Message::Todo),
-                ],
-            ),
-            MenuTree::with_children(
-                menu_root("Edit"),
-                vec![
-                    menu_key("Undo", "Ctrl + Z", Message::Todo),
-                    menu_key("Redo", "Ctrl + Shift + Z", Message::Todo),
-                    MenuTree::new(horizontal_rule(1)),
-                    menu_key("Cut", "Ctrl + X", Message::Todo),
-                    menu_key("Copy", "Ctrl + C", Message::Todo),
-                    menu_key("Paste", "Ctrl + V", Message::Todo),
-                    MenuTree::new(horizontal_rule(1)),
-                    menu_key("Find", "Ctrl + F", Message::Todo),
-                    menu_key("Replace", "Ctrl + H", Message::Todo),
-                    MenuTree::new(horizontal_rule(1)),
-                    menu_item("Spell check...", Message::Todo),
-                ],
-            ),
-            MenuTree::with_children(
-                menu_root("View"),
-                vec![
-                    MenuTree::with_children(
-                        menu_folder("Indentation"),
-                        vec![
-                            menu_item("Automatic indentation", Message::Todo),
-                            MenuTree::new(horizontal_rule(1)),
-                            menu_item("Tab width: 1", Message::Todo),
-                            menu_item("Tab width: 2", Message::Todo),
-                            menu_item("Tab width: 4", Message::Todo),
-                            menu_item("Tab width: 8", Message::Todo),
-                            MenuTree::new(horizontal_rule(1)),
-                            menu_item("Convert indentation to spaces", Message::Todo),
-                            menu_item("Convert indentation to tabs", Message::Todo),
-                        ],
-                    ),
-                    MenuTree::new(horizontal_rule(1)),
-                    menu_item("Word wrap", Message::Todo),
-                    menu_item("Show line numbers", Message::Todo),
-                    menu_item("Highlight current line", Message::Todo),
-                    menu_item("Syntax highlighting...", Message::Todo),
-                    MenuTree::new(horizontal_rule(1)),
-                    menu_key("Settings...", "Ctrl + ,", Message::Todo),
-                    MenuTree::new(horizontal_rule(1)),
-                    menu_item("Keyboard shortcuts...", Message::Todo),
-                    MenuTree::new(horizontal_rule(1)),
-                    menu_item("About COSMIC Text Editor", Message::Todo),
-                ],
-            ),
-        ])
-        .cross_offset(0)
-        .item_height(ItemHeight::Dynamic(40))
-        .item_width(ItemWidth::Uniform(240))
-        .main_offset(0)
-        .padding(8)
-        .spacing(4.0)
-        .into();
+        let menu_bar = menu_bar();
 
         let mut tab_column = widget::column::with_capacity(3).padding([0, 16]);
 
