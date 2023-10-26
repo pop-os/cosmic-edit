@@ -5,9 +5,8 @@ use cosmic::{
     iced::{widget::horizontal_rule, Alignment, Length},
     theme,
     widget::{
-        self, button, horizontal_space,
+        self, horizontal_space,
         menu::{ItemHeight, ItemWidth, MenuBar, MenuTree},
-        text,
     },
     Element,
 };
@@ -17,14 +16,14 @@ use crate::Message;
 pub fn menu_bar<'a>() -> Element<'a, Message> {
     //TODO: port to libcosmic
     let menu_root = |label| {
-        button(label)
+        widget::button(label)
             .padding([4, 12])
             .style(theme::Button::MenuRoot)
     };
 
     macro_rules! menu_button {
         ($($x:expr),+ $(,)?) => (
-            button(
+            widget::button(
                 widget::Row::with_children(
                     vec![$(Element::from($x)),+]
                 )
@@ -37,14 +36,12 @@ pub fn menu_bar<'a>() -> Element<'a, Message> {
         );
     }
 
-    let menu_folder = |label| menu_button!(text(label), horizontal_space(Length::Fill), text(">"));
+    let menu_folder = |label| menu_button!(label, horizontal_space(Length::Fill), ">");
 
-    let menu_item = |label, message| MenuTree::new(menu_button!(text(label)).on_press(message));
+    let menu_item = |label, message| MenuTree::new(menu_button!(label).on_press(message));
 
     let menu_key = |label, key, message| {
-        MenuTree::new(
-            menu_button!(text(label), horizontal_space(Length::Fill), text(key)).on_press(message),
-        )
+        MenuTree::new(menu_button!(label, horizontal_space(Length::Fill), key).on_press(message))
     };
 
     MenuBar::new(vec![
@@ -120,11 +117,8 @@ pub fn menu_bar<'a>() -> Element<'a, Message> {
             ],
         ),
     ])
-    .cross_offset(0)
     .item_height(ItemHeight::Dynamic(40))
     .item_width(ItemWidth::Uniform(240))
-    .main_offset(0)
-    .padding(8)
     .spacing(4.0)
     .into()
 }

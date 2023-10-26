@@ -3,10 +3,7 @@
 use cosmic::{
     app::{message, Command, Core, Settings},
     executor,
-    iced::{
-        widget::{column, text},
-        Length, Limits,
-    },
+    iced::{widget::text, Length, Limits},
     widget::{self, icon, segmented_button, view_switcher},
     ApplicationExt, Element,
 };
@@ -230,9 +227,11 @@ impl cosmic::Application for App {
         Command::none()
     }
 
-    fn view(&self) -> Element<Message> {
-        let menu_bar = menu_bar();
+    fn header_start(&self) -> Vec<Element<Message>> {
+        vec![menu_bar()]
+    }
 
+    fn view(&self) -> Element<Message> {
         let mut tab_column = widget::column::with_capacity(3).padding([0, 16]);
 
         tab_column = tab_column.push(
@@ -287,7 +286,7 @@ impl cosmic::Application for App {
         }
         project_row = project_row.push(tab_column);
 
-        let content: Element<_> = column![menu_bar, project_row].into();
+        let content: Element<_> = project_row.into();
 
         // Uncomment to debug layout:
         //content.explain(cosmic::iced::Color::WHITE)
