@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use cosmic_text::{Attrs, Buffer, Edit, Metrics, SyntaxEditor, ViEditor};
+use cosmic_text::{Attrs, Buffer, Edit, Metrics, SyntaxEditor, ViEditor, Wrap};
 use std::{fs, path::PathBuf, sync::Mutex};
 
-use crate::{FONT_SYSTEM, SYNTAX_SYSTEM};
+use crate::{Config, FONT_SYSTEM, SYNTAX_SYSTEM};
 
 static FONT_SIZES: &'static [Metrics] = &[
     Metrics::new(10.0, 14.0), // Caption
@@ -39,6 +39,15 @@ impl Tab {
             attrs,
             editor: Mutex::new(editor),
         }
+    }
+
+    pub fn set_config(&mut self, config: &Config) {
+        let mut editor = self.editor.lock().unwrap();
+        let mut font_system = FONT_SYSTEM.lock().unwrap();
+        let mut editor = editor.borrow_with(&mut font_system);
+        editor
+            .buffer_mut()
+            .set_wrap(if config.wrap { Wrap::Word } else { Wrap::None });
     }
 
     pub fn open(&mut self, path: PathBuf) {

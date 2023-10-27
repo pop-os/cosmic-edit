@@ -3,8 +3,12 @@
 use cosmic::{
     app::{message, Command, Core, Settings},
     executor,
-    iced::{widget::text, Length, Limits},
-    widget::{self, icon, segmented_button, view_switcher},
+    iced::{
+        widget::{row, text},
+        Alignment, Length, Limits,
+    },
+    style,
+    widget::{self, button, icon, segmented_button, view_switcher},
     ApplicationExt, Element,
 };
 use cosmic_text::{FontSystem, SyntaxSystem, ViMode};
@@ -42,10 +46,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[derive(Clone, Debug)]
+pub struct Config {
+    wrap: bool,
+}
+
+impl Config {
+    //TODO: load from cosmic-config
+    pub fn new() -> Self {
+        Self { wrap: false }
+    }
+}
+
 pub struct App {
     core: Core,
     projects: Vec<Project>,
     tab_model: segmented_button::SingleSelectModel,
+    config: Config,
 }
 
 #[allow(dead_code)]
@@ -58,6 +75,7 @@ pub enum Message {
     TabActivate(segmented_button::Entity),
     TabClose(segmented_button::Entity),
     Todo,
+    Wrap(bool),
 }
 
 impl App {
@@ -80,6 +98,7 @@ impl App {
 
     pub fn open_tab(&mut self, path_opt: Option<PathBuf>) {
         let mut tab = Tab::new();
+        tab.set_config(&self.config);
         if let Some(path) = path_opt {
             tab.open(path);
         }
@@ -131,6 +150,7 @@ impl cosmic::Application for App {
             core,
             projects: Vec::new(),
             tab_model: segmented_button::Model::builder().build(),
+            config: Config::new(),
         };
 
         for arg in env::args().skip(1) {
@@ -222,23 +242,40 @@ impl cosmic::Application for App {
             Message::Todo => {
                 log::warn!("TODO");
             }
+            Message::Wrap(wrap) => {
+                self.config.wrap = wrap;
+                //TODO: provide iterator over data
+                let entities: Vec<_> = self.tab_model.iter().collect();
+                for entity in entities {
+                    if let Some(tab) = self.tab_model.data_mut::<Tab>(entity) {
+                        tab.set_config(&self.config);
+                    }
+                }
+            }
         }
 
         Command::none()
     }
 
     fn header_start(&self) -> Vec<Element<Message>> {
-        vec![menu_bar()]
+        vec![menu_bar(&self.config)]
     }
 
     fn view(&self) -> Element<Message> {
         let mut tab_column = widget::column::with_capacity(3).padding([0, 16]);
 
         tab_column = tab_column.push(
-            view_switcher::horizontal(&self.tab_model)
-                .on_activate(Message::TabActivate)
-                .on_close(Message::TabClose)
-                .width(Length::Shrink),
+            row![
+                view_switcher::horizontal(&self.tab_model)
+                    .on_activate(Message::TabActivate)
+                    .on_close(Message::TabClose)
+                    .width(Length::Shrink),
+                button(icon::from_name("list-add-symbolic").size(16).icon())
+                    .on_press(Message::New)
+                    .padding(8)
+                    .style(style::Button::Icon)
+            ]
+            .align_items(Alignment::Center),
         );
 
         match self.active_tab() {

@@ -11,9 +11,9 @@ use cosmic::{
     Element,
 };
 
-use crate::Message;
+use crate::{Config, Message};
 
-pub fn menu_bar<'a>() -> Element<'a, Message> {
+pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
     //TODO: port to libcosmic
     let menu_root = |label| {
         widget::button(label)
