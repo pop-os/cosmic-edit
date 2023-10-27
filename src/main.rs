@@ -8,12 +8,12 @@ use cosmic::{
         Alignment, Length, Limits,
     },
     style,
-    widget::{self, button, icon, segmented_button, view_switcher},
+    widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
     ApplicationExt, Element,
 };
 use cosmic_text::{FontSystem, SyntaxSystem, ViMode};
 use std::{
-    env,
+    env, fs,
     path::{Path, PathBuf},
     sync::Mutex,
 };
@@ -21,7 +21,7 @@ use std::{
 use self::menu::menu_bar;
 mod menu;
 
-use self::project::Project;
+use self::project::ProjectNode;
 mod project;
 
 use self::tab::Tab;
@@ -60,7 +60,7 @@ impl Config {
 
 pub struct App {
     core: Core,
-    projects: Vec<Project>,
+    nav_model: segmented_button::SingleSelectModel,
     tab_model: segmented_button::SingleSelectModel,
     config: Config,
 }
@@ -87,13 +87,95 @@ impl App {
         self.tab_model.active_data_mut()
     }
 
-    pub fn open_project<P: AsRef<Path>>(&mut self, path: P) {
-        match Project::new(&path) {
-            Ok(project) => self.projects.push(project),
+    fn open_folder<P: AsRef<Path>>(&mut self, path: P, mut position: u16, indent: u16) {
+        let read_dir = match fs::read_dir(&path) {
+            Ok(ok) => ok,
             Err(err) => {
-                log::error!("failed to open '{}': {}", path.as_ref().display(), err);
+                log::error!("failed to read directory {:?}: {}", path.as_ref(), err);
+                return;
             }
+        };
+
+        let mut nodes = Vec::new();
+        for entry_res in read_dir {
+            let entry = match entry_res {
+                Ok(ok) => ok,
+                Err(err) => {
+                    log::error!(
+                        "failed to read entry in directory {:?}: {}",
+                        path.as_ref(),
+                        err
+                    );
+                    continue;
+                }
+            };
+
+            let entry_path = entry.path();
+            let node = match ProjectNode::new(&entry_path) {
+                Ok(ok) => ok,
+                Err(err) => {
+                    log::error!(
+                        "failed to open directory {:?} entry {:?}: {}",
+                        path.as_ref(),
+                        entry_path,
+                        err
+                    );
+                    continue;
+                }
+            };
+            nodes.push(node);
         }
+
+        nodes.sort_by(|a, b| a.name().cmp(b.name()));
+
+        for node in nodes {
+            self.nav_model
+                .insert()
+                .position(position)
+                .indent(indent)
+                .icon(icon::from_name(node.icon_name()).size(16).icon())
+                .text(node.name().to_string())
+                .data(node);
+
+            position += 1;
+        }
+    }
+
+    pub fn open_project<P: AsRef<Path>>(&mut self, path: P) {
+        let node = match ProjectNode::new(&path) {
+            Ok(ok) => ok,
+            Err(err) => {
+                log::error!("failed to open project {:?}: {}", path.as_ref(), err);
+                return;
+            }
+        };
+
+        let project = match node {
+            ProjectNode::Folder { name, path, .. } => ProjectNode::Root {
+                name,
+                path,
+                open: true,
+            },
+            _ => {
+                log::error!(
+                    "failed to open project {:?}: not a directory",
+                    path.as_ref()
+                );
+                return;
+            }
+        };
+
+        let id = self
+            .nav_model
+            .insert()
+            .icon(icon::from_name(project.icon_name()).size(16).icon())
+            .text(project.name().to_string())
+            .data(project)
+            .id();
+
+        let position = self.nav_model.position(id).unwrap_or(0);
+
+        self.open_folder(&path, position + 1, 1);
     }
 
     pub fn open_tab(&mut self, path_opt: Option<PathBuf>) {
@@ -105,8 +187,8 @@ impl App {
         self.tab_model
             .insert()
             .text(tab.title())
-            .icon(icon::from_name("text-x-generic").icon())
-            .data(tab)
+            .icon(icon::from_name("text-x-generic").size(16).icon())
+            .data::<Tab>(tab)
             .closable()
             .activate();
     }
@@ -148,7 +230,7 @@ impl cosmic::Application for App {
     fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
         let mut app = App {
             core,
-            projects: Vec::new(),
+            nav_model: nav_bar::Model::builder().build(),
             tab_model: segmented_button::Model::builder().build(),
             config: Config::new(),
         };
@@ -162,6 +244,11 @@ impl cosmic::Application for App {
             }
         }
 
+        // Show nav bar only if project is provided
+        if app.core.nav_bar_active() != app.nav_model.iter().next().is_some() {
+            app.core.nav_bar_toggle();
+        }
+
         // Open an empty file if no arguments provided
         if app.tab_model.iter().next().is_none() {
             app.open_tab(None);
@@ -171,7 +258,65 @@ impl cosmic::Application for App {
         (app, command)
     }
 
-    fn update(&mut self, message: Message) -> Command<Self::Message> {
+    fn nav_model(&self) -> Option<&nav_bar::Model> {
+        Some(&self.nav_model)
+    }
+
+    fn on_nav_select(&mut self, id: nav_bar::Id) -> Command<Message> {
+        let node = match self.nav_model.data_mut::<ProjectNode>(id) {
+            Some(node) => {
+                match node {
+                    ProjectNode::Folder { open, .. } => {
+                        *open = !*open;
+                    }
+                    _ => {}
+                }
+                node.clone()
+            }
+            None => {
+                log::warn!("no path found for id {:?}", id);
+                return Command::none();
+            }
+        };
+
+        self.nav_model
+            .icon_set(id, icon::from_name(node.icon_name()).size(16).icon());
+
+        match node {
+            ProjectNode::Root { .. } => {
+                log::warn!("TODO: root node click");
+                Command::none()
+            }
+            ProjectNode::Folder { path, open, .. } => {
+                let position = self.nav_model.position(id).unwrap_or(0);
+                let indent = self.nav_model.indent(id).unwrap_or(0);
+                if open {
+                    self.open_folder(path, position + 1, indent + 1);
+                } else {
+                    loop {
+                        let child_id = match self.nav_model.entity_at(position + 1) {
+                            Some(some) => some,
+                            None => break,
+                        };
+
+                        if self.nav_model.indent(child_id).unwrap_or(0) > indent {
+                            self.nav_model.remove(child_id);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                Command::none()
+            }
+            ProjectNode::File { path, .. } => {
+                //TODO: go to already open file if possible
+                self.open_tab(Some(path.clone()));
+                self.update_title()
+            }
+        }
+    }
+
+    fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::New => {
                 self.open_tab(None);
@@ -181,7 +326,6 @@ impl cosmic::Application for App {
                 return Command::perform(
                     async {
                         if let Some(handle) = rfd::AsyncFileDialog::new().pick_file().await {
-                            println!("{}", handle.path().display());
                             message::app(Message::Open(handle.path().to_owned()))
                         } else {
                             message::none()
@@ -311,19 +455,7 @@ impl cosmic::Application for App {
             }
         };
 
-        let mut project_row = widget::row::with_capacity(2);
-        if !self.projects.is_empty() {
-            /*TODO: project tree view
-            let mut project_list = widget::column::with_capacity(self.projects.len());
-            for project in self.projects.iter() {
-                project_list = project_list.push(widget::text(&project.name));
-            }
-            project_row = project_row.push(project_list);
-            */
-        }
-        project_row = project_row.push(tab_column);
-
-        let content: Element<_> = project_row.into();
+        let content: Element<_> = tab_column.into();
 
         // Uncomment to debug layout:
         //content.explain(cosmic::iced::Color::WHITE)
