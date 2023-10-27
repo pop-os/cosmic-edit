@@ -195,34 +195,61 @@ impl App {
             .activate();
     }
 
-    pub fn update_title(&mut self) -> Command<Message> {
-        let (title, tab_path_opt) = match self.active_tab() {
-            Some(tab) => (tab.title(), tab.path_opt.clone()),
-            None => (format!("No Open File"), None),
+    fn update_nav_bar_active(&mut self) {
+        let tab_path_opt = match self.active_tab() {
+            Some(tab) => tab.path_opt.clone(),
+            None => None,
         };
 
-        //TODO: is this the best place for this?
+        // Locate tree node to activate
         let mut active_id = segmented_button::Entity::default();
         match tab_path_opt {
             Some(tab_path) => {
-                for id in self.nav_model.iter() {
-                    match self.nav_model.data(id) {
-                        Some(node) => match node {
-                            ProjectNode::File { path, .. } => {
-                                if path == &tab_path {
-                                    active_id = id;
-                                    break;
+                // Automatically expand tree to find and select active file
+                loop {
+                    let mut expand_opt = None;
+                    for id in self.nav_model.iter() {
+                        match self.nav_model.data(id) {
+                            Some(node) => match node {
+                                ProjectNode::Folder { path, open, .. } => {
+                                    if tab_path.starts_with(path) && !*open {
+                                        expand_opt = Some(id);
+                                        break;
+                                    }
                                 }
-                            }
-                            _ => {}
-                        },
-                        None => {}
+                                ProjectNode::File { path, .. } => {
+                                    if path == &tab_path {
+                                        active_id = id;
+                                        break;
+                                    }
+                                }
+                            },
+                            None => {}
+                        }
+                    }
+                    match expand_opt {
+                        Some(id) => {
+                            //TODO: can this be optimized?
+                            cosmic::Application::on_nav_select(self, id);
+                        }
+                        None => {
+                            break;
+                        }
                     }
                 }
             }
             None => {}
         }
         self.nav_model.activate(active_id);
+    }
+
+    pub fn update_title(&mut self) -> Command<Message> {
+        self.update_nav_bar_active();
+
+        let title = match self.active_tab() {
+            Some(tab) => tab.title(),
+            None => format!("No Open File"),
+        };
 
         let window_title = format!("{title} - COSMIC Text Editor");
         self.set_header_title(title.clone());
