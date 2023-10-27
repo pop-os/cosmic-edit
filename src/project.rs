@@ -1,21 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use std::{
+    cmp::Ordering,
     fs, io,
     path::{Path, PathBuf},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ProjectNode {
-    Root {
-        name: String,
-        path: PathBuf,
-        open: bool,
-    },
     Folder {
         name: String,
         path: PathBuf,
         open: bool,
+        root: bool,
     },
     File {
         name: String,
@@ -43,6 +40,7 @@ impl ProjectNode {
                 path,
                 name,
                 open: false,
+                root: false,
             }
         } else {
             Self::File { path, name }
@@ -51,30 +49,42 @@ impl ProjectNode {
 
     pub fn icon_name(&self) -> &str {
         match self {
-            //TODO: different icon for project?
-            ProjectNode::Root { open, .. } => {
+            //TODO: different icon for project root?
+            Self::Folder { open, .. } => {
                 if *open {
                     "go-down-symbolic"
                 } else {
                     "go-next-symbolic"
                 }
             }
-            ProjectNode::Folder { open, .. } => {
-                if *open {
-                    "go-down-symbolic"
-                } else {
-                    "go-next-symbolic"
-                }
-            }
-            ProjectNode::File { .. } => "text-x-generic",
+            Self::File { .. } => "text-x-generic",
         }
     }
 
     pub fn name(&self) -> &str {
         match self {
-            ProjectNode::Root { name, .. } => name,
-            ProjectNode::Folder { name, .. } => name,
-            ProjectNode::File { name, .. } => name,
+            Self::Folder { name, .. } => name,
+            Self::File { name, .. } => name,
         }
+    }
+}
+
+impl Ord for ProjectNode {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self {
+            // Folders are always before files
+            Self::Folder { .. } => match other {
+                Self::File { .. } => return Ordering::Less,
+                _ => {}
+            },
+            _ => {}
+        }
+        self.name().cmp(other.name())
+    }
+}
+
+impl PartialOrd for ProjectNode {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }

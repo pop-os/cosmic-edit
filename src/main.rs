@@ -126,7 +126,7 @@ impl App {
             nodes.push(node);
         }
 
-        nodes.sort_by(|a, b| a.name().cmp(b.name()));
+        nodes.sort();
 
         for node in nodes {
             self.nav_model
@@ -143,24 +143,24 @@ impl App {
 
     pub fn open_project<P: AsRef<Path>>(&mut self, path: P) {
         let node = match ProjectNode::new(&path) {
-            Ok(ok) => ok,
+            Ok(mut node) => {
+                match &mut node {
+                    ProjectNode::Folder { open, root, .. } => {
+                        *open = true;
+                        *root = true;
+                    }
+                    _ => {
+                        log::error!(
+                            "failed to open project {:?}: not a directory",
+                            path.as_ref()
+                        );
+                        return;
+                    }
+                }
+                node
+            }
             Err(err) => {
                 log::error!("failed to open project {:?}: {}", path.as_ref(), err);
-                return;
-            }
-        };
-
-        let project = match node {
-            ProjectNode::Folder { name, path, .. } => ProjectNode::Root {
-                name,
-                path,
-                open: true,
-            },
-            _ => {
-                log::error!(
-                    "failed to open project {:?}: not a directory",
-                    path.as_ref()
-                );
                 return;
             }
         };
@@ -168,9 +168,9 @@ impl App {
         let id = self
             .nav_model
             .insert()
-            .icon(icon::from_name(project.icon_name()).size(16).icon())
-            .text(project.name().to_string())
-            .data(project)
+            .icon(icon::from_name(node.icon_name()).size(16).icon())
+            .text(node.name().to_string())
+            .data(node)
             .id();
 
         let position = self.nav_model.position(id).unwrap_or(0);
@@ -283,10 +283,6 @@ impl cosmic::Application for App {
             .icon_set(id, icon::from_name(node.icon_name()).size(16).icon());
 
         match node {
-            ProjectNode::Root { .. } => {
-                log::warn!("TODO: root node click");
-                Command::none()
-            }
             ProjectNode::Folder { path, open, .. } => {
                 let position = self.nav_model.position(id).unwrap_or(0);
                 let indent = self.nav_model.indent(id).unwrap_or(0);
