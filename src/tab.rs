@@ -56,11 +56,17 @@ impl Tab {
         let mut editor = editor.borrow_with(&mut font_system);
         match editor.load_text(&path, self.attrs) {
             Ok(()) => {
-                log::info!("opened '{}'", path.display());
-                self.path_opt = Some(path);
+                log::info!("opened {:?}", path);
+                self.path_opt = match fs::canonicalize(&path) {
+                    Ok(ok) => Some(ok),
+                    Err(err) => {
+                        log::error!("failed to canonicalize {:?}: {}", path, err);
+                        Some(path)
+                    }
+                };
             }
             Err(err) => {
-                log::error!("failed to open '{}': {}", path.display(), err);
+                log::error!("failed to open {:?}: {}", path, err);
                 self.path_opt = None;
             }
         }
@@ -76,10 +82,10 @@ impl Tab {
             }
             match fs::write(path, text) {
                 Ok(()) => {
-                    log::info!("saved '{}'", path.display());
+                    log::info!("saved {:?}", path);
                 }
                 Err(err) => {
-                    log::error!("failed to save '{}': {}", path.display(), err);
+                    log::error!("failed to save {:?}: {}", path, err);
                 }
             }
         } else {

@@ -51,7 +51,7 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                 menu_key("New file", "Ctrl + N", Message::New),
                 menu_key("New window", "Ctrl + Shift + N", Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key("Open file...", "Ctrl + O", Message::OpenDialog),
+                menu_key("Open file...", "Ctrl + O", Message::OpenFileDialog),
                 MenuTree::with_children(
                     menu_folder("Open recent"),
                     vec![menu_item("TODO", Message::Todo)],

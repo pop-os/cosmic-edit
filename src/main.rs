@@ -69,8 +69,10 @@ pub struct App {
 #[derive(Clone, Debug)]
 pub enum Message {
     New,
-    OpenDialog,
-    Open(PathBuf),
+    OpenFileDialog,
+    OpenFile(PathBuf),
+    OpenProjectDialog,
+    OpenProject(PathBuf),
     Save,
     TabActivate(segmented_button::Entity),
     TabClose(segmented_button::Entity),
@@ -194,10 +196,34 @@ impl App {
     }
 
     pub fn update_title(&mut self) -> Command<Message> {
-        let title = match self.active_tab() {
-            Some(tab) => tab.title(),
-            None => format!("No Open File"),
+        let (title, tab_path_opt) = match self.active_tab() {
+            Some(tab) => (tab.title(), tab.path_opt.clone()),
+            None => (format!("No Open File"), None),
         };
+
+        //TODO: is this the best place for this?
+        let mut active_id = segmented_button::Entity::default();
+        match tab_path_opt {
+            Some(tab_path) => {
+                for id in self.nav_model.iter() {
+                    match self.nav_model.data(id) {
+                        Some(node) => match node {
+                            ProjectNode::File { path, .. } => {
+                                if path == &tab_path {
+                                    active_id = id;
+                                    break;
+                                }
+                            }
+                            _ => {}
+                        },
+                        None => {}
+                    }
+                }
+            }
+            None => {}
+        }
+        self.nav_model.activate(active_id);
+
         let window_title = format!("{title} - COSMIC Text Editor");
         self.set_header_title(title.clone());
         self.set_window_title(window_title)
@@ -247,6 +273,10 @@ impl cosmic::Application for App {
         // Show nav bar only if project is provided
         if app.core.nav_bar_active() != app.nav_model.iter().next().is_some() {
             app.core.nav_bar_toggle();
+            app.nav_model
+                .insert()
+                .icon(icon::from_name("folder-open-symbolic").size(16).icon())
+                .text("Open project");
         }
 
         // Open an empty file if no arguments provided
@@ -263,7 +293,8 @@ impl cosmic::Application for App {
     }
 
     fn on_nav_select(&mut self, id: nav_bar::Id) -> Command<Message> {
-        let node = match self.nav_model.data_mut::<ProjectNode>(id) {
+        // Toggle open state and get clone of node data
+        let node_opt = match self.nav_model.data_mut::<ProjectNode>(id) {
             Some(node) => {
                 match node {
                     ProjectNode::Folder { open, .. } => {
@@ -271,43 +302,50 @@ impl cosmic::Application for App {
                     }
                     _ => {}
                 }
-                node.clone()
+                Some(node.clone())
             }
-            None => {
-                log::warn!("no path found for id {:?}", id);
-                return Command::none();
-            }
+            None => None,
         };
 
-        self.nav_model
-            .icon_set(id, icon::from_name(node.icon_name()).size(16).icon());
+        match node_opt {
+            Some(node) => {
+                // Update icon
+                self.nav_model
+                    .icon_set(id, icon::from_name(node.icon_name()).size(16).icon());
 
-        match node {
-            ProjectNode::Folder { path, open, .. } => {
-                let position = self.nav_model.position(id).unwrap_or(0);
-                let indent = self.nav_model.indent(id).unwrap_or(0);
-                if open {
-                    self.open_folder(path, position + 1, indent + 1);
-                } else {
-                    loop {
-                        let child_id = match self.nav_model.entity_at(position + 1) {
-                            Some(some) => some,
-                            None => break,
-                        };
-
-                        if self.nav_model.indent(child_id).unwrap_or(0) > indent {
-                            self.nav_model.remove(child_id);
+                match node {
+                    ProjectNode::Folder { path, open, .. } => {
+                        let position = self.nav_model.position(id).unwrap_or(0);
+                        let indent = self.nav_model.indent(id).unwrap_or(0);
+                        if open {
+                            // Open folder
+                            self.open_folder(path, position + 1, indent + 1);
                         } else {
-                            break;
+                            // Close folder
+                            loop {
+                                let child_id = match self.nav_model.entity_at(position + 1) {
+                                    Some(some) => some,
+                                    None => break,
+                                };
+
+                                if self.nav_model.indent(child_id).unwrap_or(0) > indent {
+                                    self.nav_model.remove(child_id);
+                                } else {
+                                    break;
+                                }
+                            }
                         }
+                        Command::none()
+                    }
+                    ProjectNode::File { path, .. } => {
+                        //TODO: go to already open file if possible
+                        self.update(Message::OpenFile(path))
                     }
                 }
-                Command::none()
             }
-            ProjectNode::File { path, .. } => {
-                //TODO: go to already open file if possible
-                self.open_tab(Some(path.clone()));
-                self.update_title()
+            None => {
+                // Open project
+                self.update(Message::OpenProjectDialog)
             }
         }
     }
@@ -318,11 +356,11 @@ impl cosmic::Application for App {
                 self.open_tab(None);
                 return self.update_title();
             }
-            Message::OpenDialog => {
+            Message::OpenFileDialog => {
                 return Command::perform(
                     async {
                         if let Some(handle) = rfd::AsyncFileDialog::new().pick_file().await {
-                            message::app(Message::Open(handle.path().to_owned()))
+                            message::app(Message::OpenFile(handle.path().to_owned()))
                         } else {
                             message::none()
                         }
@@ -330,9 +368,24 @@ impl cosmic::Application for App {
                     |x| x,
                 );
             }
-            Message::Open(path) => {
+            Message::OpenFile(path) => {
                 self.open_tab(Some(path));
                 return self.update_title();
+            }
+            Message::OpenProjectDialog => {
+                return Command::perform(
+                    async {
+                        if let Some(handle) = rfd::AsyncFileDialog::new().pick_folder().await {
+                            message::app(Message::OpenProject(handle.path().to_owned()))
+                        } else {
+                            message::none()
+                        }
+                    },
+                    |x| x,
+                );
+            }
+            Message::OpenProject(path) => {
+                self.open_project(path);
             }
             Message::Save => {
                 let mut title_opt = None;
