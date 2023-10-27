@@ -20,7 +20,9 @@ features = ["syntect", "vi"]
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
+branch = "menu"
 default-features = false
+#path = "../libcosmic"
 
 [features]
 default = ["wayland"]

@@ -1,39 +1,40 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::{
-    app::{Command, Core, Settings},
+    app::{message, Command, Core, Settings},
     executor,
     iced::{
-        widget::{column, row, text},
+        widget::{row, text},
         Alignment, Length, Limits,
     },
-    widget::{self, icon, segmented_button, view_switcher},
+    style,
+    widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
     ApplicationExt, Element,
 };
-use cosmic_text::{
-    Attrs, Buffer, Edit, FontSystem, Metrics, SyntaxEditor, SyntaxSystem, ViEditor, ViMode,
+use cosmic_text::{FontSystem, SyntaxSystem, ViMode};
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+    sync::Mutex,
 };
-use std::{env, fs, path::PathBuf, sync::Mutex};
 
-use self::menu_list::MenuList;
-mod menu_list;
+use self::menu::menu_bar;
+mod menu;
+
+use self::project::ProjectNode;
+mod project;
+
+use self::tab::Tab;
+mod tab;
 
 use self::text_box::text_box;
 mod text_box;
 
+//TODO: re-use iced FONT_SYSTEM
 lazy_static::lazy_static! {
     static ref FONT_SYSTEM: Mutex<FontSystem> = Mutex::new(FontSystem::new());
     static ref SYNTAX_SYSTEM: SyntaxSystem = SyntaxSystem::new();
 }
-
-static FONT_SIZES: &'static [Metrics] = &[
-    Metrics::new(10.0, 14.0), // Caption
-    Metrics::new(14.0, 20.0), // Body
-    Metrics::new(20.0, 28.0), // Title 4
-    Metrics::new(24.0, 32.0), // Title 3
-    Metrics::new(28.0, 36.0), // Title 2
-    Metrics::new(32.0, 44.0), // Title 1
-];
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
@@ -45,99 +46,38 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub struct Tab {
-    path_opt: Option<PathBuf>,
-    attrs: Attrs<'static>,
-    editor: Mutex<ViEditor<'static>>,
+#[derive(Clone, Debug)]
+pub struct Config {
+    wrap: bool,
 }
 
-impl Tab {
+impl Config {
+    //TODO: load from cosmic-config
     pub fn new() -> Self {
-        let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Monospace);
-
-        let editor = SyntaxEditor::new(
-            Buffer::new(&mut FONT_SYSTEM.lock().unwrap(), FONT_SIZES[1 /* Body */]),
-            &SYNTAX_SYSTEM,
-            "base16-eighties.dark",
-        )
-        .unwrap();
-
-        let mut editor = ViEditor::new(editor);
-        editor.set_passthrough(false);
-
-        Self {
-            path_opt: None,
-            attrs,
-            editor: Mutex::new(editor),
-        }
-    }
-
-    pub fn open(&mut self, path: PathBuf) {
-        let mut editor = self.editor.lock().unwrap();
-        let mut font_system = FONT_SYSTEM.lock().unwrap();
-        let mut editor = editor.borrow_with(&mut font_system);
-        match editor.load_text(&path, self.attrs) {
-            Ok(()) => {
-                log::info!("opened '{}'", path.display());
-                self.path_opt = Some(path);
-            }
-            Err(err) => {
-                log::error!("failed to open '{}': {}", path.display(), err);
-                self.path_opt = None;
-            }
-        }
-    }
-
-    pub fn save(&mut self) {
-        if let Some(path) = &self.path_opt {
-            let editor = self.editor.lock().unwrap();
-            let mut text = String::new();
-            for line in editor.buffer().lines.iter() {
-                text.push_str(line.text());
-                text.push('\n');
-            }
-            match fs::write(path, text) {
-                Ok(()) => {
-                    log::info!("saved '{}'", path.display());
-                }
-                Err(err) => {
-                    log::error!("failed to save '{}': {}", path.display(), err);
-                }
-            }
-        } else {
-            log::warn!("tab has no path yet");
-        }
-    }
-
-    pub fn title(&self) -> String {
-        //TODO: show full title when there is a conflict
-        if let Some(path) = &self.path_opt {
-            match path.file_name() {
-                Some(file_name_os) => match file_name_os.to_str() {
-                    Some(file_name) => file_name.to_string(),
-                    None => format!("{}", path.display()),
-                },
-                None => format!("{}", path.display()),
-            }
-        } else {
-            "New document".to_string()
-        }
+        Self { wrap: false }
     }
 }
 
 pub struct App {
     core: Core,
+    nav_model: segmented_button::SingleSelectModel,
     tab_model: segmented_button::SingleSelectModel,
+    config: Config,
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum Message {
-    Open,
+    New,
+    OpenFileDialog,
+    OpenFile(PathBuf),
+    OpenProjectDialog,
+    OpenProject(PathBuf),
     Save,
     TabActivate(segmented_button::Entity),
     TabClose(segmented_button::Entity),
     Todo,
+    Wrap(bool),
 }
 
 impl App {
@@ -149,25 +89,168 @@ impl App {
         self.tab_model.active_data_mut()
     }
 
+    fn open_folder<P: AsRef<Path>>(&mut self, path: P, mut position: u16, indent: u16) {
+        let read_dir = match fs::read_dir(&path) {
+            Ok(ok) => ok,
+            Err(err) => {
+                log::error!("failed to read directory {:?}: {}", path.as_ref(), err);
+                return;
+            }
+        };
+
+        let mut nodes = Vec::new();
+        for entry_res in read_dir {
+            let entry = match entry_res {
+                Ok(ok) => ok,
+                Err(err) => {
+                    log::error!(
+                        "failed to read entry in directory {:?}: {}",
+                        path.as_ref(),
+                        err
+                    );
+                    continue;
+                }
+            };
+
+            let entry_path = entry.path();
+            let node = match ProjectNode::new(&entry_path) {
+                Ok(ok) => ok,
+                Err(err) => {
+                    log::error!(
+                        "failed to open directory {:?} entry {:?}: {}",
+                        path.as_ref(),
+                        entry_path,
+                        err
+                    );
+                    continue;
+                }
+            };
+            nodes.push(node);
+        }
+
+        nodes.sort();
+
+        for node in nodes {
+            self.nav_model
+                .insert()
+                .position(position)
+                .indent(indent)
+                .icon(icon::from_name(node.icon_name()).size(16).icon())
+                .text(node.name().to_string())
+                .data(node);
+
+            position += 1;
+        }
+    }
+
+    pub fn open_project<P: AsRef<Path>>(&mut self, path: P) {
+        let node = match ProjectNode::new(&path) {
+            Ok(mut node) => {
+                match &mut node {
+                    ProjectNode::Folder { open, root, .. } => {
+                        *open = true;
+                        *root = true;
+                    }
+                    _ => {
+                        log::error!(
+                            "failed to open project {:?}: not a directory",
+                            path.as_ref()
+                        );
+                        return;
+                    }
+                }
+                node
+            }
+            Err(err) => {
+                log::error!("failed to open project {:?}: {}", path.as_ref(), err);
+                return;
+            }
+        };
+
+        let id = self
+            .nav_model
+            .insert()
+            .icon(icon::from_name(node.icon_name()).size(16).icon())
+            .text(node.name().to_string())
+            .data(node)
+            .id();
+
+        let position = self.nav_model.position(id).unwrap_or(0);
+
+        self.open_folder(&path, position + 1, 1);
+    }
+
     pub fn open_tab(&mut self, path_opt: Option<PathBuf>) {
         let mut tab = Tab::new();
+        tab.set_config(&self.config);
         if let Some(path) = path_opt {
             tab.open(path);
         }
         self.tab_model
             .insert()
             .text(tab.title())
-            .icon(icon::from_name("text-x-generic").icon())
-            .data(tab)
+            .icon(icon::from_name("text-x-generic").size(16).icon())
+            .data::<Tab>(tab)
             .closable()
             .activate();
     }
 
+    fn update_nav_bar_active(&mut self) {
+        let tab_path_opt = match self.active_tab() {
+            Some(tab) => tab.path_opt.clone(),
+            None => None,
+        };
+
+        // Locate tree node to activate
+        let mut active_id = segmented_button::Entity::default();
+        match tab_path_opt {
+            Some(tab_path) => {
+                // Automatically expand tree to find and select active file
+                loop {
+                    let mut expand_opt = None;
+                    for id in self.nav_model.iter() {
+                        match self.nav_model.data(id) {
+                            Some(node) => match node {
+                                ProjectNode::Folder { path, open, .. } => {
+                                    if tab_path.starts_with(path) && !*open {
+                                        expand_opt = Some(id);
+                                        break;
+                                    }
+                                }
+                                ProjectNode::File { path, .. } => {
+                                    if path == &tab_path {
+                                        active_id = id;
+                                        break;
+                                    }
+                                }
+                            },
+                            None => {}
+                        }
+                    }
+                    match expand_opt {
+                        Some(id) => {
+                            //TODO: can this be optimized?
+                            cosmic::Application::on_nav_select(self, id);
+                        }
+                        None => {
+                            break;
+                        }
+                    }
+                }
+            }
+            None => {}
+        }
+        self.nav_model.activate(active_id);
+    }
+
     pub fn update_title(&mut self) -> Command<Message> {
+        self.update_nav_bar_active();
+
         let title = match self.active_tab() {
             Some(tab) => tab.title(),
             None => format!("No Open File"),
         };
+
         let window_title = format!("{title} - COSMIC Text Editor");
         self.set_header_title(title.clone());
         self.set_window_title(window_title)
@@ -186,7 +269,7 @@ impl cosmic::Application for App {
     type Message = Message;
 
     /// The unique application ID to supply to the window manager.
-    const APP_ID: &'static str = "com.system76.CosmicTextEditor";
+    const APP_ID: &'static str = "com.system76.CosmicEdit";
 
     fn core(&self) -> &Core {
         &self.core
@@ -200,11 +283,27 @@ impl cosmic::Application for App {
     fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
         let mut app = App {
             core,
+            nav_model: nav_bar::Model::builder().build(),
             tab_model: segmented_button::Model::builder().build(),
+            config: Config::new(),
         };
 
-        for path in env::args().skip(1) {
-            app.open_tab(Some(PathBuf::from(path)));
+        for arg in env::args().skip(1) {
+            let path = PathBuf::from(arg);
+            if path.is_dir() {
+                app.open_project(path);
+            } else {
+                app.open_tab(Some(path));
+            }
+        }
+
+        // Show nav bar only if project is provided
+        if app.core.nav_bar_active() != app.nav_model.iter().next().is_some() {
+            app.core.nav_bar_toggle();
+            app.nav_model
+                .insert()
+                .icon(icon::from_name("folder-open-symbolic").size(16).icon())
+                .text("Open project");
         }
 
         // Open an empty file if no arguments provided
@@ -216,13 +315,104 @@ impl cosmic::Application for App {
         (app, command)
     }
 
-    fn update(&mut self, message: Message) -> Command<Self::Message> {
-        match message {
-            Message::Open => {
-                if let Some(path) = rfd::FileDialog::new().pick_file() {
-                    self.open_tab(Some(path));
-                    return self.update_title();
+    fn nav_model(&self) -> Option<&nav_bar::Model> {
+        Some(&self.nav_model)
+    }
+
+    fn on_nav_select(&mut self, id: nav_bar::Id) -> Command<Message> {
+        // Toggle open state and get clone of node data
+        let node_opt = match self.nav_model.data_mut::<ProjectNode>(id) {
+            Some(node) => {
+                match node {
+                    ProjectNode::Folder { open, .. } => {
+                        *open = !*open;
+                    }
+                    _ => {}
                 }
+                Some(node.clone())
+            }
+            None => None,
+        };
+
+        match node_opt {
+            Some(node) => {
+                // Update icon
+                self.nav_model
+                    .icon_set(id, icon::from_name(node.icon_name()).size(16).icon());
+
+                match node {
+                    ProjectNode::Folder { path, open, .. } => {
+                        let position = self.nav_model.position(id).unwrap_or(0);
+                        let indent = self.nav_model.indent(id).unwrap_or(0);
+                        if open {
+                            // Open folder
+                            self.open_folder(path, position + 1, indent + 1);
+                        } else {
+                            // Close folder
+                            loop {
+                                let child_id = match self.nav_model.entity_at(position + 1) {
+                                    Some(some) => some,
+                                    None => break,
+                                };
+
+                                if self.nav_model.indent(child_id).unwrap_or(0) > indent {
+                                    self.nav_model.remove(child_id);
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+                        Command::none()
+                    }
+                    ProjectNode::File { path, .. } => {
+                        //TODO: go to already open file if possible
+                        self.update(Message::OpenFile(path))
+                    }
+                }
+            }
+            None => {
+                // Open project
+                self.update(Message::OpenProjectDialog)
+            }
+        }
+    }
+
+    fn update(&mut self, message: Message) -> Command<Message> {
+        match message {
+            Message::New => {
+                self.open_tab(None);
+                return self.update_title();
+            }
+            Message::OpenFileDialog => {
+                return Command::perform(
+                    async {
+                        if let Some(handle) = rfd::AsyncFileDialog::new().pick_file().await {
+                            message::app(Message::OpenFile(handle.path().to_owned()))
+                        } else {
+                            message::none()
+                        }
+                    },
+                    |x| x,
+                );
+            }
+            Message::OpenFile(path) => {
+                self.open_tab(Some(path));
+                return self.update_title();
+            }
+            Message::OpenProjectDialog => {
+                return Command::perform(
+                    async {
+                        if let Some(handle) = rfd::AsyncFileDialog::new().pick_folder().await {
+                            message::app(Message::OpenProject(handle.path().to_owned()))
+                        } else {
+                            message::none()
+                        }
+                    },
+                    |x| x,
+                );
+            }
+            Message::OpenProject(path) => {
+                self.open_project(path);
             }
             Message::Save => {
                 let mut title_opt = None;
@@ -230,6 +420,7 @@ impl cosmic::Application for App {
                 match self.active_tab_mut() {
                     Some(tab) => {
                         if tab.path_opt.is_none() {
+                            //TODO: use async file dialog
                             tab.path_opt = rfd::FileDialog::new().save_file();
                             title_opt = Some(tab.title());
                         }
@@ -271,37 +462,40 @@ impl cosmic::Application for App {
             Message::Todo => {
                 log::warn!("TODO");
             }
+            Message::Wrap(wrap) => {
+                self.config.wrap = wrap;
+                //TODO: provide iterator over data
+                let entities: Vec<_> = self.tab_model.iter().collect();
+                for entity in entities {
+                    if let Some(tab) = self.tab_model.data_mut::<Tab>(entity) {
+                        tab.set_config(&self.config);
+                    }
+                }
+            }
         }
 
         Command::none()
     }
 
-    fn view(&self) -> Element<Message> {
-        let menu_bar = row![
-            MenuList::new(vec!["Open", "Save"], None, |item| {
-                match item {
-                    "Open" => Message::Open,
-                    "Save" => Message::Save,
-                    _ => Message::Todo,
-                }
-            })
-            .padding(8)
-            .placeholder("File"),
-            MenuList::new(vec!["Todo"], None, |_| Message::Todo).placeholder("Edit"),
-            MenuList::new(vec!["Todo"], None, |_| Message::Todo).placeholder("View"),
-            MenuList::new(vec!["Todo"], None, |_| Message::Todo).placeholder("Help"),
-        ]
-        .align_items(Alignment::Start)
-        .padding(4)
-        .spacing(16);
+    fn header_start(&self) -> Vec<Element<Message>> {
+        vec![menu_bar(&self.config)]
+    }
 
+    fn view(&self) -> Element<Message> {
         let mut tab_column = widget::column::with_capacity(3).padding([0, 16]);
 
         tab_column = tab_column.push(
-            view_switcher::horizontal(&self.tab_model)
-                .on_activate(Message::TabActivate)
-                .on_close(Message::TabClose)
-                .width(Length::Shrink),
+            row![
+                view_switcher::horizontal(&self.tab_model)
+                    .on_activate(Message::TabActivate)
+                    .on_close(Message::TabClose)
+                    .width(Length::Shrink),
+                button(icon::from_name("list-add-symbolic").size(16).icon())
+                    .on_press(Message::New)
+                    .padding(8)
+                    .style(style::Button::Icon)
+            ]
+            .align_items(Alignment::Center),
         );
 
         match self.active_tab() {
@@ -337,10 +531,10 @@ impl cosmic::Application for App {
             }
         };
 
-        let content: Element<_> = column![menu_bar, tab_column].into();
+        let content: Element<_> = tab_column.into();
 
         // Uncomment to debug layout:
-        //content.explain(Color::WHITE)
+        //content.explain(cosmic::iced::Color::WHITE)
         content
     }
 }
