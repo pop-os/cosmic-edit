@@ -269,7 +269,7 @@ impl cosmic::Application for App {
     type Message = Message;
 
     /// The unique application ID to supply to the window manager.
-    const APP_ID: &'static str = "com.system76.CosmicTextEditor";
+    const APP_ID: &'static str = "com.system76.CosmicEdit";
 
     fn core(&self) -> &Core {
         &self.core
