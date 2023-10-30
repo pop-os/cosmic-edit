@@ -4,6 +4,7 @@ use cosmic::{
     app::{message, Command, Core, Settings},
     executor,
     iced::{
+        event, keyboard, subscription,
         widget::{row, text},
         Alignment, Length, Limits,
     },
@@ -17,6 +18,9 @@ use std::{
     path::{Path, PathBuf},
     sync::Mutex,
 };
+
+use config::{Config, KeyBind};
+mod config;
 
 mod localize;
 
@@ -50,18 +54,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[derive(Clone, Debug)]
-pub struct Config {
-    wrap: bool,
-}
-
-impl Config {
-    //TODO: load from cosmic-config
-    pub fn new() -> Self {
-        Self { wrap: false }
-    }
-}
-
 pub struct App {
     core: Core,
     nav_model: segmented_button::SingleSelectModel,
@@ -70,8 +62,9 @@ pub struct App {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Message {
+    KeyBind(KeyBind),
     New,
     OpenFileDialog,
     OpenFile(PathBuf),
@@ -289,7 +282,7 @@ impl cosmic::Application for App {
             core,
             nav_model: nav_bar::Model::builder().build(),
             tab_model: segmented_button::Model::builder().build(),
-            config: Config::new(),
+            config: Config::load(),
         };
 
         for arg in env::args().skip(1) {
@@ -383,6 +376,13 @@ impl cosmic::Application for App {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
+            Message::KeyBind(key_bind) => {
+                for (config_key_bind, config_message) in self.config.keybinds.iter() {
+                    if config_key_bind == &key_bind {
+                        return self.update(config_message.clone());
+                    }
+                }
+            }
             Message::New => {
                 self.open_tab(None);
                 return self.update_title();
@@ -540,5 +540,18 @@ impl cosmic::Application for App {
         // Uncomment to debug layout:
         //content.explain(cosmic::iced::Color::WHITE)
         content
+    }
+
+    fn subscription(&self) -> subscription::Subscription<Message> {
+        subscription::events_with(|event, status| match event {
+            event::Event::Keyboard(keyboard::Event::KeyPressed {
+                modifiers,
+                key_code,
+            }) => Some(Message::KeyBind(KeyBind {
+                modifiers,
+                key_code,
+            })),
+            _ => None,
+        })
     }
 }

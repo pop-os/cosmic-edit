@@ -39,8 +39,23 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
     let menu_folder =
         |label| menu_button!(widget::text(label), horizontal_space(Length::Fill), ">");
 
-    let menu_item =
-        |label, message| MenuTree::new(menu_button!(widget::text(label)).on_press(message));
+    let menu_item = |label, message| {
+        let mut key = String::new();
+        for (config_key_bind, config_message) in config.keybinds.iter() {
+            if config_message == &message {
+                key = config_key_bind.to_string();
+                break;
+            }
+        }
+        MenuTree::new(
+            menu_button!(
+                widget::text(label),
+                horizontal_space(Length::Fill),
+                widget::text(key)
+            )
+            .on_press(message),
+        )
+    };
 
     let menu_key = |label, key, message| {
         MenuTree::new(
@@ -53,16 +68,16 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
         MenuTree::with_children(
             menu_root(fl!("file")),
             vec![
-                menu_key(fl!("new-file"), "Ctrl + N", Message::New),
+                menu_item(fl!("new-file"), Message::New),
                 menu_key(fl!("new-window"), "Ctrl + Shift + N", Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key(fl!("open-file"), "Ctrl + O", Message::OpenFileDialog),
+                menu_item(fl!("open-file"), Message::OpenFileDialog),
                 MenuTree::with_children(
                     menu_folder(fl!("open-recent")),
                     vec![menu_item(fl!("todo"), Message::Todo)],
                 ),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key(fl!("save"), "Ctrl + S", Message::Save),
+                menu_item(fl!("save"), Message::Save),
                 menu_key(fl!("save-as"), "Ctrl + Shift + S", Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("revert-all-changes"), Message::Todo),
