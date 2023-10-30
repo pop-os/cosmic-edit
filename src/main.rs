@@ -12,7 +12,7 @@ use cosmic::{
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
     ApplicationExt, Element,
 };
-use cosmic_text::{FontSystem, SyntaxSystem, ViMode};
+use cosmic_text::{FontSystem, SwashCache, SyntaxSystem, ViMode};
 use std::{
     env, fs,
     path::{Path, PathBuf},
@@ -39,6 +39,7 @@ mod text_box;
 //TODO: re-use iced FONT_SYSTEM
 lazy_static::lazy_static! {
     static ref FONT_SYSTEM: Mutex<FontSystem> = Mutex::new(FontSystem::new());
+    static ref SWASH_CACHE: Mutex<SwashCache> = Mutex::new(SwashCache::new());
     static ref SYNTAX_SYSTEM: SyntaxSystem = SyntaxSystem::new();
 }
 

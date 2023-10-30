@@ -17,10 +17,10 @@ use cosmic::{
     },
     theme::{Theme, ThemeType},
 };
-use cosmic_text::{Action, Edit, SwashCache};
+use cosmic_text::{Action, Edit};
 use std::{cmp, sync::Mutex, time::Instant};
 
-use crate::FONT_SYSTEM;
+use crate::{FONT_SYSTEM, SWASH_CACHE};
 
 pub struct Appearance {
     background_color: Option<Color>,
@@ -281,7 +281,7 @@ where
                 };
 
                 editor.draw(
-                    &mut state.cache.lock().unwrap(),
+                    &mut SWASH_CACHE.lock().unwrap(),
                     text_color,
                     |x, y, w, h, color| {
                         draw_rect(buffer, image_w, image_h, x, y, w as i32, h as i32, color.0);
@@ -446,7 +446,6 @@ where
 
 pub struct State {
     is_dragging: bool,
-    cache: Mutex<SwashCache>,
     handle: Mutex<image::Handle>,
 }
 
@@ -455,7 +454,6 @@ impl State {
     pub fn new() -> State {
         State {
             is_dragging: false,
-            cache: Mutex::new(SwashCache::new()),
             //TODO: make option!
             handle: Mutex::new(image::Handle::from_pixels(1, 1, vec![0, 0, 0, 0])),
         }
