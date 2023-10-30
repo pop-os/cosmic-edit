@@ -12,7 +12,7 @@ use cosmic::{
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
     ApplicationExt, Element,
 };
-use cosmic_text::{FontSystem, SwashCache, SyntaxSystem, ViMode};
+use cosmic_text::{Edit, FontSystem, SwashCache, SyntaxSystem, ViMode};
 use std::{
     env, fs,
     path::{Path, PathBuf},
@@ -228,7 +228,8 @@ impl App {
                     match expand_opt {
                         Some(id) => {
                             //TODO: can this be optimized?
-                            cosmic::Application::on_nav_select(self, id);
+                            // Command not used becuase opening a folder just returns Command::none
+                            let _ = cosmic::Application::on_nav_select(self, id);
                         }
                         None => {
                             break;
@@ -241,11 +242,16 @@ impl App {
         self.nav_model.activate(active_id);
     }
 
-    pub fn update_title(&mut self) -> Command<Message> {
+    // Call this any time the tab changes
+    pub fn update_tab(&mut self) -> Command<Message> {
         self.update_nav_bar_active();
 
         let title = match self.active_tab() {
-            Some(tab) => tab.title(),
+            Some(tab) => {
+                // Hack to ensure redraw on changing tabs
+                tab.editor.lock().unwrap().buffer_mut().set_redraw(true);
+                tab.title()
+            }
             None => format!("No Open File"),
         };
 
@@ -309,7 +315,7 @@ impl cosmic::Application for App {
             app.open_tab(None);
         }
 
-        let command = app.update_title();
+        let command = app.update_tab();
         (app, command)
     }
 
@@ -386,7 +392,7 @@ impl cosmic::Application for App {
             }
             Message::New => {
                 self.open_tab(None);
-                return self.update_title();
+                return self.update_tab();
             }
             Message::OpenFileDialog => {
                 return Command::perform(
@@ -402,7 +408,7 @@ impl cosmic::Application for App {
             }
             Message::OpenFile(path) => {
                 self.open_tab(Some(path));
-                return self.update_title();
+                return self.update_tab();
             }
             Message::OpenProjectDialog => {
                 return Command::perform(
@@ -442,7 +448,7 @@ impl cosmic::Application for App {
             }
             Message::TabActivate(entity) => {
                 self.tab_model.activate(entity);
-                return self.update_title();
+                return self.update_tab();
             }
             Message::TabClose(entity) => {
                 // Activate closest item
@@ -462,7 +468,7 @@ impl cosmic::Application for App {
                     self.open_tab(None);
                 }
 
-                return self.update_title();
+                return self.update_tab();
             }
             Message::Todo => {
                 log::warn!("TODO");
