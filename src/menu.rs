@@ -11,12 +11,12 @@ use cosmic::{
     Element,
 };
 
-use crate::{Config, Message};
+use crate::{fl, Config, Message};
 
 pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
     //TODO: port to libcosmic
     let menu_root = |label| {
-        widget::button(label)
+        widget::button(widget::text(label))
             .padding([4, 12])
             .style(theme::Button::MenuRoot)
     };
@@ -36,84 +36,89 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
         );
     }
 
-    let menu_folder = |label| menu_button!(label, horizontal_space(Length::Fill), ">");
+    let menu_folder =
+        |label| menu_button!(widget::text(label), horizontal_space(Length::Fill), ">");
 
-    let menu_item = |label, message| MenuTree::new(menu_button!(label).on_press(message));
+    let menu_item =
+        |label, message| MenuTree::new(menu_button!(widget::text(label)).on_press(message));
 
     let menu_key = |label, key, message| {
-        MenuTree::new(menu_button!(label, horizontal_space(Length::Fill), key).on_press(message))
+        MenuTree::new(
+            menu_button!(widget::text(label), horizontal_space(Length::Fill), key)
+                .on_press(message),
+        )
     };
 
     MenuBar::new(vec![
         MenuTree::with_children(
-            menu_root("File"),
+            menu_root(fl!("file")),
             vec![
-                menu_key("New file", "Ctrl + N", Message::New),
-                menu_key("New window", "Ctrl + Shift + N", Message::Todo),
+                menu_key(fl!("new-file"), "Ctrl + N", Message::New),
+                menu_key(fl!("new-window"), "Ctrl + Shift + N", Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key("Open file...", "Ctrl + O", Message::OpenFileDialog),
+                menu_key(fl!("open-file"), "Ctrl + O", Message::OpenFileDialog),
                 MenuTree::with_children(
-                    menu_folder("Open recent"),
-                    vec![menu_item("TODO", Message::Todo)],
+                    menu_folder(fl!("open-recent")),
+                    vec![menu_item(fl!("todo"), Message::Todo)],
                 ),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key("Save", "Ctrl + S", Message::Save),
-                menu_key("Save as...", "Ctrl + Shift + S", Message::Todo),
+                menu_key(fl!("save"), "Ctrl + S", Message::Save),
+                menu_key(fl!("save-as"), "Ctrl + Shift + S", Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item("Revert all changes", Message::Todo),
+                menu_item(fl!("revert-all-changes"), Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item("Document statistics...", Message::Todo),
-                menu_item("Document type...", Message::Todo),
-                menu_item("Encoding...", Message::Todo),
-                menu_item("Print", Message::Todo),
+                menu_item(fl!("document-statistics"), Message::Todo),
+                menu_item(fl!("document-type"), Message::Todo),
+                menu_item(fl!("encoding"), Message::Todo),
+                menu_item(fl!("print"), Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key("Quit", "Ctrl + Q", Message::Todo),
+                menu_key(fl!("quit"), "Ctrl + Q", Message::Todo),
             ],
         ),
         MenuTree::with_children(
-            menu_root("Edit"),
+            menu_root(fl!("edit")),
             vec![
-                menu_key("Undo", "Ctrl + Z", Message::Todo),
-                menu_key("Redo", "Ctrl + Shift + Z", Message::Todo),
+                menu_key(fl!("undo"), "Ctrl + Z", Message::Todo),
+                menu_key(fl!("redo"), "Ctrl + Shift + Z", Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key("Cut", "Ctrl + X", Message::Todo),
-                menu_key("Copy", "Ctrl + C", Message::Todo),
-                menu_key("Paste", "Ctrl + V", Message::Todo),
+                menu_key(fl!("cut"), "Ctrl + X", Message::Todo),
+                menu_key(fl!("copy"), "Ctrl + C", Message::Todo),
+                menu_key(fl!("paste"), "Ctrl + V", Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key("Find", "Ctrl + F", Message::Todo),
-                menu_key("Replace", "Ctrl + H", Message::Todo),
+                menu_key(fl!("find"), "Ctrl + F", Message::Todo),
+                menu_key(fl!("replace"), "Ctrl + H", Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item("Spell check...", Message::Todo),
+                menu_item(fl!("spell-check"), Message::Todo),
             ],
         ),
         MenuTree::with_children(
-            menu_root("View"),
+            menu_root(fl!("view")),
             vec![
                 MenuTree::with_children(
-                    menu_folder("Indentation"),
+                    menu_folder(fl!("indentation")),
                     vec![
-                        menu_item("Automatic indentation", Message::Todo),
+                        menu_item(fl!("automatic-indentation"), Message::Todo),
                         MenuTree::new(horizontal_rule(1)),
-                        menu_item("Tab width: 1", Message::Todo),
-                        menu_item("Tab width: 2", Message::Todo),
-                        menu_item("Tab width: 4", Message::Todo),
-                        menu_item("Tab width: 8", Message::Todo),
+                        menu_item(fl!("tab-width", tab_width = 1), Message::Todo),
+                        menu_item(fl!("tab-width", tab_width = 2), Message::Todo),
+                        menu_item(fl!("tab-width", tab_width = 4), Message::Todo),
+                        menu_item(fl!("tab-width", tab_width = 8), Message::Todo),
                         MenuTree::new(horizontal_rule(1)),
-                        menu_item("Convert indentation to spaces", Message::Todo),
-                        menu_item("Convert indentation to tabs", Message::Todo),
+                        menu_item(fl!("convert-indentation-to-spaces"), Message::Todo),
+                        menu_item(fl!("convert-indentation-to-tabs"), Message::Todo),
                     ],
                 ),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item("Word wrap", Message::Todo),
-                menu_item("Show line numbers", Message::Todo),
-                menu_item("Highlight current line", Message::Todo),
-                menu_item("Syntax highlighting...", Message::Todo),
+                menu_item(fl!("word-wrap"), Message::Todo),
+                menu_item(fl!("show-line-numbers"), Message::Todo),
+                menu_item(fl!("highlight-current-line"), Message::Todo),
+                menu_item(fl!("syntax-highlighting"), Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key("Settings...", "Ctrl + ,", Message::Todo),
+                menu_key(fl!("settings"), "Ctrl + ,", Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item("Keyboard shortcuts...", Message::Todo),
+                menu_item(fl!("keyboard-shortcuts"), Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item("About COSMIC Text Editor", Message::Todo),
+                menu_item(fl!("about-cosmic-text-editor"), Message::Todo),
             ],
         ),
     ])

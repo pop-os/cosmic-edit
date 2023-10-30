@@ -3,7 +3,7 @@
 use cosmic_text::{Attrs, Buffer, Edit, Metrics, SyntaxEditor, ViEditor, Wrap};
 use std::{fs, path::PathBuf, sync::Mutex};
 
-use crate::{Config, FONT_SYSTEM, SYNTAX_SYSTEM};
+use crate::{fl, Config, FONT_SYSTEM, SYNTAX_SYSTEM};
 
 static FONT_SIZES: &'static [Metrics] = &[
     Metrics::new(10.0, 14.0), // Caption
@@ -104,7 +104,7 @@ impl Tab {
                 None => format!("{}", path.display()),
             }
         } else {
-            "New document".to_string()
+            fl!("new-document")
         }
     }
 }

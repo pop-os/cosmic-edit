@@ -18,6 +18,8 @@ use std::{
     sync::Mutex,
 };
 
+mod localize;
+
 use self::menu::menu_bar;
 mod menu;
 
@@ -38,6 +40,8 @@ lazy_static::lazy_static! {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
+
+    localize::localize();
 
     let settings = Settings::default().size_limits(Limits::NONE.min_width(400.0).min_height(200.0));
     let flags = ();
@@ -303,7 +307,7 @@ impl cosmic::Application for App {
             app.nav_model
                 .insert()
                 .icon(icon::from_name("folder-open-symbolic").size(16).icon())
-                .text("Open project");
+                .text(fl!("open-project"));
         }
 
         // Open an empty file if no arguments provided
