@@ -32,6 +32,3 @@ features = ["winit"]
 [features]
 default = []
 vi = []
-
-[patch.crates-io]
-smithay-client-toolkit = { git = "https://github.com/pop-os/client-toolkit", branch = "wayland-resize" }
