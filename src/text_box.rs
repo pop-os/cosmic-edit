@@ -243,8 +243,9 @@ where
 
         let image_w = (view_w as f64 * scale_factor) as i32;
         let image_h = (view_h as f64 * scale_factor) as i32;
+        let scrollbar_w = (8.0 * scale_factor) as i32;
 
-        if image_w <= 0 || image_h <= 0 {
+        if image_w <= scrollbar_w || image_h <= 0 {
             // Zero sized image
             return;
         }
@@ -287,6 +288,35 @@ where
                         draw_rect(buffer, image_w, image_h, x, y, w as i32, h as i32, color.0);
                     },
                 );
+
+                // Draw scrollbar
+                {
+                    let mut start_line_opt = None;
+                    let mut end_line = 0;
+                    for run in editor.buffer().layout_runs() {
+                        end_line = run.line_i;
+                        if start_line_opt.is_none() {
+                            start_line_opt = Some(end_line);
+                        }
+                    }
+
+                    let start_line = start_line_opt.unwrap_or(end_line);
+                    let lines = editor.buffer().lines.len();
+                    let start_y = (start_line * image_h as usize) / lines;
+                    let end_y = (end_line * image_h as usize) / lines;
+                    if end_y > start_y {
+                        draw_rect(
+                            buffer,
+                            image_w,
+                            image_h,
+                            image_w - scrollbar_w,
+                            start_y as i32,
+                            scrollbar_w,
+                            (end_y - start_y) as i32,
+                            0x40FFFFFF,
+                        );
+                    }
+                }
             }
 
             // Clear redraw flag
