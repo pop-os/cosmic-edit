@@ -5,9 +5,7 @@ Maintainer: Jeremy Soller <jeremy@system76.com>
 Build-Depends:
     debhelper-compat (=13),
     just (>= 1.13.0),
-    libclang-dev,
-    libwayland-dev,
-    libxkbcommon-dev,
+    libgtk-3-dev,
     pkg-config,
     rust-all,
 Standards-Version: 4.6.2
