@@ -1,7 +1,7 @@
 use cosmic::iced::keyboard::{KeyCode, Modifiers};
 use std::{collections::HashMap, fmt};
 
-use crate::{fl, Message};
+use crate::Message;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct KeyBind {
@@ -26,6 +26,9 @@ impl KeyBind {
             }};
         }
 
+        bind!(CTRL, X, Cut);
+        bind!(CTRL, C, Copy);
+        bind!(CTRL, V, Paste);
         bind!(CTRL, N, New);
         bind!(CTRL, O, OpenFileDialog);
         bind!(CTRL, S, Save);

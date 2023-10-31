@@ -32,7 +32,7 @@ impl Tab {
         .unwrap();
 
         let mut editor = ViEditor::new(editor);
-        editor.set_passthrough(false);
+        editor.set_passthrough(!cfg!(feature = "vi"));
 
         Self {
             path_opt: None,

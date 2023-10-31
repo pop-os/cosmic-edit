@@ -26,9 +26,9 @@ features = ["syntect", "vi"]
 git = "https://github.com/pop-os/libcosmic"
 branch = "menu"
 default-features = false
+features = ["winit"]
 #path = "../libcosmic"
 
 [features]
-default = ["wayland"]
-wayland = ["libcosmic/wayland"]
-winit = ["libcosmic/winit"]
+default = []
+vi = []

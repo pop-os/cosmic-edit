@@ -4,7 +4,7 @@ use cosmic::{
     app::{message, Command, Core, Settings},
     executor,
     iced::{
-        event, keyboard, subscription,
+        clipboard, event, keyboard, subscription,
         widget::{row, text},
         Alignment, Length, Limits,
     },
@@ -48,7 +48,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     localize::localize();
 
-    let settings = Settings::default().size_limits(Limits::NONE.min_width(400.0).min_height(200.0));
+    let mut settings = Settings::default();
+
+    //TODO: fix wayland resize on iced_winit
+    settings = settings.client_decorations(false);
+
+    //TODO: allow size limits on iced_winit
+    //settings = settings.size_limits(Limits::NONE.min_width(400.0).min_height(200.0));
+
     let flags = ();
     cosmic::app::run::<App>(settings, flags)?;
 
@@ -65,12 +72,16 @@ pub struct App {
 #[allow(dead_code)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Message {
+    Cut,
+    Copy,
     KeyBind(KeyBind),
     New,
     OpenFileDialog,
     OpenFile(PathBuf),
     OpenProjectDialog,
     OpenProject(PathBuf),
+    Paste,
+    PasteValue(String),
     Save,
     TabActivate(segmented_button::Entity),
     TabClose(segmented_button::Entity),
@@ -383,6 +394,27 @@ impl cosmic::Application for App {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
+            Message::Cut => match self.active_tab() {
+                Some(tab) => {
+                    let mut editor = tab.editor.lock().unwrap();
+                    let selection_opt = editor.copy_selection();
+                    editor.delete_selection();
+                    if let Some(selection) = selection_opt {
+                        return clipboard::write(selection);
+                    }
+                }
+                None => {}
+            },
+            Message::Copy => match self.active_tab() {
+                Some(tab) => {
+                    let mut editor = tab.editor.lock().unwrap();
+                    let selection_opt = editor.copy_selection();
+                    if let Some(selection) = selection_opt {
+                        return clipboard::write(selection);
+                    }
+                }
+                None => {}
+            },
             Message::KeyBind(key_bind) => {
                 for (config_key_bind, config_message) in self.config.keybinds.iter() {
                     if config_key_bind == &key_bind {
@@ -424,6 +456,22 @@ impl cosmic::Application for App {
             }
             Message::OpenProject(path) => {
                 self.open_project(path);
+            }
+            Message::Paste => {
+                return clipboard::read(|value_opt| match value_opt {
+                    Some(value) => message::app(Message::PasteValue(value)),
+                    None => message::none(),
+                });
+            }
+            Message::PasteValue(value) => {
+                println!("Paste {:?}", value);
+                match self.active_tab() {
+                    Some(tab) => {
+                        let mut editor = tab.editor.lock().unwrap();
+                        editor.insert_string(&value, None);
+                    }
+                    None => {}
+                }
             }
             Message::Save => {
                 let mut title_opt = None;
