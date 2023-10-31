@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "ab_glyph"
-version = "0.2.22"
+version = "0.2.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1061f3ff92c2f65800df1f12fc7b4ff44ee14783104187dd04dfee6f11b0fd2"
+checksum = "80179d7dd5d7e8c285d67c4a1e652972a92de7475beddfb92028c76463b13225"
 dependencies = [
  "ab_glyph_rasterizer",
  "owned_ttf_parser",
@@ -288,11 +288,31 @@ dependencies = [
  "futures-lite",
  "log",
  "parking",
- "polling",
+ "polling 2.8.0",
  "rustix 0.37.27",
  "slab",
  "socket2",
  "waker-fn",
+]
+
+[[package]]
+name = "async-io"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "10da8f3146014722c89e7859e1d7bb97873125d7346d10ca642ffab794355828"
+dependencies = [
+ "async-lock",
+ "cfg-if",
+ "concurrent-queue",
+ "futures-io",
+ "futures-lite",
+ "parking",
+ "polling 3.3.0",
+ "rustix 0.38.21",
+ "slab",
+ "tracing",
+ "waker-fn",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -310,12 +330,12 @@ version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ea6438ba0a08d81529c69b36700fa2f95837bfe3e776ab39cde9c14d9149da88"
 dependencies = [
- "async-io",
+ "async-io 1.13.0",
  "async-lock",
  "async-signal",
  "blocking",
  "cfg-if",
- "event-listener 3.0.0",
+ "event-listener 3.0.1",
  "futures-lite",
  "rustix 0.38.21",
  "windows-sys 0.48.0",
@@ -334,11 +354,11 @@ dependencies = [
 
 [[package]]
 name = "async-signal"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2a5415b7abcdc9cd7d63d6badba5288b2ca017e3fbd4173b8f405449f1a2399"
+checksum = "9e47d90f65a225c4527103a8d747001fc56e375203592b25ad103e1ca13124c5"
 dependencies = [
- "async-io",
+ "async-io 2.1.0",
  "async-lock",
  "atomic-waker",
  "cfg-if",
@@ -1340,9 +1360,9 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
 name = "event-listener"
-version = "3.0.0"
+version = "3.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29e56284f00d94c1bc7fd3c77027b4623c88c1f53d8d2394c6199f2921dea325"
+checksum = "01cec0252c2afff729ee6f00e903d479fba81784c8e2bd77447673471fdfaea1"
 dependencies = [
  "concurrent-queue",
  "parking",
@@ -3295,11 +3315,11 @@ dependencies = [
 
 [[package]]
 name = "owned_ttf_parser"
-version = "0.19.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "706de7e2214113d63a8238d1910463cfce781129a6f263d13fdb09ff64355ba4"
+checksum = "d4586edfe4c648c71797a74c84bacb32b52b212eff5dfe2bb9f2c599844023e7"
 dependencies = [
- "ttf-parser 0.19.2",
+ "ttf-parser 0.20.0",
 ]
 
 [[package]]
@@ -3541,6 +3561,20 @@ dependencies = [
  "libc",
  "log",
  "pin-project-lite",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "polling"
+version = "3.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e53b6af1f60f36f8c2ac2aad5459d75a5a9b4be1e8cdd40264f315d78193e531"
+dependencies = [
+ "cfg-if",
+ "concurrent-queue",
+ "pin-project-lite",
+ "rustix 0.38.21",
+ "tracing",
  "windows-sys 0.48.0",
 ]
 
@@ -3845,9 +3879,9 @@ dependencies = [
 
 [[package]]
 name = "rgb"
-version = "0.8.36"
+version = "0.8.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20ec2d3e3fc7a92ced357df9cebd5a10b6fb2aa1ee797bf7e9ce2f17dffc8f59"
+checksum = "05aaa8004b64fd573fc9d002f4e632d51ad4f026c2b5ba95fcb6c2f32c2c47d8"
 dependencies = [
  "bytemuck",
 ]
@@ -4056,20 +4090,19 @@ checksum = "61270629cc6b4d77ec1907db1033d5c2e1a404c412743621981a871dc9c12339"
 dependencies = [
  "crossfont",
  "log",
- "smithay-client-toolkit",
+ "smithay-client-toolkit 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "tiny-skia 0.7.0",
 ]
 
 [[package]]
 name = "sctk-adwaita"
 version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cda4e97be1fd174ccc2aae81c8b694e803fa99b34e8fd0f057a9d70698e3ed09"
+source = "git+https://github.com/pop-os/sctk-adwaita?branch=wayland-resize#da85380dfb8f0c13aed51c5bddaad0ba3654cb1f"
 dependencies = [
  "ab_glyph",
  "log",
  "memmap2 0.5.10",
- "smithay-client-toolkit",
+ "smithay-client-toolkit 0.16.1 (git+https://github.com/pop-os/client-toolkit?branch=wayland-resize)",
  "tiny-skia 0.8.4",
 ]
 
@@ -4107,9 +4140,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.107"
+version = "1.0.108"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b420ce6e3d8bd882e9b243c6eed35dbc9a6110c9769e74b584e0d68d1f20c65"
+checksum = "3d1c7e3eac408d115102c4c24ad393e0821bb3a5df4d506a80f85f7a742a526b"
 dependencies = [
  "itoa",
  "ryu",
@@ -4118,9 +4151,9 @@ dependencies = [
 
 [[package]]
 name = "serde_repr"
-version = "0.1.16"
+version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8725e1dfadb3a50f7e5ce0b1a540466f6ed3fe7a0fca2ac2b8b831d31316bd00"
+checksum = "3081f5ffbb02284dda55132aa26daecedd7372a42417bbbab6f14ab7d6bb9145"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4253,12 +4286,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "smithay-client-toolkit"
+version = "0.16.1"
+source = "git+https://github.com/pop-os/client-toolkit?branch=wayland-resize#515820fc86cf8cb3ac8d087dc6c87852767627ca"
+dependencies = [
+ "bitflags 1.3.2",
+ "calloop",
+ "dlib",
+ "lazy_static",
+ "log",
+ "memmap2 0.5.10",
+ "nix 0.24.3",
+ "pkg-config",
+ "wayland-client 0.29.5",
+ "wayland-cursor",
+ "wayland-protocols",
+]
+
+[[package]]
 name = "smithay-clipboard"
 version = "0.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0a345c870a1fae0b1b779085e81b51e614767c239e93503588e54c5b17f4b0e8"
 dependencies = [
- "smithay-client-toolkit",
+ "smithay-client-toolkit 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "wayland-client 0.29.5",
 ]
 
@@ -4425,9 +4476,9 @@ dependencies = [
 
 [[package]]
 name = "system-deps"
-version = "6.1.2"
+version = "6.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94af52f9402f94aac4948a2518b43359be8d9ce6cd9efc1c4de3b2f7b7e897d6"
+checksum = "2a2d580ff6a20c55dfb86be5f9c238f67835d0e81cbdea8bf5680e0897320331"
 dependencies = [
  "cfg-expr",
  "heck",
@@ -4439,7 +4490,7 @@ dependencies = [
 [[package]]
 name = "taffy"
 version = "0.3.11"
-source = "git+https://github.com/DioxusLabs/taffy#d4374b93f0ec2c0ace42d3feafec22d3af1940d8"
+source = "git+https://github.com/DioxusLabs/taffy#278f5e39b6edcd6f5a3ee9e10da81c0bfb0b3124"
 dependencies = [
  "arrayvec 0.7.4",
  "grid",
@@ -5612,7 +5663,7 @@ dependencies = [
  "raw-window-handle 0.4.3",
  "raw-window-handle 0.5.2",
  "sctk-adwaita 0.4.3",
- "smithay-client-toolkit",
+ "smithay-client-toolkit 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "wasm-bindgen",
  "wayland-client 0.29.5",
  "wayland-protocols",
@@ -5624,7 +5675,7 @@ dependencies = [
 [[package]]
 name = "winit"
 version = "0.28.6"
-source = "git+https://github.com/pop-os/winit.git?branch=master#4060baa6ad2237092fed166d96f18d5394f92ef1"
+source = "git+https://github.com/pop-os/winit.git?branch=master#c6ad672264b2e320cd15a531f67e133d9ecd39bf"
 dependencies = [
  "android-activity",
  "bitflags 1.3.2",
@@ -5644,7 +5695,7 @@ dependencies = [
  "raw-window-handle 0.5.2",
  "redox_syscall 0.3.5",
  "sctk-adwaita 0.5.4",
- "smithay-client-toolkit",
+ "smithay-client-toolkit 0.16.1 (git+https://github.com/pop-os/client-toolkit?branch=wayland-resize)",
  "wasm-bindgen",
  "wayland-client 0.29.5",
  "wayland-commons",
@@ -5657,9 +5708,9 @@ dependencies = [
 
 [[package]]
 name = "winnow"
-version = "0.5.17"
+version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3b801d0e0a6726477cc207f60162da452f3a95adb368399bef20a946e06f65c"
+checksum = "176b6138793677221d420fd2f0aeeced263f197688b36484660da767bca2fa32"
 dependencies = [
  "memchr",
 ]
@@ -5788,7 +5839,7 @@ dependencies = [
  "async-broadcast",
  "async-executor",
  "async-fs",
- "async-io",
+ "async-io 1.13.0",
  "async-lock",
  "async-process",
  "async-recursion",
@@ -5853,18 +5904,18 @@ checksum = "dd15f8e0dbb966fd9245e7498c7e9e5055d9e5c8b676b95bd67091cd11a1e697"
 
 [[package]]
 name = "zerocopy"
-version = "0.7.17"
+version = "0.7.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1808c6e5aa42cb2b67578276190258f08679c275d92a19735aad5d359e1b154"
+checksum = "dd66a62464e3ffd4e37bd09950c2b9dd6c4f8767380fabba0d523f9a775bc85a"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.7.17"
+version = "0.7.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea597733532c780ce3e110401fc3b359b984cc78e17ac0917d3f371ffd1c1618"
+checksum = "255c4596d41e6916ced49cfafea18727b24d67878fa180ddfd69b9df34fd1726"
 dependencies = [
  "proc-macro2",
  "quote",

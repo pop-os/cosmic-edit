@@ -48,10 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     localize::localize();
 
-    let mut settings = Settings::default();
-
-    //TODO: fix wayland resize on iced_winit
-    settings = settings.client_decorations(false);
+    let settings = Settings::default();
 
     //TODO: allow size limits on iced_winit
     //settings = settings.size_limits(Limits::NONE.min_width(400.0).min_height(200.0));
