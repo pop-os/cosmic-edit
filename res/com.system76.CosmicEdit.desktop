@@ -1,0 +1,11 @@
+#TODO: more build-out, desktop actions, translations?
+[Desktop Entry]
+Name=COSMIC Text Editor
+Exec=cosmic-edit %U
+Terminal=false
+Type=Application
+StartupNotify=true
+MimeType=text/plain;
+Icon=accessories-text-editor
+Categories=COSMIC;Utility;TextEditor;
+Keywords=Text;Editor;
