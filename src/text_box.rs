@@ -3,7 +3,7 @@
 use cosmic::{
     iced::{
         event::{Event, Status},
-        keyboard::{Event as KeyEvent, KeyCode},
+        keyboard::{Event as KeyEvent, KeyCode, Modifiers},
         mouse::{self, Button, Event as MouseEvent, ScrollDelta},
         Color, Element, Length, Padding, Rectangle, Size,
     },
@@ -407,14 +407,20 @@ where
                 }
                 _ => (),
             },
+            Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
+                state.modifiers = modifiers;
+            }
             Event::Keyboard(KeyEvent::CharacterReceived(character)) => {
-                match character {
-                    '\n' | '\r' => {}
-                    _ => {
-                        editor.action(Action::Insert(character));
+                // Only parse keys when Super, Ctrl, and Alt are not pressed
+                if !state.modifiers.logo() && !state.modifiers.control() && !state.modifiers.alt() {
+                    match character {
+                        '\n' | '\r' => {}
+                        _ => {
+                            editor.action(Action::Insert(character));
+                        }
                     }
+                    status = Status::Captured;
                 }
-                status = Status::Captured;
             }
             Event::Mouse(MouseEvent::ButtonPressed(Button::Left)) => {
                 if let Some(p) = cursor_position.position_in(layout.bounds()) {
@@ -472,6 +478,7 @@ where
 }
 
 pub struct State {
+    modifiers: Modifiers,
     is_dragging: bool,
     scale_factor: Cell<f64>,
     handle: Mutex<image::Handle>,
@@ -481,6 +488,7 @@ impl State {
     /// Creates a new [`State`].
     pub fn new() -> State {
         State {
+            modifiers: Modifiers::empty(),
             is_dragging: false,
             scale_factor: Cell::new(1.0),
             //TODO: make option!
