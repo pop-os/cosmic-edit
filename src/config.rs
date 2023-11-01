@@ -39,7 +39,7 @@ impl KeyBind {
         bind!(CTRL, O, OpenFileDialog);
         bind!(CTRL, S, Save);
         bind!(CTRL, Q, Quit);
-        bind!(ALT, Z, ToggleWrap);
+        bind!(ALT, Z, ToggleWordWrap);
 
         keybinds
     }
@@ -65,7 +65,7 @@ impl fmt::Display for KeyBind {
 
 #[derive(Clone, Debug)]
 pub struct Config {
-    pub wrap: bool,
+    pub word_wrap: bool,
     pub keybinds: HashMap<KeyBind, Message>,
 }
 
@@ -73,7 +73,7 @@ impl Config {
     //TODO: load from cosmic-config
     pub fn load() -> Self {
         Self {
-            wrap: false,
+            word_wrap: false,
             keybinds: KeyBind::load(),
         }
     }

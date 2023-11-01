@@ -45,9 +45,11 @@ impl Tab {
         let mut editor = self.editor.lock().unwrap();
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
-        editor
-            .buffer_mut()
-            .set_wrap(if config.wrap { Wrap::Word } else { Wrap::None });
+        editor.buffer_mut().set_wrap(if config.word_wrap {
+            Wrap::Word
+        } else {
+            Wrap::None
+        });
     }
 
     pub fn open(&mut self, path: PathBuf) {

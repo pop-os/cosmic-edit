@@ -152,7 +152,7 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                     ],
                 ),
                 MenuTree::new(horizontal_rule(1)),
-                menu_checkbox(fl!("word-wrap"), config.wrap, Message::ToggleWrap),
+                menu_checkbox(fl!("word-wrap"), config.word_wrap, Message::ToggleWordWrap),
                 menu_checkbox(fl!("show-line-numbers"), false, Message::Todo),
                 menu_checkbox(fl!("highlight-current-line"), false, Message::Todo),
                 menu_item(fl!("syntax-highlighting"), Message::Todo),
