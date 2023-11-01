@@ -17,8 +17,8 @@ use cosmic::{
     },
     theme::{Theme, ThemeType},
 };
-use cosmic_text::{Action, Edit};
-use std::{cmp, sync::Mutex, time::Instant};
+use cosmic_text::{Action, Edit, Metrics};
+use std::{cell::Cell, cmp, sync::Mutex, time::Instant};
 
 use crate::{FONT_SYSTEM, SWASH_CACHE};
 
@@ -238,8 +238,7 @@ where
         let view_h = cmp::min(viewport.height as i32, layout.bounds().height as i32)
             - self.padding.vertical() as i32;
 
-        //TODO: scale factor from style
-        let scale_factor = 1.0;
+        let scale_factor = style.scale_factor;
 
         let image_w = (view_w as f64 * scale_factor) as i32;
         let image_h = (view_h as f64 * scale_factor) as i32;
@@ -253,21 +252,15 @@ where
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
 
-        /*TODO: have buffer able to scale during drawing
-        // Scale metrics
-        let metrics = editor.buffer().metrics();
-        editor
-            .buffer_mut()
-            .set_metrics(metrics.scale(scale_factor as f32));
+        // Set metrics and size
+        editor.buffer_mut().set_metrics_and_size(
+            //TODO: get from config
+            Metrics::new(14.0, 20.0).scale(scale_factor as f32),
+            image_w as f32,
+            image_h as f32,
+        );
 
-        // Restore original metrics
-        editor.buffer_mut().set_metrics(metrics);
-        */
-
-        // Set size
-        editor.buffer_mut().set_size(image_w as f32, image_h as f32);
-
-        // Shape and layout
+        // Shape and layout as needed
         editor.shape_as_needed();
 
         if editor.buffer().redraw() {
@@ -322,6 +315,7 @@ where
             // Clear redraw flag
             editor.buffer_mut().set_redraw(false);
 
+            state.scale_factor.set(scale_factor);
             *state.handle.lock().unwrap() =
                 image::Handle::from_pixels(image_w as u32, image_h as u32, pixels);
         }
@@ -352,6 +346,7 @@ where
         _viewport: &Rectangle<f32>,
     ) -> Status {
         let state = tree.state.downcast_mut::<State>();
+        let scale_factor = state.scale_factor.get() as f32;
         let mut editor = self.editor.lock().unwrap();
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
@@ -424,8 +419,8 @@ where
             Event::Mouse(MouseEvent::ButtonPressed(Button::Left)) => {
                 if let Some(p) = cursor_position.position_in(layout.bounds()) {
                     editor.action(Action::Click {
-                        x: p.x as i32 - self.padding.left as i32,
-                        y: p.y as i32 - self.padding.top as i32,
+                        x: ((p.x - self.padding.left) * scale_factor) as i32,
+                        y: ((p.y - self.padding.top) * scale_factor) as i32,
                     });
                     state.is_dragging = true;
                     status = Status::Captured;
@@ -439,8 +434,10 @@ where
                 if state.is_dragging {
                     if let Some(p) = cursor_position.position() {
                         editor.action(Action::Drag {
-                            x: (p.x - layout.bounds().x) as i32 - self.padding.left as i32,
-                            y: (p.y - layout.bounds().y) as i32 - self.padding.top as i32,
+                            x: (((p.x - layout.bounds().x) - self.padding.left) * scale_factor)
+                                as i32,
+                            y: (((p.y - layout.bounds().y) - self.padding.top) * scale_factor)
+                                as i32,
                         });
                     }
                     status = Status::Captured;
@@ -476,6 +473,7 @@ where
 
 pub struct State {
     is_dragging: bool,
+    scale_factor: Cell<f64>,
     handle: Mutex<image::Handle>,
 }
 
@@ -484,6 +482,7 @@ impl State {
     pub fn new() -> State {
         State {
             is_dragging: false,
+            scale_factor: Cell::new(1.0),
             //TODO: make option!
             handle: Mutex::new(image::Handle::from_pixels(1, 1, vec![0, 0, 0, 0])),
         }
