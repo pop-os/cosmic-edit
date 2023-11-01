@@ -32,7 +32,7 @@ impl Tab {
         .unwrap();
 
         let mut editor = ViEditor::new(editor);
-        editor.set_passthrough(!cfg!(feature = "vi"));
+        editor.set_passthrough(true);
 
         Self {
             path_opt: None,
@@ -45,6 +45,7 @@ impl Tab {
         let mut editor = self.editor.lock().unwrap();
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
+        editor.set_passthrough(!config.vim_bindings);
         editor.buffer_mut().set_wrap(if config.word_wrap {
             Wrap::Word
         } else {

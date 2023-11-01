@@ -851,7 +851,7 @@ dependencies = [
 [[package]]
 name = "cosmic-text"
 version = "0.10.0"
-source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#7855dce09d457ea6d516f621fdaafaa7ce78d9d4"
+source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#ca35e1f429af2ac3121f8afb0991963820dbd1bf"
 dependencies = [
  "fontdb 0.15.0",
  "libm",

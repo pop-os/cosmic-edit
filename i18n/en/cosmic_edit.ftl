@@ -1,6 +1,15 @@
 new-document = New document
 open-project = Open project
 
+# Context Pages
+
+## Settings
+settings = Settings
+
+### Keyboard shortcuts
+keyboard-shortcuts = Keyboard shortcuts
+enable-vim-bindings = Enable Vim bindings
+
 # Menu
 
 ## File
@@ -44,6 +53,6 @@ word-wrap = Word wrap
 show-line-numbers = Show line numbers
 highlight-current-line = Highlight current line
 syntax-highlighting = Syntax highlighting...
-settings = Settings...
-keyboard-shortcuts = Keyboard shortcuts...
+menu-settings = Settings...
+menu-keyboard-shortcuts = Keyboard shortcuts...
 about-cosmic-text-editor = About COSMIC Text Editor

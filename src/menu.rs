@@ -11,7 +11,7 @@ use cosmic::{
     Element,
 };
 
-use crate::{fl, Config, Message};
+use crate::{fl, Config, ContextPage, Message};
 
 pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
     //TODO: port to libcosmic
@@ -157,9 +157,12 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                 menu_checkbox(fl!("highlight-current-line"), false, Message::Todo),
                 menu_item(fl!("syntax-highlighting"), Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key(fl!("settings"), "Ctrl + ,", Message::Todo),
+                menu_item(
+                    fl!("menu-settings"),
+                    Message::ToggleContextPage(ContextPage::Settings),
+                ),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("keyboard-shortcuts"), Message::Todo),
+                menu_item(fl!("menu-keyboard-shortcuts"), Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("about-cosmic-text-editor"), Message::Todo),
             ],

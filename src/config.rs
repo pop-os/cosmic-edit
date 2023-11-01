@@ -1,7 +1,7 @@
 use cosmic::iced::keyboard::{KeyCode, Modifiers};
 use std::{collections::HashMap, fmt};
 
-use crate::Message;
+use crate::{ContextPage, Message};
 
 // Makes key binding definitions simpler
 const CTRL: Modifiers = Modifiers::CTRL;
@@ -20,26 +20,31 @@ impl KeyBind {
         let mut keybinds = HashMap::new();
 
         macro_rules! bind {
-            ($modifiers:expr, $key_code:ident, $message:ident) => {{
+            ($modifiers:expr, $key_code:ident, $message:expr) => {{
                 keybinds.insert(
                     KeyBind {
                         modifiers: $modifiers,
                         key_code: KeyCode::$key_code,
                     },
-                    Message::$message,
+                    $message,
                 );
             }};
         }
 
-        bind!(CTRL, X, Cut);
-        bind!(CTRL, C, Copy);
-        bind!(CTRL, V, Paste);
-        bind!(CTRL, N, NewFile);
-        bind!(CTRL | SHIFT, N, NewWindow);
-        bind!(CTRL, O, OpenFileDialog);
-        bind!(CTRL, S, Save);
-        bind!(CTRL, Q, Quit);
-        bind!(ALT, Z, ToggleWordWrap);
+        bind!(CTRL, X, Message::Cut);
+        bind!(CTRL, C, Message::Copy);
+        bind!(CTRL, V, Message::Paste);
+        bind!(CTRL, N, Message::NewFile);
+        bind!(CTRL | SHIFT, N, Message::NewWindow);
+        bind!(CTRL, O, Message::OpenFileDialog);
+        bind!(CTRL, S, Message::Save);
+        bind!(CTRL, Q, Message::Quit);
+        bind!(
+            CTRL,
+            Comma,
+            Message::ToggleContextPage(ContextPage::Settings)
+        );
+        bind!(ALT, Z, Message::ToggleWordWrap);
 
         keybinds
     }
@@ -65,6 +70,7 @@ impl fmt::Display for KeyBind {
 
 #[derive(Clone, Debug)]
 pub struct Config {
+    pub vim_bindings: bool,
     pub word_wrap: bool,
     pub keybinds: HashMap<KeyBind, Message>,
 }
@@ -73,6 +79,7 @@ impl Config {
     //TODO: load from cosmic-config
     pub fn load() -> Self {
         Self {
+            vim_bindings: false,
             word_wrap: false,
             keybinds: KeyBind::load(),
         }

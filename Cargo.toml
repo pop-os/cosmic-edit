@@ -29,9 +29,5 @@ default-features = false
 features = ["winit"]
 #path = "../libcosmic"
 
-[features]
-default = []
-vi = []
-
 [patch.crates-io]
 smithay-client-toolkit = { git = "https://github.com/pop-os/client-toolkit", branch = "wayland-resize" }

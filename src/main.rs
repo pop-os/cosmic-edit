@@ -60,13 +60,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub struct App {
-    core: Core,
-    nav_model: segmented_button::SingleSelectModel,
-    tab_model: segmented_button::SingleSelectModel,
-    config: Config,
-}
-
 #[allow(dead_code)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Message {
@@ -86,7 +79,30 @@ pub enum Message {
     TabActivate(segmented_button::Entity),
     TabClose(segmented_button::Entity),
     Todo,
+    ToggleContextPage(ContextPage),
     ToggleWordWrap,
+    VimBindings(bool),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ContextPage {
+    Settings,
+}
+
+impl ContextPage {
+    fn title(&self) -> String {
+        match self {
+            Self::Settings => fl!("settings"),
+        }
+    }
+}
+
+pub struct App {
+    core: Core,
+    nav_model: segmented_button::SingleSelectModel,
+    tab_model: segmented_button::SingleSelectModel,
+    config: Config,
+    context_page: ContextPage,
 }
 
 impl App {
@@ -204,6 +220,16 @@ impl App {
             .activate();
     }
 
+    fn update_config(&mut self) {
+        //TODO: provide iterator over data
+        let entities: Vec<_> = self.tab_model.iter().collect();
+        for entity in entities {
+            if let Some(tab) = self.tab_model.data_mut::<Tab>(entity) {
+                tab.set_config(&self.config);
+            }
+        }
+    }
+
     fn update_nav_bar_active(&mut self) {
         let tab_path_opt = match self.active_tab() {
             Some(tab) => tab.path_opt.clone(),
@@ -301,6 +327,7 @@ impl cosmic::Application for App {
             nav_model: nav_bar::Model::builder().build(),
             tab_model: segmented_button::Model::builder().build(),
             config: Config::load(),
+            context_page: ContextPage::Settings,
         };
 
         for arg in env::args().skip(1) {
@@ -539,19 +566,50 @@ impl cosmic::Application for App {
             Message::Todo => {
                 log::warn!("TODO");
             }
+            Message::ToggleContextPage(context_page) => {
+                if self.context_page == context_page {
+                    self.core.window.show_context = !self.core.window.show_context;
+                } else {
+                    self.context_page = context_page;
+                    self.core.window.show_context = true;
+                }
+                self.set_context_title(context_page.title());
+
+                // Hack to ensure tab redraws.
+                //TODO: tab does not redraw when using Close button!
+                return self.update_tab();
+            }
             Message::ToggleWordWrap => {
                 self.config.word_wrap = !self.config.word_wrap;
-                //TODO: provide iterator over data
-                let entities: Vec<_> = self.tab_model.iter().collect();
-                for entity in entities {
-                    if let Some(tab) = self.tab_model.data_mut::<Tab>(entity) {
-                        tab.set_config(&self.config);
-                    }
-                }
+                self.update_config();
+            }
+            Message::VimBindings(vim_bindings) => {
+                self.config.vim_bindings = vim_bindings;
+                self.update_config();
             }
         }
 
         Command::none()
+    }
+
+    fn context_drawer(&self) -> Option<Element<Message>> {
+        if !self.core.window.show_context {
+            return None;
+        }
+
+        Some(match self.context_page {
+            ContextPage::Settings => {
+                widget::settings::view_column(vec![widget::settings::view_section(fl!(
+                    "keyboard-shortcuts"
+                ))
+                .add(
+                    widget::settings::item::builder(fl!("enable-vim-bindings"))
+                        .toggler(self.config.vim_bindings, Message::VimBindings),
+                )
+                .into()])
+                .into()
+            }
+        })
     }
 
     fn header_start(&self) -> Vec<Element<Message>> {
