@@ -86,7 +86,7 @@ pub enum Message {
     TabActivate(segmented_button::Entity),
     TabClose(segmented_button::Entity),
     Todo,
-    Wrap(bool),
+    ToggleWrap,
 }
 
 impl App {
@@ -539,8 +539,8 @@ impl cosmic::Application for App {
             Message::Todo => {
                 log::warn!("TODO");
             }
-            Message::Wrap(wrap) => {
-                self.config.wrap = wrap;
+            Message::ToggleWrap => {
+                self.config.wrap = !self.config.wrap;
                 //TODO: provide iterator over data
                 let entities: Vec<_> = self.tab_model.iter().collect();
                 for entity in entities {

@@ -39,16 +39,44 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
     let menu_folder =
         |label| menu_button!(widget::text(label), horizontal_space(Length::Fill), ">");
 
-    let menu_item = |label, message| {
+    let find_key = |message: &Message| -> String {
         let mut key = String::new();
         for (config_key_bind, config_message) in config.keybinds.iter() {
-            if config_message == &message {
+            if config_message == message {
                 key = config_key_bind.to_string();
                 break;
             }
         }
+        key
+    };
+
+    let menu_item = |label, message| {
+        let key = find_key(&message);
         MenuTree::new(
             menu_button!(
+                widget::text(label),
+                horizontal_space(Length::Fill),
+                widget::text(key)
+            )
+            .on_press(message),
+        )
+    };
+
+    //TODO: support key lookup?
+    let menu_checkbox = |label, value, message| {
+        let check: Element<_> = if value {
+            widget::icon::from_name("object-select-symbolic")
+                .size(16)
+                .icon()
+                .into()
+        } else {
+            widget::Space::with_width(Length::Fixed(16.0)).into()
+        };
+        let key = find_key(&message);
+        MenuTree::new(
+            menu_button!(
+                check,
+                widget::Space::with_width(Length::Fixed(8.0)),
                 widget::text(label),
                 horizontal_space(Length::Fill),
                 widget::text(key)
@@ -124,9 +152,9 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                     ],
                 ),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("word-wrap"), Message::Todo),
-                menu_item(fl!("show-line-numbers"), Message::Todo),
-                menu_item(fl!("highlight-current-line"), Message::Todo),
+                menu_checkbox(fl!("word-wrap"), config.wrap, Message::ToggleWrap),
+                menu_checkbox(fl!("show-line-numbers"), false, Message::Todo),
+                menu_checkbox(fl!("highlight-current-line"), false, Message::Todo),
                 menu_item(fl!("syntax-highlighting"), Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
                 menu_key(fl!("settings"), "Ctrl + ,", Message::Todo),

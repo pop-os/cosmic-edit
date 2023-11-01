@@ -5,6 +5,7 @@ use crate::Message;
 
 // Makes key binding definitions simpler
 const CTRL: Modifiers = Modifiers::CTRL;
+const ALT: Modifiers = Modifiers::ALT;
 const SHIFT: Modifiers = Modifiers::SHIFT;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -38,6 +39,7 @@ impl KeyBind {
         bind!(CTRL, O, OpenFileDialog);
         bind!(CTRL, S, Save);
         bind!(CTRL, Q, Quit);
+        bind!(ALT, Z, ToggleWrap);
 
         keybinds
     }
