@@ -405,6 +405,14 @@ where
                     editor.action(Action::Delete);
                     status = Status::Captured;
                 }
+                KeyCode::Tab => {
+                    if modifiers.shift() {
+                        editor.action(Action::Unindent);
+                    } else {
+                        editor.action(Action::Indent);
+                    }
+                    status = Status::Captured;
+                }
                 _ => (),
             },
             Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
@@ -414,7 +422,7 @@ where
                 // Only parse keys when Super, Ctrl, and Alt are not pressed
                 if !state.modifiers.logo() && !state.modifiers.control() && !state.modifiers.alt() {
                     match character {
-                        '\n' | '\r' => {}
+                        '\n' | '\r' | '\t' => {}
                         _ => {
                             editor.action(Action::Insert(character));
                         }
