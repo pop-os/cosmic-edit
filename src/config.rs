@@ -3,6 +3,10 @@ use std::{collections::HashMap, fmt};
 
 use crate::Message;
 
+// Makes key binding definitions simpler
+const CTRL: Modifiers = Modifiers::CTRL;
+const SHIFT: Modifiers = Modifiers::SHIFT;
+
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct KeyBind {
     pub modifiers: Modifiers,
@@ -15,10 +19,10 @@ impl KeyBind {
         let mut keybinds = HashMap::new();
 
         macro_rules! bind {
-            ($modifiers:ident, $key_code:ident, $message:ident) => {{
+            ($modifiers:expr, $key_code:ident, $message:ident) => {{
                 keybinds.insert(
                     KeyBind {
-                        modifiers: Modifiers::$modifiers,
+                        modifiers: $modifiers,
                         key_code: KeyCode::$key_code,
                     },
                     Message::$message,
@@ -29,9 +33,11 @@ impl KeyBind {
         bind!(CTRL, X, Cut);
         bind!(CTRL, C, Copy);
         bind!(CTRL, V, Paste);
-        bind!(CTRL, N, New);
+        bind!(CTRL, N, NewFile);
+        bind!(CTRL | SHIFT, N, NewWindow);
         bind!(CTRL, O, OpenFileDialog);
         bind!(CTRL, S, Save);
+        bind!(CTRL, Q, Quit);
 
         keybinds
     }

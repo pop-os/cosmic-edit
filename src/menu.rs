@@ -68,8 +68,8 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
         MenuTree::with_children(
             menu_root(fl!("file")),
             vec![
-                menu_item(fl!("new-file"), Message::New),
-                menu_key(fl!("new-window"), "Ctrl + Shift + N", Message::Todo),
+                menu_item(fl!("new-file"), Message::NewFile),
+                menu_item(fl!("new-window"), Message::NewWindow),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("open-file"), Message::OpenFileDialog),
                 MenuTree::with_children(
@@ -87,7 +87,7 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                 menu_item(fl!("encoding"), Message::Todo),
                 menu_item(fl!("print"), Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key(fl!("quit"), "Ctrl + Q", Message::Todo),
+                menu_item(fl!("quit"), Message::Quit),
             ],
         ),
         MenuTree::with_children(

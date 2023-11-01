@@ -6,7 +6,7 @@ use cosmic::{
     iced::{
         clipboard, event, keyboard, subscription,
         widget::{row, text},
-        Alignment, Length, Limits,
+        window, Alignment, Length, Limits,
     },
     style,
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
@@ -16,6 +16,7 @@ use cosmic_text::{Edit, FontSystem, SwashCache, SyntaxSystem, ViMode};
 use std::{
     env, fs,
     path::{Path, PathBuf},
+    process,
     sync::Mutex,
 };
 
@@ -72,13 +73,15 @@ pub enum Message {
     Cut,
     Copy,
     KeyBind(KeyBind),
-    New,
+    NewFile,
+    NewWindow,
     OpenFileDialog,
     OpenFile(PathBuf),
     OpenProjectDialog,
     OpenProject(PathBuf),
     Paste,
     PasteValue(String),
+    Quit,
     Save,
     TabActivate(segmented_button::Entity),
     TabClose(segmented_button::Entity),
@@ -404,7 +407,7 @@ impl cosmic::Application for App {
             },
             Message::Copy => match self.active_tab() {
                 Some(tab) => {
-                    let mut editor = tab.editor.lock().unwrap();
+                    let editor = tab.editor.lock().unwrap();
                     let selection_opt = editor.copy_selection();
                     if let Some(selection) = selection_opt {
                         return clipboard::write(selection);
@@ -419,9 +422,23 @@ impl cosmic::Application for App {
                     }
                 }
             }
-            Message::New => {
+            Message::NewFile => {
                 self.open_tab(None);
                 return self.update_tab();
+            }
+            Message::NewWindow => {
+                //TODO: support multi-window in winit
+                match env::current_exe() {
+                    Ok(exe) => match process::Command::new(&exe).spawn() {
+                        Ok(child) => {}
+                        Err(err) => {
+                            log::error!("failed to execute {:?}: {}", exe, err);
+                        }
+                    },
+                    Err(err) => {
+                        log::error!("failed to get current executable path: {}", err);
+                    }
+                }
             }
             Message::OpenFileDialog => {
                 return Command::perform(
@@ -469,6 +486,10 @@ impl cosmic::Application for App {
                     }
                     None => {}
                 }
+            }
+            Message::Quit => {
+                //TODO: prompt for save?
+                return window::close();
             }
             Message::Save => {
                 let mut title_opt = None;
@@ -547,7 +568,7 @@ impl cosmic::Application for App {
                     .on_close(Message::TabClose)
                     .width(Length::Shrink),
                 button(icon::from_name("list-add-symbolic").size(16).icon())
-                    .on_press(Message::New)
+                    .on_press(Message::NewFile)
                     .padding(8)
                     .style(style::Button::Icon)
             ]
