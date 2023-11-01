@@ -110,7 +110,10 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("revert-all-changes"), Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("document-statistics"), Message::Todo),
+                menu_item(
+                    fl!("menu-document-statistics"),
+                    Message::ToggleContextPage(ContextPage::DocumentStatistics),
+                ),
                 menu_item(fl!("document-type"), Message::Todo),
                 menu_item(fl!("encoding"), Message::Todo),
                 menu_item(fl!("print"), Message::Todo),

@@ -86,12 +86,14 @@ pub enum Message {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ContextPage {
+    DocumentStatistics,
     Settings,
 }
 
 impl ContextPage {
     fn title(&self) -> String {
         match self {
+            Self::DocumentStatistics => fl!("document-statistics"),
             Self::Settings => fl!("settings"),
         }
     }
@@ -598,6 +600,49 @@ impl cosmic::Application for App {
         }
 
         Some(match self.context_page {
+            ContextPage::DocumentStatistics => {
+                //TODO: calculate in the background
+                let mut character_count = 0;
+                let mut character_count_no_spaces = 0;
+                let line_count;
+                match self.active_tab() {
+                    Some(tab) => {
+                        let editor = tab.editor.lock().unwrap();
+                        let buffer = editor.buffer();
+
+                        line_count = buffer.lines.len();
+                        for line in buffer.lines.iter() {
+                            //TODO: do graphemes?
+                            for c in line.text().chars() {
+                                character_count += 1;
+                                if !c.is_whitespace() {
+                                    character_count_no_spaces += 1;
+                                }
+                            }
+                        }
+                    }
+                    None => {
+                        return None;
+                    }
+                }
+
+                widget::settings::view_column(vec![widget::settings::view_section("")
+                    .add(widget::settings::item::builder(fl!("word-count")).control("TODO"))
+                    .add(
+                        widget::settings::item::builder(fl!("character-count"))
+                            .control(widget::text(character_count.to_string())),
+                    )
+                    .add(
+                        widget::settings::item::builder(fl!("character-count-no-spaces"))
+                            .control(widget::text(character_count_no_spaces.to_string())),
+                    )
+                    .add(
+                        widget::settings::item::builder(fl!("line-count"))
+                            .control(widget::text(line_count.to_string())),
+                    )
+                    .into()])
+                .into()
+            }
             ContextPage::Settings => {
                 widget::settings::view_column(vec![widget::settings::view_section(fl!(
                     "keyboard-shortcuts"

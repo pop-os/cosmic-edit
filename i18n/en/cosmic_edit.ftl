@@ -3,6 +3,13 @@ open-project = Open project
 
 # Context Pages
 
+## Document statistics
+document-statistics = Document statistics
+word-count = Word count
+character-count = Characters
+character-count-no-spaces = Characters (without spaces)
+line-count = Lines
+
 ## Settings
 settings = Settings
 
@@ -22,7 +29,7 @@ todo = TODO
 save = Save
 save-as = Save as...
 revert-all-changes = Revert all changes
-document-statistics = Document statistics...
+menu-document-statistics = Document statistics...
 document-type = Document type...
 encoding = Encoding...
 print = Print
