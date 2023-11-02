@@ -160,12 +160,11 @@ where
     fn layout(&self, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
         let limits = limits.width(Length::Fill).height(Length::Fill);
 
-        //TODO: allow lazy shape
         let mut editor = self.editor.lock().unwrap();
+        //TODO: set size?
         editor
             .borrow_with(&mut FONT_SYSTEM.lock().unwrap())
-            .buffer_mut()
-            .shape_until(i32::max_value());
+            .shape_as_needed();
 
         let mut layout_lines = 0;
         for line in editor.buffer().lines.iter() {
@@ -296,19 +295,17 @@ where
                     let start_line = start_line_opt.unwrap_or(end_line);
                     let lines = editor.buffer().lines.len();
                     let start_y = (start_line * image_h as usize) / lines;
-                    let end_y = (end_line * image_h as usize) / lines;
-                    if end_y > start_y {
-                        draw_rect(
-                            buffer,
-                            image_w,
-                            image_h,
-                            image_w - scrollbar_w,
-                            start_y as i32,
-                            scrollbar_w,
-                            (end_y - start_y) as i32,
-                            0x40FFFFFF,
-                        );
-                    }
+                    let end_y = ((end_line * image_h as usize) / lines).max(start_y + 1);
+                    draw_rect(
+                        buffer,
+                        image_w,
+                        image_h,
+                        image_w - scrollbar_w,
+                        start_y as i32,
+                        scrollbar_w,
+                        end_y as i32 - start_y as i32,
+                        0x40FFFFFF,
+                    );
                 }
             }
 
