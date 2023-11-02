@@ -507,7 +507,6 @@ impl cosmic::Application for App {
                 });
             }
             Message::PasteValue(value) => {
-                println!("Paste {:?}", value);
                 match self.active_tab() {
                     Some(tab) => {
                         let mut editor = tab.editor.lock().unwrap();

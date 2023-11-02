@@ -77,7 +77,11 @@ impl Ord for ProjectNode {
                 Self::File { .. } => return Ordering::Less,
                 _ => {}
             },
-            _ => {}
+            // Files are always after folders
+            Self::File { .. } => match other {
+                Self::Folder { .. } => return Ordering::Greater,
+                _ => {}
+            },
         }
         self.name().cmp(other.name())
     }
