@@ -662,7 +662,7 @@ impl cosmic::Application for App {
     }
 
     fn view(&self) -> Element<Message> {
-        let mut tab_column = widget::column::with_capacity(3).padding([0, 16]);
+        let mut tab_column = widget::column::with_capacity(3).padding([0, 8]);
 
         tab_column = tab_column.push(
             row![

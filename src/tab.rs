@@ -3,7 +3,7 @@
 use cosmic_text::{Attrs, Buffer, Edit, Metrics, SyntaxEditor, ViEditor, Wrap};
 use std::{fs, path::PathBuf, sync::Mutex};
 
-use crate::{fl, Config, FONT_SYSTEM, SYNTAX_SYSTEM};
+use crate::{fl, text_box, Config, FONT_SYSTEM, SYNTAX_SYSTEM};
 
 static FONT_SIZES: &'static [Metrics] = &[
     Metrics::new(10.0, 14.0), // Caption
@@ -27,7 +27,7 @@ impl Tab {
         let editor = SyntaxEditor::new(
             Buffer::new(&mut FONT_SYSTEM.lock().unwrap(), FONT_SIZES[1 /* Body */]),
             &SYNTAX_SYSTEM,
-            "base16-eighties.dark",
+            text_box::Appearance::dark().syntax_theme,
         )
         .unwrap();
 

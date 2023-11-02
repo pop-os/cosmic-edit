@@ -851,7 +851,7 @@ dependencies = [
 [[package]]
 name = "cosmic-text"
 version = "0.10.0"
-source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#241c4ca357b91334c07cb41e2679857841b33e19"
+source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#ac389d9eebe1a6d8fe21bae315a853a5e0205b73"
 dependencies = [
  "fontdb 0.15.0",
  "libm",
@@ -4227,7 +4227,7 @@ dependencies = [
 [[package]]
 name = "taffy"
 version = "0.3.11"
-source = "git+https://github.com/DioxusLabs/taffy#6d7f3cf86a923a02c9d7b67053096a8b3486f15f"
+source = "git+https://github.com/DioxusLabs/taffy#1876f72bee5e376023eaa518aa7b8a34c769bd1b"
 dependencies = [
  "arrayvec",
  "grid",

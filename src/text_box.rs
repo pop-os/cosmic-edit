@@ -15,16 +15,35 @@ use cosmic::{
         widget::{self, tree, Widget},
         Shell,
     },
-    theme::{Theme, ThemeType},
+    theme::Theme,
 };
-use cosmic_text::{Action, Edit, Metrics};
+use cosmic_text::{Action, Edit, Metrics, ViEditor};
 use std::{cell::Cell, cmp, sync::Mutex, time::Instant};
 
 use crate::{FONT_SYSTEM, SWASH_CACHE};
 
 pub struct Appearance {
-    background_color: Option<Color>,
-    text_color: Color,
+    pub background_color: Option<Color>,
+    pub text_color: Color,
+    pub syntax_theme: &'static str,
+}
+
+impl Appearance {
+    pub fn dark() -> Self {
+        Self {
+            background_color: Some(Color::from_rgb8(0x34, 0x34, 0x34)),
+            text_color: Color::from_rgb8(0xFF, 0xFF, 0xFF),
+            syntax_theme: "base16-eighties.dark",
+        }
+    }
+
+    pub fn light() -> Self {
+        Self {
+            background_color: Some(Color::from_rgb8(0xFC, 0xFC, 0xFC)),
+            text_color: Color::from_rgb8(0x00, 0x00, 0x00),
+            syntax_theme: "base16-ocean.light",
+        }
+    }
 }
 
 pub trait StyleSheet {
@@ -33,34 +52,26 @@ pub trait StyleSheet {
 
 impl StyleSheet for Theme {
     fn appearance(&self) -> Appearance {
-        match self.theme_type {
-            ThemeType::Dark | ThemeType::HighContrastDark => Appearance {
-                background_color: Some(Color::from_rgb8(0x34, 0x34, 0x34)),
-                text_color: Color::from_rgb8(0xFF, 0xFF, 0xFF),
-            },
-            ThemeType::Light | ThemeType::HighContrastLight => Appearance {
-                background_color: Some(Color::from_rgb8(0xFC, 0xFC, 0xFC)),
-                text_color: Color::from_rgb8(0x00, 0x00, 0x00),
-            },
-            //TODO: what to return for these?
-            _ => Appearance {
-                background_color: Some(Color::from_rgb8(0x34, 0x34, 0x34)),
-                text_color: Color::from_rgb8(0xFF, 0xFF, 0xFF),
-            },
+        if self.theme_type.is_dark() {
+            Appearance::dark()
+        } else {
+            Appearance::light()
         }
     }
 }
 
-pub struct TextBox<'a, Editor> {
-    editor: &'a Mutex<Editor>,
+pub struct TextBox<'a> {
+    editor: &'a Mutex<ViEditor<'static>>,
     padding: Padding,
+    line_numbers: bool,
 }
 
-impl<'a, Editor> TextBox<'a, Editor> {
-    pub fn new(editor: &'a Mutex<Editor>) -> Self {
+impl<'a> TextBox<'a> {
+    pub fn new(editor: &'a Mutex<ViEditor<'static>>) -> Self {
         Self {
             editor,
             padding: Padding::new(0.0),
+            line_numbers: true,
         }
     }
 
@@ -70,7 +81,7 @@ impl<'a, Editor> TextBox<'a, Editor> {
     }
 }
 
-pub fn text_box<'a, Editor>(editor: &'a Mutex<Editor>) -> TextBox<'a, Editor> {
+pub fn text_box<'a>(editor: &'a Mutex<ViEditor<'static>>) -> TextBox<'a> {
     TextBox::new(editor)
 }
 
@@ -126,20 +137,25 @@ fn draw_rect(
                 // Alpha blend with current value
                 let offset = line_offset + x as usize;
                 let current = buffer[offset];
-                let rb = ((n_alpha * (current & 0x00FF00FF)) + (alpha * (color & 0x00FF00FF))) >> 8;
-                let ag = (n_alpha * ((current & 0xFF00FF00) >> 8))
-                    + (alpha * (0x01000000 | ((color & 0x0000FF00) >> 8)));
-                buffer[offset] = (rb & 0x00FF00FF) | (ag & 0xFF00FF00);
+                if current & 0xFF000000 == 0 {
+                    // Overwrite if buffer empty
+                    buffer[offset] = color;
+                } else {
+                    let rb =
+                        ((n_alpha * (current & 0x00FF00FF)) + (alpha * (color & 0x00FF00FF))) >> 8;
+                    let ag = (n_alpha * ((current & 0xFF00FF00) >> 8))
+                        + (alpha * (0x01000000 | ((color & 0x0000FF00) >> 8)));
+                    buffer[offset] = (rb & 0x00FF00FF) | (ag & 0xFF00FF00);
+                }
             }
         }
     }
 }
 
-impl<'a, 'editor, Editor, Message, Renderer> Widget<Message, Renderer> for TextBox<'a, Editor>
+impl<'a, 'editor, Message, Renderer> Widget<Message, Renderer> for TextBox<'a>
 where
     Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
     Renderer::Theme: StyleSheet,
-    Editor: Edit,
 {
     fn tag(&self) -> tree::Tag {
         tree::Tag::of::<State>()
@@ -250,6 +266,9 @@ where
 
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
+
+        // Set theme
+        editor.update_theme(appearance.syntax_theme);
 
         // Set metrics and size
         editor.buffer_mut().set_metrics_and_size(
@@ -470,14 +489,12 @@ where
     }
 }
 
-impl<'a, 'editor, Editor, Message, Renderer> From<TextBox<'a, Editor>>
-    for Element<'a, Message, Renderer>
+impl<'a, 'editor, Message, Renderer> From<TextBox<'a>> for Element<'a, Message, Renderer>
 where
     Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
     Renderer::Theme: StyleSheet,
-    Editor: Edit,
 {
-    fn from(text_box: TextBox<'a, Editor>) -> Self {
+    fn from(text_box: TextBox<'a>) -> Self {
         Self::new(text_box)
     }
 }
