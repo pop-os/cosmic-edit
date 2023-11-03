@@ -20,7 +20,7 @@ use std::{
     sync::Mutex,
 };
 
-use config::{Config, KeyBind};
+use config::Config;
 mod config;
 
 mod localize;
@@ -67,7 +67,7 @@ pub enum Message {
     Copy,
     DefaultFont(usize),
     DefaultFontSize(usize),
-    KeyBind(KeyBind),
+    Key(keyboard::Modifiers, keyboard::KeyCode),
     NewFile,
     NewWindow,
     OpenFileDialog,
@@ -370,7 +370,7 @@ impl cosmic::Application for App {
             core,
             nav_model: nav_bar::Model::builder().build(),
             tab_model: segmented_button::Model::builder().build(),
-            config: Config::load(),
+            config: Config::default(),
             font_names,
             font_size_names,
             font_sizes,
@@ -511,21 +511,19 @@ impl cosmic::Application for App {
                     }
                 }
             }
-            Message::DefaultFontSize(index) => {
-                match self.font_sizes.get(index) {
-                    Some(font_size) => {
-                        self.config.font_size = *font_size;
-                        self.save_config();
-                    }
-                    None => {
-                        log::warn!("failed to find font with index {}", index);
-                    }
+            Message::DefaultFontSize(index) => match self.font_sizes.get(index) {
+                Some(font_size) => {
+                    self.config.font_size = *font_size;
+                    self.save_config();
                 }
-            }
-            Message::KeyBind(key_bind) => {
-                for (config_key_bind, config_message) in self.config.keybinds.iter() {
-                    if config_key_bind == &key_bind {
-                        return self.update(config_message.clone());
+                None => {
+                    log::warn!("failed to find font with index {}", index);
+                }
+            },
+            Message::Key(modifiers, key_code) => {
+                for (key_bind, action) in self.config.keybinds.iter() {
+                    if key_bind.matches(modifiers, key_code) {
+                        return self.update(action.message());
                     }
                 }
             }
@@ -769,9 +767,11 @@ impl cosmic::Application for App {
                         )
                         .add(
                             widget::settings::item::builder(fl!("default-font-size")).control(
-                                widget::dropdown(&self.font_size_names, font_size_selected, |index| {
-                                    Message::DefaultFontSize(index)
-                                }),
+                                widget::dropdown(
+                                    &self.font_size_names,
+                                    font_size_selected,
+                                    |index| Message::DefaultFontSize(index),
+                                ),
                             ),
                         )
                         .into(),
@@ -810,7 +810,8 @@ impl cosmic::Application for App {
 
         match self.active_tab() {
             Some(tab) => {
-                tab_column = tab_column.push(text_box(&tab.editor, self.config.metrics()).padding(8));
+                tab_column =
+                    tab_column.push(text_box(&tab.editor, self.config.metrics()).padding(8));
                 let status = match tab.editor.lock().unwrap().mode() {
                     ViMode::Passthrough => {
                         //TODO: status line
@@ -853,10 +854,7 @@ impl cosmic::Application for App {
             event::Event::Keyboard(keyboard::Event::KeyPressed {
                 modifiers,
                 key_code,
-            }) => Some(Message::KeyBind(KeyBind {
-                modifiers,
-                key_code,
-            })),
+            }) => Some(Message::Key(modifiers, key_code)),
             _ => None,
         })
     }

@@ -17,10 +17,7 @@ impl Tab {
         let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Monospace);
 
         let editor = SyntaxEditor::new(
-            Buffer::new(
-                &mut FONT_SYSTEM.lock().unwrap(),
-                config.metrics(),
-            ),
+            Buffer::new(&mut FONT_SYSTEM.lock().unwrap(), config.metrics()),
             &SYNTAX_SYSTEM,
             config.syntax_theme(cosmic::theme::is_dark()),
         )

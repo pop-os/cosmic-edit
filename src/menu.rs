@@ -41,9 +41,9 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
 
     let find_key = |message: &Message| -> String {
         let mut key = String::new();
-        for (config_key_bind, config_message) in config.keybinds.iter() {
-            if config_message == message {
-                key = config_key_bind.to_string();
+        for (key_bind, action) in config.keybinds.iter() {
+            if &action.message() == message {
+                key = key_bind.to_string();
                 break;
             }
         }

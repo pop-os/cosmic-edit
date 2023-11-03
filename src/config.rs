@@ -1,87 +1,119 @@
-use cosmic::iced::keyboard::{KeyCode, Modifiers};
+use cosmic::{
+    cosmic_config::{self, cosmic_config_derive::CosmicConfigEntry, CosmicConfigEntry},
+    iced::keyboard::{KeyCode, Modifiers},
+};
 use cosmic_text::Metrics;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt};
 
 use crate::{ContextPage, Message};
 
-// Makes key binding definitions simpler
-const CTRL: Modifiers = Modifiers::CTRL;
-const ALT: Modifiers = Modifiers::ALT;
-const SHIFT: Modifiers = Modifiers::SHIFT;
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub enum Action {
+    Cut,
+    Copy,
+    Paste,
+    NewFile,
+    NewWindow,
+    OpenFileDialog,
+    Save,
+    Quit,
+    ToggleSettingsPage,
+    ToggleWordWrap,
+}
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+impl Action {
+    pub fn message(&self) -> Message {
+        match self {
+            Self::Cut => Message::Cut,
+            Self::Copy => Message::Copy,
+            Self::Paste => Message::Paste,
+            Self::NewFile => Message::NewFile,
+            Self::NewWindow => Message::NewWindow,
+            Self::OpenFileDialog => Message::OpenFileDialog,
+            Self::Save => Message::Save,
+            Self::Quit => Message::Quit,
+            Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
+            Self::ToggleWordWrap => Message::ToggleWordWrap,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub enum Modifier {
+    Super,
+    Ctrl,
+    Alt,
+    Shift,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct KeyBind {
-    pub modifiers: Modifiers,
+    pub modifiers: Vec<Modifier>,
     pub key_code: KeyCode,
 }
 
 impl KeyBind {
     //TODO: load from config
-    pub fn load() -> HashMap<KeyBind, Message> {
+    pub fn load() -> HashMap<KeyBind, Action> {
         let mut keybinds = HashMap::new();
 
         macro_rules! bind {
-            ($modifiers:expr, $key_code:ident, $message:expr) => {{
+            ([$($modifier:ident),+ $(,)?], $key_code:ident, $action:ident) => {{
                 keybinds.insert(
                     KeyBind {
-                        modifiers: $modifiers,
+                        modifiers: vec![$(Modifier::$modifier),+],
                         key_code: KeyCode::$key_code,
                     },
-                    $message,
+                    Action::$action,
                 );
             }};
         }
 
-        bind!(CTRL, X, Message::Cut);
-        bind!(CTRL, C, Message::Copy);
-        bind!(CTRL, V, Message::Paste);
-        bind!(CTRL, N, Message::NewFile);
-        bind!(CTRL | SHIFT, N, Message::NewWindow);
-        bind!(CTRL, O, Message::OpenFileDialog);
-        bind!(CTRL, S, Message::Save);
-        bind!(CTRL, Q, Message::Quit);
-        bind!(
-            CTRL,
-            Comma,
-            Message::ToggleContextPage(ContextPage::Settings)
-        );
-        bind!(ALT, Z, Message::ToggleWordWrap);
+        bind!([Ctrl], X, Cut);
+        bind!([Ctrl], C, Copy);
+        bind!([Ctrl], V, Paste);
+        bind!([Ctrl], N, NewFile);
+        bind!([Ctrl, Shift], N, NewWindow);
+        bind!([Ctrl], O, OpenFileDialog);
+        bind!([Ctrl], S, Save);
+        bind!([Ctrl], Q, Quit);
+        bind!([Ctrl], Comma, ToggleSettingsPage);
+        bind!([Alt], Z, ToggleWordWrap);
 
         keybinds
+    }
+
+    pub fn matches(&self, modifiers: Modifiers, key_code: KeyCode) -> bool {
+        self.key_code == key_code
+            && modifiers.logo() == self.modifiers.contains(&Modifier::Super)
+            && modifiers.control() == self.modifiers.contains(&Modifier::Ctrl)
+            && modifiers.alt() == self.modifiers.contains(&Modifier::Alt)
+            && modifiers.shift() == self.modifiers.contains(&Modifier::Shift)
     }
 }
 
 impl fmt::Display for KeyBind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.modifiers.logo() {
-            write!(f, "Super + ")?;
-        }
-        if self.modifiers.control() {
-            write!(f, "Ctrl + ")?;
-        }
-        if self.modifiers.alt() {
-            write!(f, "Alt + ")?;
-        }
-        if self.modifiers.shift() {
-            write!(f, "Shift + ")?;
+        for modifier in self.modifiers.iter() {
+            write!(f, "{:?} + ", modifier)?;
         }
         write!(f, "{:?}", self.key_code)
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, CosmicConfigEntry, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Config {
     pub font_size: u16,
     pub syntax_theme_dark: String,
     pub syntax_theme_light: String,
     pub vim_bindings: bool,
     pub word_wrap: bool,
-    pub keybinds: HashMap<KeyBind, Message>,
+    pub keybinds: HashMap<KeyBind, Action>,
 }
 
-impl Config {
-    //TODO: load from cosmic-config
-    pub fn load() -> Self {
+impl Default for Config {
+    fn default() -> Self {
         Self {
             font_size: 14,
             syntax_theme_dark: "base16-eighties.dark".to_string(),
@@ -91,7 +123,9 @@ impl Config {
             keybinds: KeyBind::load(),
         }
     }
+}
 
+impl Config {
     // Calculate metrics from font size
     pub fn metrics(&self) -> Metrics {
         let font_size = self.font_size as f32;
