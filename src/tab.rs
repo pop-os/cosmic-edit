@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use cosmic_text::{Attrs, Buffer, Edit, Metrics, SyntaxEditor, ViEditor, Wrap};
+use cosmic_text::{Attrs, Buffer, Edit, SyntaxEditor, ViEditor, Wrap};
 use std::{fs, path::PathBuf, sync::Mutex};
 
 use crate::{fl, Config, FONT_SYSTEM, SYNTAX_SYSTEM};
@@ -19,7 +19,7 @@ impl Tab {
         let editor = SyntaxEditor::new(
             Buffer::new(
                 &mut FONT_SYSTEM.lock().unwrap(),
-                Metrics::new(config.font_size, config.line_height()),
+                config.metrics(),
             ),
             &SYNTAX_SYSTEM,
             config.syntax_theme(cosmic::theme::is_dark()),

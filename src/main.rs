@@ -66,6 +66,7 @@ pub enum Message {
     Cut,
     Copy,
     DefaultFont(usize),
+    DefaultFontSize(usize),
     KeyBind(KeyBind),
     NewFile,
     NewWindow,
@@ -107,6 +108,8 @@ pub struct App {
     tab_model: segmented_button::SingleSelectModel,
     config: Config,
     font_names: Vec<String>,
+    font_size_names: Vec<String>,
+    font_sizes: Vec<u16>,
     theme_names: Vec<String>,
     context_page: ContextPage,
 }
@@ -235,6 +238,11 @@ impl App {
         }
     }
 
+    fn save_config(&mut self) {
+        //TODO: save config (work lost due to drive failure)
+        self.update_config();
+    }
+
     fn update_nav_bar_active(&mut self) {
         let tab_path_opt = match self.active_tab() {
             Some(tab) => tab.path_opt.clone(),
@@ -346,6 +354,13 @@ impl cosmic::Application for App {
             font_names
         };
 
+        let mut font_size_names = Vec::new();
+        let mut font_sizes = Vec::new();
+        for font_size in 4..=32 {
+            font_size_names.push(format!("{}px", font_size));
+            font_sizes.push(font_size);
+        }
+
         let mut theme_names = Vec::with_capacity(SYNTAX_SYSTEM.theme_set.themes.len());
         for (theme_name, _theme) in SYNTAX_SYSTEM.theme_set.themes.iter() {
             theme_names.push(theme_name.to_string());
@@ -357,6 +372,8 @@ impl cosmic::Application for App {
             tab_model: segmented_button::Model::builder().build(),
             config: Config::load(),
             font_names,
+            font_size_names,
+            font_sizes,
             theme_names,
             context_page: ContextPage::Settings,
         };
@@ -494,6 +511,17 @@ impl cosmic::Application for App {
                     }
                 }
             }
+            Message::DefaultFontSize(index) => {
+                match self.font_sizes.get(index) {
+                    Some(font_size) => {
+                        self.config.font_size = *font_size;
+                        self.save_config();
+                    }
+                    None => {
+                        log::warn!("failed to find font with index {}", index);
+                    }
+                }
+            }
             Message::KeyBind(key_bind) => {
                 for (config_key_bind, config_message) in self.config.keybinds.iter() {
                     if config_key_bind == &key_bind {
@@ -595,7 +623,7 @@ impl cosmic::Application for App {
                     } else {
                         self.config.syntax_theme_light = theme_name.to_string();
                     }
-                    self.update_config();
+                    self.save_config();
                 }
                 None => {
                     log::warn!("failed to find syntax theme with index {}", index);
@@ -643,11 +671,11 @@ impl cosmic::Application for App {
             }
             Message::ToggleWordWrap => {
                 self.config.word_wrap = !self.config.word_wrap;
-                self.update_config();
+                self.save_config();
             }
             Message::VimBindings(vim_bindings) => {
                 self.config.vim_bindings = vim_bindings;
-                self.update_config();
+                self.save_config();
             }
         }
 
@@ -721,6 +749,10 @@ impl cosmic::Application for App {
                         .iter()
                         .position(|font_name| font_name == current_font_name)
                 };
+                let font_size_selected = self
+                    .font_sizes
+                    .iter()
+                    .position(|font_size| font_size == &self.config.font_size);
                 widget::settings::view_column(vec![
                     widget::settings::view_section(fl!("appearance"))
                         .add(widget::settings::item::builder(fl!("theme")).control(
@@ -737,7 +769,9 @@ impl cosmic::Application for App {
                         )
                         .add(
                             widget::settings::item::builder(fl!("default-font-size")).control(
-                                widget::dropdown(&["TODO"], Some(0), |_index| Message::Todo),
+                                widget::dropdown(&self.font_size_names, font_size_selected, |index| {
+                                    Message::DefaultFontSize(index)
+                                }),
                             ),
                         )
                         .into(),
@@ -776,7 +810,7 @@ impl cosmic::Application for App {
 
         match self.active_tab() {
             Some(tab) => {
-                tab_column = tab_column.push(text_box(&tab.editor).padding(8));
+                tab_column = tab_column.push(text_box(&tab.editor, self.config.metrics()).padding(8));
                 let status = match tab.editor.lock().unwrap().mode() {
                     ViMode::Passthrough => {
                         //TODO: status line

@@ -59,13 +59,15 @@ impl StyleSheet for Theme {
 
 pub struct TextBox<'a> {
     editor: &'a Mutex<ViEditor<'static>>,
+    metrics: Metrics,
     padding: Padding,
 }
 
 impl<'a> TextBox<'a> {
-    pub fn new(editor: &'a Mutex<ViEditor<'static>>) -> Self {
+    pub fn new(editor: &'a Mutex<ViEditor<'static>>, metrics: Metrics) -> Self {
         Self {
             editor,
+            metrics,
             padding: Padding::new(0.0),
         }
     }
@@ -76,8 +78,8 @@ impl<'a> TextBox<'a> {
     }
 }
 
-pub fn text_box<'a>(editor: &'a Mutex<ViEditor<'static>>) -> TextBox<'a> {
-    TextBox::new(editor)
+pub fn text_box<'a>(editor: &'a Mutex<ViEditor<'static>>, metrics: Metrics) -> TextBox<'a> {
+    TextBox::new(editor, metrics)
 }
 
 //TODO: improve performance
@@ -264,8 +266,7 @@ where
 
         // Set metrics and size
         editor.buffer_mut().set_metrics_and_size(
-            //TODO: get from config
-            Metrics::new(14.0, 20.0).scale(scale_factor as f32),
+            self.metrics.scale(scale_factor as f32),
             image_w as f32,
             image_h as f32,
         );
@@ -336,6 +337,7 @@ where
                 layout.position() + [self.padding.left as f32, self.padding.top as f32].into(),
                 Size::new(view_w as f32, view_h as f32),
             ),
+            [0.0; 4],
         );
 
         let duration = instant.elapsed();

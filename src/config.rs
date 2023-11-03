@@ -1,11 +1,8 @@
 use cosmic::iced::keyboard::{KeyCode, Modifiers};
+use cosmic_text::Metrics;
 use std::{collections::HashMap, fmt};
 
 use crate::{ContextPage, Message};
-
-const DEFAULT_FONT_SIZE: f32 = 14.0;
-const DEFAULT_SYNTAX_THEME_DARK: &'static str = "base16-eighties.dark";
-const DEFAULT_SYNTAX_THEME_LIGHT: &'static str = "base16-ocean.light";
 
 // Makes key binding definitions simpler
 const CTRL: Modifiers = Modifiers::CTRL;
@@ -72,9 +69,9 @@ impl fmt::Display for KeyBind {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Config {
-    pub font_size: f32,
+    pub font_size: u16,
     pub syntax_theme_dark: String,
     pub syntax_theme_light: String,
     pub vim_bindings: bool,
@@ -86,18 +83,20 @@ impl Config {
     //TODO: load from cosmic-config
     pub fn load() -> Self {
         Self {
-            font_size: DEFAULT_FONT_SIZE,
-            syntax_theme_dark: DEFAULT_SYNTAX_THEME_DARK.to_string(),
-            syntax_theme_light: DEFAULT_SYNTAX_THEME_LIGHT.to_string(),
+            font_size: 14,
+            syntax_theme_dark: "base16-eighties.dark".to_string(),
+            syntax_theme_light: "base16-ocean.light".to_string(),
             vim_bindings: false,
             word_wrap: false,
             keybinds: KeyBind::load(),
         }
     }
 
-    // Calculate line height from font size
-    pub fn line_height(&self) -> f32 {
-        (self.font_size * 1.4).ceil()
+    // Calculate metrics from font size
+    pub fn metrics(&self) -> Metrics {
+        let font_size = self.font_size as f32;
+        let line_height = (font_size * 1.4).ceil();
+        Metrics::new(font_size, line_height)
     }
 
     // Get current syntax theme based on dark mode
