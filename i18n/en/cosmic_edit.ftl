@@ -13,6 +13,12 @@ line-count = Lines
 ## Settings
 settings = Settings
 
+## Appearance
+appearance = Appearance
+theme = Theme
+default-font = Default font
+default-font-size = Default font size
+
 ### Keyboard shortcuts
 keyboard-shortcuts = Keyboard shortcuts
 enable-vim-bindings = Enable Vim bindings

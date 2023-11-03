@@ -3,16 +3,7 @@
 use cosmic_text::{Attrs, Buffer, Edit, Metrics, SyntaxEditor, ViEditor, Wrap};
 use std::{fs, path::PathBuf, sync::Mutex};
 
-use crate::{fl, text_box, Config, FONT_SYSTEM, SYNTAX_SYSTEM};
-
-static FONT_SIZES: &'static [Metrics] = &[
-    Metrics::new(10.0, 14.0), // Caption
-    Metrics::new(14.0, 20.0), // Body
-    Metrics::new(20.0, 28.0), // Title 4
-    Metrics::new(24.0, 32.0), // Title 3
-    Metrics::new(28.0, 36.0), // Title 2
-    Metrics::new(32.0, 44.0), // Title 1
-];
+use crate::{fl, Config, FONT_SYSTEM, SYNTAX_SYSTEM};
 
 pub struct Tab {
     pub path_opt: Option<PathBuf>,
@@ -21,24 +12,30 @@ pub struct Tab {
 }
 
 impl Tab {
-    pub fn new() -> Self {
+    pub fn new(config: &Config) -> Self {
+        //TODO: do not repeat, used in App::init
         let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Monospace);
 
         let editor = SyntaxEditor::new(
-            Buffer::new(&mut FONT_SYSTEM.lock().unwrap(), FONT_SIZES[1 /* Body */]),
+            Buffer::new(
+                &mut FONT_SYSTEM.lock().unwrap(),
+                Metrics::new(config.font_size, config.line_height()),
+            ),
             &SYNTAX_SYSTEM,
-            text_box::Appearance::dark().syntax_theme,
+            config.syntax_theme(cosmic::theme::is_dark()),
         )
         .unwrap();
 
-        let mut editor = ViEditor::new(editor);
-        editor.set_passthrough(true);
-
-        Self {
+        let mut tab = Self {
             path_opt: None,
             attrs,
-            editor: Mutex::new(editor),
-        }
+            editor: Mutex::new(ViEditor::new(editor)),
+        };
+
+        // Update any other config settings
+        tab.set_config(config);
+
+        tab
     }
 
     pub fn set_config(&mut self, config: &Config) {
@@ -50,6 +47,12 @@ impl Tab {
             Wrap::Word
         } else {
             Wrap::None
+        });
+        //TODO: dynamically discover light/dark changes
+        editor.update_theme(if cosmic::theme::is_dark() {
+            &config.syntax_theme_dark
+        } else {
+            &config.syntax_theme_light
         });
     }
 

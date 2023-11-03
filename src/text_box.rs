@@ -25,7 +25,6 @@ use crate::{FONT_SYSTEM, SWASH_CACHE};
 pub struct Appearance {
     pub background_color: Option<Color>,
     pub text_color: Color,
-    pub syntax_theme: &'static str,
 }
 
 impl Appearance {
@@ -33,7 +32,6 @@ impl Appearance {
         Self {
             background_color: Some(Color::from_rgb8(0x34, 0x34, 0x34)),
             text_color: Color::from_rgb8(0xFF, 0xFF, 0xFF),
-            syntax_theme: "base16-eighties.dark",
         }
     }
 
@@ -41,7 +39,6 @@ impl Appearance {
         Self {
             background_color: Some(Color::from_rgb8(0xFC, 0xFC, 0xFC)),
             text_color: Color::from_rgb8(0x00, 0x00, 0x00),
-            syntax_theme: "base16-ocean.light",
         }
     }
 }
@@ -63,7 +60,6 @@ impl StyleSheet for Theme {
 pub struct TextBox<'a> {
     editor: &'a Mutex<ViEditor<'static>>,
     padding: Padding,
-    line_numbers: bool,
 }
 
 impl<'a> TextBox<'a> {
@@ -71,7 +67,6 @@ impl<'a> TextBox<'a> {
         Self {
             editor,
             padding: Padding::new(0.0),
-            line_numbers: true,
         }
     }
 
@@ -266,9 +261,6 @@ where
 
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
-
-        // Set theme
-        editor.update_theme(appearance.syntax_theme);
 
         // Set metrics and size
         editor.buffer_mut().set_metrics_and_size(

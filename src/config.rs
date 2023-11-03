@@ -3,6 +3,10 @@ use std::{collections::HashMap, fmt};
 
 use crate::{ContextPage, Message};
 
+const DEFAULT_FONT_SIZE: f32 = 14.0;
+const DEFAULT_SYNTAX_THEME_DARK: &'static str = "base16-eighties.dark";
+const DEFAULT_SYNTAX_THEME_LIGHT: &'static str = "base16-ocean.light";
+
 // Makes key binding definitions simpler
 const CTRL: Modifiers = Modifiers::CTRL;
 const ALT: Modifiers = Modifiers::ALT;
@@ -70,6 +74,9 @@ impl fmt::Display for KeyBind {
 
 #[derive(Clone, Debug)]
 pub struct Config {
+    pub font_size: f32,
+    pub syntax_theme_dark: String,
+    pub syntax_theme_light: String,
     pub vim_bindings: bool,
     pub word_wrap: bool,
     pub keybinds: HashMap<KeyBind, Message>,
@@ -79,9 +86,26 @@ impl Config {
     //TODO: load from cosmic-config
     pub fn load() -> Self {
         Self {
+            font_size: DEFAULT_FONT_SIZE,
+            syntax_theme_dark: DEFAULT_SYNTAX_THEME_DARK.to_string(),
+            syntax_theme_light: DEFAULT_SYNTAX_THEME_LIGHT.to_string(),
             vim_bindings: false,
             word_wrap: false,
             keybinds: KeyBind::load(),
+        }
+    }
+
+    // Calculate line height from font size
+    pub fn line_height(&self) -> f32 {
+        (self.font_size * 1.4).ceil()
+    }
+
+    // Get current syntax theme based on dark mode
+    pub fn syntax_theme(&self, dark: bool) -> &str {
+        if dark {
+            &self.syntax_theme_dark
+        } else {
+            &self.syntax_theme_light
         }
     }
 }

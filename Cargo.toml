@@ -19,7 +19,7 @@ rust-embed = "6.3.0"
 [dependencies.cosmic-text]
 git = "https://github.com/pop-os/cosmic-text"
 branch = "vi-editor"
-features = ["syntect", "two-face", "vi"]
+features = ["two-face", "vi"]
 #path = "../cosmic-text"
 
 [dependencies.libcosmic]

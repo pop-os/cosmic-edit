@@ -6,13 +6,13 @@ use cosmic::{
     iced::{
         clipboard, event, keyboard, subscription,
         widget::{row, text},
-        window, Alignment, Length, Limits,
+        window, Alignment, Length,
     },
     style,
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
     ApplicationExt, Element,
 };
-use cosmic_text::{Edit, FontSystem, SwashCache, SyntaxSystem, ViMode};
+use cosmic_text::{Edit, Family, FontSystem, SwashCache, SyntaxSystem, ViMode};
 use std::{
     env, fs,
     path::{Path, PathBuf},
@@ -65,6 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 pub enum Message {
     Cut,
     Copy,
+    DefaultFont(usize),
     KeyBind(KeyBind),
     NewFile,
     NewWindow,
@@ -76,6 +77,7 @@ pub enum Message {
     PasteValue(String),
     Quit,
     Save,
+    SyntaxTheme(usize, bool),
     TabActivate(segmented_button::Entity),
     TabClose(segmented_button::Entity),
     Todo,
@@ -104,6 +106,8 @@ pub struct App {
     nav_model: segmented_button::SingleSelectModel,
     tab_model: segmented_button::SingleSelectModel,
     config: Config,
+    font_names: Vec<String>,
+    theme_names: Vec<String>,
     context_page: ContextPage,
 }
 
@@ -208,8 +212,7 @@ impl App {
     }
 
     pub fn open_tab(&mut self, path_opt: Option<PathBuf>) {
-        let mut tab = Tab::new();
-        tab.set_config(&self.config);
+        let mut tab = Tab::new(&self.config);
         if let Some(path) = path_opt {
             tab.open(path);
         }
@@ -324,11 +327,37 @@ impl cosmic::Application for App {
 
     /// Creates the application, and optionally emits command on initialize.
     fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
+        let font_names = {
+            let mut font_names = Vec::new();
+            let font_system = FONT_SYSTEM.lock().unwrap();
+            //TODO: do not repeat, used in Tab::new
+            let attrs = cosmic_text::Attrs::new().family(Family::Monospace);
+            for face in font_system.db().faces() {
+                if attrs.matches(face) && face.monospaced {
+                    //TODO: get localized name if possible
+                    let font_name = face
+                        .families
+                        .get(0)
+                        .map_or_else(|| face.post_script_name.to_string(), |x| x.0.to_string());
+                    font_names.push(font_name);
+                }
+            }
+            font_names.sort();
+            font_names
+        };
+
+        let mut theme_names = Vec::with_capacity(SYNTAX_SYSTEM.theme_set.themes.len());
+        for (theme_name, _theme) in SYNTAX_SYSTEM.theme_set.themes.iter() {
+            theme_names.push(theme_name.to_string());
+        }
+
         let mut app = App {
             core,
             nav_model: nav_bar::Model::builder().build(),
             tab_model: segmented_button::Model::builder().build(),
             config: Config::load(),
+            font_names,
+            theme_names,
             context_page: ContextPage::Settings,
         };
 
@@ -444,6 +473,27 @@ impl cosmic::Application for App {
                 }
                 None => {}
             },
+            Message::DefaultFont(index) => {
+                match self.font_names.get(index) {
+                    Some(font_name) => {
+                        let mut font_system = FONT_SYSTEM.lock().unwrap();
+                        font_system.db_mut().set_monospace_family(font_name);
+                        // This does a complete reset of shaping data!
+                        let entities: Vec<_> = self.tab_model.iter().collect();
+                        for entity in entities {
+                            if let Some(tab) = self.tab_model.data_mut::<Tab>(entity) {
+                                let mut editor = tab.editor.lock().unwrap();
+                                for line in editor.buffer_mut().lines.iter_mut() {
+                                    line.reset();
+                                }
+                            }
+                        }
+                    }
+                    None => {
+                        log::warn!("failed to find font with index {}", index);
+                    }
+                }
+            }
             Message::KeyBind(key_bind) => {
                 for (config_key_bind, config_message) in self.config.keybinds.iter() {
                     if config_key_bind == &key_bind {
@@ -459,7 +509,7 @@ impl cosmic::Application for App {
                 //TODO: support multi-window in winit
                 match env::current_exe() {
                     Ok(exe) => match process::Command::new(&exe).spawn() {
-                        Ok(child) => {}
+                        Ok(_child) => {}
                         Err(err) => {
                             log::error!("failed to execute {:?}: {}", exe, err);
                         }
@@ -506,15 +556,13 @@ impl cosmic::Application for App {
                     None => message::none(),
                 });
             }
-            Message::PasteValue(value) => {
-                match self.active_tab() {
-                    Some(tab) => {
-                        let mut editor = tab.editor.lock().unwrap();
-                        editor.insert_string(&value, None);
-                    }
-                    None => {}
+            Message::PasteValue(value) => match self.active_tab() {
+                Some(tab) => {
+                    let mut editor = tab.editor.lock().unwrap();
+                    editor.insert_string(&value, None);
                 }
-            }
+                None => {}
+            },
             Message::Quit => {
                 //TODO: prompt for save?
                 return window::close();
@@ -540,6 +588,19 @@ impl cosmic::Application for App {
                     self.tab_model.text_set(self.tab_model.active(), title);
                 }
             }
+            Message::SyntaxTheme(index, dark) => match self.theme_names.get(index) {
+                Some(theme_name) => {
+                    if dark {
+                        self.config.syntax_theme_dark = theme_name.to_string();
+                    } else {
+                        self.config.syntax_theme_light = theme_name.to_string();
+                    }
+                    self.update_config();
+                }
+                None => {
+                    log::warn!("failed to find syntax theme with index {}", index);
+                }
+            },
             Message::TabActivate(entity) => {
                 self.tab_model.activate(entity);
                 return self.update_tab();
@@ -643,14 +704,50 @@ impl cosmic::Application for App {
                 .into()
             }
             ContextPage::Settings => {
-                widget::settings::view_column(vec![widget::settings::view_section(fl!(
-                    "keyboard-shortcuts"
-                ))
-                .add(
-                    widget::settings::item::builder(fl!("enable-vim-bindings"))
-                        .toggler(self.config.vim_bindings, Message::VimBindings),
-                )
-                .into()])
+                let dark = cosmic::theme::is_dark();
+                let current_theme_name = if dark {
+                    &self.config.syntax_theme_dark
+                } else {
+                    &self.config.syntax_theme_light
+                };
+                let theme_selected = self
+                    .theme_names
+                    .iter()
+                    .position(|theme_name| theme_name == current_theme_name);
+                let font_selected = {
+                    let font_system = FONT_SYSTEM.lock().unwrap();
+                    let current_font_name = font_system.db().family_name(&Family::Monospace);
+                    self.font_names
+                        .iter()
+                        .position(|font_name| font_name == current_font_name)
+                };
+                widget::settings::view_column(vec![
+                    widget::settings::view_section(fl!("appearance"))
+                        .add(widget::settings::item::builder(fl!("theme")).control(
+                            widget::dropdown(&self.theme_names, theme_selected, move |index| {
+                                Message::SyntaxTheme(index, dark)
+                            }),
+                        ))
+                        .add(
+                            widget::settings::item::builder(fl!("default-font")).control(
+                                widget::dropdown(&self.font_names, font_selected, |index| {
+                                    Message::DefaultFont(index)
+                                }),
+                            ),
+                        )
+                        .add(
+                            widget::settings::item::builder(fl!("default-font-size")).control(
+                                widget::dropdown(&["TODO"], Some(0), |_index| Message::Todo),
+                            ),
+                        )
+                        .into(),
+                    widget::settings::view_section(fl!("keyboard-shortcuts"))
+                        .add(
+                            widget::settings::item::builder(fl!("enable-vim-bindings"))
+                                .toggler(self.config.vim_bindings, Message::VimBindings),
+                        )
+                        .into(),
+                ])
                 .into()
             }
         })
@@ -718,7 +815,7 @@ impl cosmic::Application for App {
     }
 
     fn subscription(&self) -> subscription::Subscription<Message> {
-        subscription::events_with(|event, status| match event {
+        subscription::events_with(|event, _status| match event {
             event::Event::Keyboard(keyboard::Event::KeyPressed {
                 modifiers,
                 key_code,

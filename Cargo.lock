@@ -851,7 +851,7 @@ dependencies = [
 [[package]]
 name = "cosmic-text"
 version = "0.10.0"
-source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#e62fea5efddb20fd1bc518e0d733a86f6858fa73"
+source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#f8da72f7a3cbbb4d0807eb089ff10c602b38baed"
 dependencies = [
  "fontdb 0.15.0",
  "libm",
@@ -5544,18 +5544,18 @@ checksum = "dd15f8e0dbb966fd9245e7498c7e9e5055d9e5c8b676b95bd67091cd11a1e697"
 
 [[package]]
 name = "zerocopy"
-version = "0.7.23"
+version = "0.7.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e50cbb27c30666a6108abd6bc7577556265b44f243e2be89a8bc4e07a528c107"
+checksum = "092cd76b01a033a9965b9097da258689d9e17c69ded5dcf41bca001dd20ebc6d"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.7.23"
+version = "0.7.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a25f293fe55f0a48e7010d65552bb63704f6ceb55a1a385da10d41d8f78e4a3d"
+checksum = "a13a20a7c6a90e2034bcc65495799da92efcec6a8dd4f3fcb6f7a48988637ead"
 dependencies = [
  "proc-macro2",
  "quote",
