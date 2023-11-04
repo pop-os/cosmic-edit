@@ -106,6 +106,7 @@ impl fmt::Display for KeyBind {
 
 #[derive(Clone, CosmicConfigEntry, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Config {
+    pub font_name: String,
     pub font_size: u16,
     pub syntax_theme_dark: String,
     pub syntax_theme_light: String,
@@ -117,6 +118,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            font_name: "Fira Mono".to_string(),
             font_size: 14,
             syntax_theme_dark: "gruvbox-dark".to_string(),
             syntax_theme_light: "gruvbox-light".to_string(),
@@ -130,7 +132,7 @@ impl Default for Config {
 impl Config {
     // Calculate metrics from font size
     pub fn metrics(&self) -> Metrics {
-        let font_size = self.font_size as f32;
+        let font_size = self.font_size.max(1) as f32;
         let line_height = (font_size * 1.4).ceil();
         Metrics::new(font_size, line_height)
     }

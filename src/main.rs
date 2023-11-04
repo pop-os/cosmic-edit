@@ -366,6 +366,12 @@ impl cosmic::Application for App {
                 }
             };
 
+        // Update font name from config
+        {
+            let mut font_system = FONT_SYSTEM.lock().unwrap();
+            font_system.db_mut().set_monospace_family(&config.font_name);
+        }
+
         let font_names = {
             let mut font_names = Vec::new();
             let font_system = FONT_SYSTEM.lock().unwrap();
@@ -533,17 +539,26 @@ impl cosmic::Application for App {
             Message::DefaultFont(index) => {
                 match self.font_names.get(index) {
                     Some(font_name) => {
-                        let mut font_system = FONT_SYSTEM.lock().unwrap();
-                        font_system.db_mut().set_monospace_family(font_name);
-                        // This does a complete reset of shaping data!
-                        let entities: Vec<_> = self.tab_model.iter().collect();
-                        for entity in entities {
-                            if let Some(tab) = self.tab_model.data_mut::<Tab>(entity) {
-                                let mut editor = tab.editor.lock().unwrap();
-                                for line in editor.buffer_mut().lines.iter_mut() {
-                                    line.reset();
+                        if font_name != &self.config.font_name {
+                            // Update font name from config
+                            {
+                                let mut font_system = FONT_SYSTEM.lock().unwrap();
+                                font_system.db_mut().set_monospace_family(font_name);
+                            }
+
+                            // This does a complete reset of shaping data!
+                            let entities: Vec<_> = self.tab_model.iter().collect();
+                            for entity in entities {
+                                if let Some(tab) = self.tab_model.data_mut::<Tab>(entity) {
+                                    let mut editor = tab.editor.lock().unwrap();
+                                    for line in editor.buffer_mut().lines.iter_mut() {
+                                        line.reset();
+                                    }
                                 }
                             }
+
+                            self.config.font_name = font_name.to_string();
+                            self.save_config();
                         }
                     }
                     None => {
