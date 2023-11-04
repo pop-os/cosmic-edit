@@ -2,6 +2,7 @@
 
 use cosmic::{
     app::{message, Command, Core, Settings},
+    cosmic_config::{self, CosmicConfigEntry},
     executor,
     iced::{
         clipboard, event, keyboard, subscription,
@@ -20,7 +21,7 @@ use std::{
     sync::Mutex,
 };
 
-use config::Config;
+use config::{Config, CONFIG_VERSION};
 mod config;
 
 mod localize;
@@ -63,8 +64,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[allow(dead_code)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Message {
-    Cut,
+    Config(Config),
     Copy,
+    Cut,
     DefaultFont(usize),
     DefaultFontSize(usize),
     Key(keyboard::Modifiers, keyboard::KeyCode),
@@ -106,6 +108,7 @@ pub struct App {
     core: Core,
     nav_model: segmented_button::SingleSelectModel,
     tab_model: segmented_button::SingleSelectModel,
+    config_handler: Option<cosmic_config::Config>,
     config: Config,
     font_names: Vec<String>,
     font_size_names: Vec<String>,
@@ -239,7 +242,17 @@ impl App {
     }
 
     fn save_config(&mut self) {
-        //TODO: save config (work lost due to drive failure)
+        match self.config_handler {
+            Some(ref config_handler) => match self.config.write_entry(&config_handler) {
+                Ok(()) => {}
+                Err(err) => {
+                    log::error!("failed to save config: {}", err);
+                }
+            },
+            None => {
+                //TODO: log that there is no handler?
+            }
+        }
         self.update_config();
     }
 
@@ -335,6 +348,24 @@ impl cosmic::Application for App {
 
     /// Creates the application, and optionally emits command on initialize.
     fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
+        let (config_handler, config) =
+            match cosmic_config::Config::new(Self::APP_ID, CONFIG_VERSION) {
+                Ok(config_handler) => {
+                    let config = match Config::get_entry(&config_handler) {
+                        Ok(ok) => ok,
+                        Err((errs, config)) => {
+                            log::warn!("errors loading config: {:?}", errs);
+                            config
+                        }
+                    };
+                    (Some(config_handler), config)
+                }
+                Err(err) => {
+                    log::error!("failed to create config handler: {}", err);
+                    (None, Config::default())
+                }
+            };
+
         let font_names = {
             let mut font_names = Vec::new();
             let font_system = FONT_SYSTEM.lock().unwrap();
@@ -370,7 +401,8 @@ impl cosmic::Application for App {
             core,
             nav_model: nav_bar::Model::builder().build(),
             tab_model: segmented_button::Model::builder().build(),
-            config: Config::default(),
+            config_handler,
+            config,
             font_names,
             font_size_names,
             font_sizes,
@@ -469,21 +501,29 @@ impl cosmic::Application for App {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
-            Message::Cut => match self.active_tab() {
+            Message::Config(config) => {
+                if config != self.config {
+                    log::info!("update config");
+                    //TODO: update syntax theme by clearing tabs, only if needed
+                    self.config = config;
+                    self.update_config();
+                }
+            }
+            Message::Copy => match self.active_tab() {
                 Some(tab) => {
-                    let mut editor = tab.editor.lock().unwrap();
+                    let editor = tab.editor.lock().unwrap();
                     let selection_opt = editor.copy_selection();
-                    editor.delete_selection();
                     if let Some(selection) = selection_opt {
                         return clipboard::write(selection);
                     }
                 }
                 None => {}
             },
-            Message::Copy => match self.active_tab() {
+            Message::Cut => match self.active_tab() {
                 Some(tab) => {
-                    let editor = tab.editor.lock().unwrap();
+                    let mut editor = tab.editor.lock().unwrap();
                     let selection_opt = editor.copy_selection();
+                    editor.delete_selection();
                     if let Some(selection) = selection_opt {
                         return clipboard::write(selection);
                     }
@@ -850,12 +890,23 @@ impl cosmic::Application for App {
     }
 
     fn subscription(&self) -> subscription::Subscription<Message> {
-        subscription::events_with(|event, _status| match event {
-            event::Event::Keyboard(keyboard::Event::KeyPressed {
-                modifiers,
-                key_code,
-            }) => Some(Message::Key(modifiers, key_code)),
-            _ => None,
-        })
+        subscription::Subscription::batch([
+            subscription::events_with(|event, _status| match event {
+                event::Event::Keyboard(keyboard::Event::KeyPressed {
+                    modifiers,
+                    key_code,
+                }) => Some(Message::Key(modifiers, key_code)),
+                _ => None,
+            }),
+            cosmic_config::config_subscription(0, Self::APP_ID.into(), CONFIG_VERSION).map(
+                |(_, res)| match res {
+                    Ok(config) => Message::Config(config),
+                    Err((errs, config)) => {
+                        log::warn!("errors loading config: {:#?}", errs);
+                        Message::Config(config)
+                    }
+                },
+            ),
+        ])
     }
 }

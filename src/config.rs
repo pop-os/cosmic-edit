@@ -8,6 +8,8 @@ use std::{collections::HashMap, fmt};
 
 use crate::{ContextPage, Message};
 
+pub const CONFIG_VERSION: u64 = 1;
+
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Action {
     Cut,
@@ -116,8 +118,8 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             font_size: 14,
-            syntax_theme_dark: "base16-eighties.dark".to_string(),
-            syntax_theme_light: "base16-ocean.light".to_string(),
+            syntax_theme_dark: "gruvbox-dark".to_string(),
+            syntax_theme_light: "gruvbox-light".to_string(),
             vim_bindings: false,
             word_wrap: false,
             keybinds: KeyBind::load(),
