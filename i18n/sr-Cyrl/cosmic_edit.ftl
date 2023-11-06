@@ -48,6 +48,7 @@ redo = Понови
 cut = Исеци
 copy = Копирај
 paste = Налепи
+select-all = Изабери све
 find = Пронађи
 replace = Замени
 spell-check = Провера правописа...
