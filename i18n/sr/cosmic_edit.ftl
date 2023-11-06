@@ -53,7 +53,7 @@ replace = Zameni
 spell-check = Provera pravopisa...
 
 ## View
-view = Приказ
+view = Prikaz
 indentation = Uvlačenje
 
 ### Indentation
