@@ -12,14 +12,15 @@ pub const CONFIG_VERSION: u64 = 1;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Action {
-    Cut,
     Copy,
-    Paste,
+    Cut,
     NewFile,
     NewWindow,
     OpenFileDialog,
-    Save,
+    Paste,
     Quit,
+    Save,
+    SelectAll,
     ToggleSettingsPage,
     ToggleWordWrap,
 }
@@ -27,14 +28,15 @@ pub enum Action {
 impl Action {
     pub fn message(&self) -> Message {
         match self {
-            Self::Cut => Message::Cut,
             Self::Copy => Message::Copy,
-            Self::Paste => Message::Paste,
+            Self::Cut => Message::Cut,
             Self::NewFile => Message::NewFile,
             Self::NewWindow => Message::NewWindow,
             Self::OpenFileDialog => Message::OpenFileDialog,
-            Self::Save => Message::Save,
+            Self::Paste => Message::Paste,
             Self::Quit => Message::Quit,
+            Self::Save => Message::Save,
+            Self::SelectAll => Message::SelectAll,
             Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
             Self::ToggleWordWrap => Message::ToggleWordWrap,
         }
@@ -78,8 +80,9 @@ impl KeyBind {
         bind!([Ctrl], N, NewFile);
         bind!([Ctrl, Shift], N, NewWindow);
         bind!([Ctrl], O, OpenFileDialog);
-        bind!([Ctrl], S, Save);
         bind!([Ctrl], Q, Quit);
+        bind!([Ctrl], S, Save);
+        bind!([Ctrl], A, SelectAll);
         bind!([Ctrl], Comma, ToggleSettingsPage);
         bind!([Alt], Z, ToggleWordWrap);
 

@@ -130,6 +130,7 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                 menu_item(fl!("cut"), Message::Cut),
                 menu_item(fl!("copy"), Message::Copy),
                 menu_item(fl!("paste"), Message::Paste),
+                menu_item(fl!("select-all"), Message::SelectAll),
                 MenuTree::new(horizontal_rule(1)),
                 menu_key(fl!("find"), "Ctrl + F", Message::Todo),
                 menu_key(fl!("replace"), "Ctrl + H", Message::Todo),

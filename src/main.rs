@@ -13,7 +13,7 @@ use cosmic::{
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
     ApplicationExt, Element,
 };
-use cosmic_text::{Edit, Family, FontSystem, SwashCache, SyntaxSystem, ViMode};
+use cosmic_text::{Cursor, Edit, Family, FontSystem, SwashCache, SyntaxSystem, ViMode};
 use std::{
     env, fs,
     path::{Path, PathBuf},
@@ -87,6 +87,7 @@ pub enum Message {
     PasteValue(String),
     Quit,
     Save,
+    SelectAll,
     SyntaxTheme(usize, bool),
     TabActivate(segmented_button::Entity),
     TabClose(segmented_button::Entity),
@@ -668,12 +669,30 @@ impl cosmic::Application for App {
                         tab.save();
                     }
                     None => {
+                        //TODO: disable save button?
                         log::warn!("TODO: NO TAB OPEN");
                     }
                 }
 
                 if let Some(title) = title_opt {
                     self.tab_model.text_set(self.tab_model.active(), title);
+                }
+            }
+            Message::SelectAll => {
+                match self.active_tab_mut() {
+                    Some(tab) => {
+                        let mut editor = tab.editor.lock().unwrap();
+
+                        // Set cursor to lowest possible value
+                        editor.set_cursor(Cursor::new(0, 0));
+
+                        // Set selection end to highest possible value
+                        let buffer = editor.buffer();
+                        let last_line = buffer.lines.len().saturating_sub(1);
+                        let last_index = buffer.lines[last_line].text().len();
+                        editor.set_select_opt(Some(Cursor::new(last_line, last_index)));
+                    }
+                    None => {}
                 }
             }
             Message::SyntaxTheme(index, dark) => match self.theme_names.get(index) {
