@@ -12,6 +12,8 @@ lazy_static = "1.4.0"
 log = "0.4.20"
 rfd = "0.12.0"
 serde = { version = "1", features = ["serde_derive"] }
+syntect = "5.1.0"
+two-face = "0.3.0"
 # Internationalization
 i18n-embed = { version = "0.13.4", features = ["fluent-system", "desktop-requester"] }
 i18n-embed-fl = "0.6.4"
@@ -20,7 +22,7 @@ rust-embed = "6.3.0"
 [dependencies.cosmic-text]
 git = "https://github.com/pop-os/cosmic-text"
 branch = "vi-editor"
-features = ["two-face", "vi"]
+features = ["syntect", "vi"]
 #path = "../cosmic-text"
 
 [dependencies.libcosmic]
