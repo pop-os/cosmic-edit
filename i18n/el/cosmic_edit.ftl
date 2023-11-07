@@ -1,59 +1,59 @@
-new-document = New document
-open-project = Open project
+new-document = Νέο έγγραφο
+open-project = Άνοιγμα Project
 
 # Context Pages
 
 ## Document statistics
-document-statistics = Document statistics
-word-count = Word count
-character-count = Characters
-character-count-no-spaces = Characters (without spaces)
-line-count = Lines
+document-statistics = Στατιστικά εγγράφου
+word-count = Λέξεις
+character-count = Χαρακτήρες
+character-count-no-spaces = Χαρακτήρες (χωρίς κενά)
+line-count = Γραμμές
 
 ## Settings
-settings = Settings
+settings = Ρυθμίσεις
 
 ## Appearance
-appearance = Appearance
-theme = Theme
-default-font = Default font
-default-font-size = Default font size
+appearance = Εμφάνιση
+theme = Θέμα
+default-font = Γραμματοσειρά
+default-font-size = Μέγεθος γραμματοσειράς
 
 ### Keyboard shortcuts
-keyboard-shortcuts = Keyboard shortcuts
-enable-vim-bindings = Enable Vim bindings
+keyboard-shortcuts = Συντομεύσεις πλήκτρων
+enable-vim-bindings = Ενεργοποίηση πλήκτρων vim
 
 # Menu
 
 ## File
-file = File
-new-file = New file
-new-window = New window
-open-file = Open file...
-open-recent = Open recent
+file = Αρχείο
+new-file = Νέο αρχείο
+new-window = Νέο παράθυρο
+open-file = Άνοιγμα αρχείου...
+open-recent = Άνοιγμα πρόσφατου
 todo = TODO
-save = Save
-save-as = Save as...
-revert-all-changes = Revert all changes
-menu-document-statistics = Document statistics...
-document-type = Document type...
-encoding = Encoding...
-print = Print
-quit = Quit
+save = Αποθήκευση
+save-as = Αποθήκευση ως...
+revert-all-changes = Αναίρεση όλων των αλλαγών
+menu-document-statistics = Στατιστικά εγγράφου...
+document-type = Τύπος εγγράφου...
+encoding = Κωδικοποίηση...
+print = Εκτύπωση
+quit = Έξοδος
 
 ## Edit
-edit = Edit
-undo = Undo
-redo = Redo
-cut = Cut
-copy = Copy
-paste = Paste
-find = Find
-replace = Replace
-spell-check = Spell check...
+edit = Επεξεργασία
+undo = Αναίρεση
+redo = Επανάληψη
+cut = Αποκοπή
+copy = Αντιγραφή
+paste = Επικόλληση
+find = Εύρεση
+replace = Αντικατάσταση
+spell-check = Έλεγχος ορθογραφίας...
 
 ## View
-view = View
+view = Προβολή
 indentation = Indentation
 
 ### Indentation
@@ -62,10 +62,10 @@ tab-width = Tab width: {$tab_width}
 convert-indentation-to-spaces = Convert indentation to spaces
 convert-indentation-to-tabs = Convert indentation to tabs
 
-word-wrap = Word wrap
-show-line-numbers = Show line numbers
+word-wrap = Περιτύλιξη λέξεων
+show-line-numbers = Εμφάνιση αριθμού γραμμών
 highlight-current-line = Highlight current line
 syntax-highlighting = Syntax highlighting...
-menu-settings = Settings...
-menu-keyboard-shortcuts = Keyboard shortcuts...
-about-cosmic-text-editor = About COSMIC Text Editor
+menu-settings = Ρυθμίσεις...
+menu-keyboard-shortcuts = Συντομεύσεις πλήκτρων...
+about-cosmic-text-editor = Σχετικά με τον επεξεργαστή κειμένου COSMIC
