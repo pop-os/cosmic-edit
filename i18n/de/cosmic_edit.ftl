@@ -59,8 +59,8 @@ indentation = Einrückung
 ### Indentation
 automatic-indentation = Automatische Einrückung
 tab-width = Tabulator-Breite: {$tab_width}
-convert-indentation-to-spaces = Einrückung zu Leerzeichen
-convert-indentation-to-tabs = Einrückung zu to Tabulator
+convert-indentation-to-spaces = Einrückung in Leerzeichen umwandeln
+convert-indentation-to-tabs = Einrückung in Tabulatoren umwandeln
 
 word-wrap = Zeilenumbruch
 show-line-numbers = Zeige Zeilennummern

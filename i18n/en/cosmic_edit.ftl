@@ -48,6 +48,7 @@ redo = Redo
 cut = Cut
 copy = Copy
 paste = Paste
+select-all = Select All
 find = Find
 replace = Replace
 spell-check = Spell check...

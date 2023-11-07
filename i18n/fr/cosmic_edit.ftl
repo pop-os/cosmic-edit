@@ -16,8 +16,8 @@ settings = Paramètre
 ## Appearance
 appearance = Apparence
 theme = Thème
-default-font = Fonte par défaut
-default-font-size = Taille de la fonte
+default-font = Police par défaut
+default-font-size = Taille de la Police
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Raccourci clavier
@@ -59,10 +59,10 @@ indentation = Indentation
 ### Indentation
 automatic-indentation = Indentation Automatique 
 tab-width = Largeur de l'onglet: {$tab_width}
-convert-indentation-to-spaces = Indentation en espaces
-convert-indentation-to-tabs = Indentation en tabulations
+convert-indentation-to-spaces = convertir l'indentation en espaces
+convert-indentation-to-tabs = convertir l'indentation en tabulations
 
-word-wrap = Word wrap
+word-wrap = retour à la ligne
 show-line-numbers = Numéros de ligne
 highlight-current-line = Surbriller la ligne actuelle
 syntax-highlighting = Surbrillance de la syntaxe...
