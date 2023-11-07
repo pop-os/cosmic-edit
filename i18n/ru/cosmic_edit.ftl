@@ -5,10 +5,10 @@ open-project = Открыть проект
 
 ## Document statistics
 document-statistics = Статистика документа
-word-count = Кол-во слов
-character-count = Символы
-character-count-no-spaces = Символы (без пробелов)
-line-count = Строки
+word-count = Число слов
+character-count = Символов
+character-count-no-spaces = Символов (без пробелов)
+line-count = Строк
 
 ## Settings
 settings = Параметры
@@ -48,6 +48,7 @@ redo = Повторить
 cut = Вырезать
 copy = Копировать
 paste = Вставить
+select-all = Выбрать все
 find = Найти
 replace = Заменить
 spell-check = Проверить правописание...
