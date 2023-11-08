@@ -1,5 +1,5 @@
 new-document = Νέο έγγραφο
-open-project = Άνοιγμα Project
+open-project = Άνοιγμα έργου
 
 # Context Pages
 
@@ -57,7 +57,7 @@ view = Προβολή
 indentation = Εσοχές
 
 ### Indentation
-automatic-indentation = Automatic Indentation
+automatic-indentation = Αυτόματη εισαγωγή εσοχών
 tab-width = Πλάτος Tabs: {$tab_width}
 convert-indentation-to-spaces = Μετατροπή εσοχών σε spaces
 convert-indentation-to-tabs = Μετατροπή εσοχών σε tabs
@@ -65,7 +65,7 @@ convert-indentation-to-tabs = Μετατροπή εσοχών σε tabs
 word-wrap = Περιτύλιξη λέξεων
 show-line-numbers = Εμφάνιση αριθμού γραμμών
 highlight-current-line = Υπογράμμιση τρέχουσας γραμμής
-syntax-highlighting = Syntax highlighting...
+syntax-highlighting = Υπογράμμιση συντακτικού...
 menu-settings = Ρυθμίσεις...
 menu-keyboard-shortcuts = Συντομεύσεις πλήκτρων...
 about-cosmic-text-editor = Σχετικά με τον επεξεργαστή κειμένου COSMIC
