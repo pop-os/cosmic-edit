@@ -893,17 +893,22 @@ impl cosmic::Application for App {
             Some(tab) => {
                 tab_column =
                     tab_column.push(text_box(&tab.editor, self.config.metrics()).padding(8));
-                let status = match tab.editor.lock().unwrap().mode() {
-                    ViMode::Passthrough => {
-                        //TODO: status line
-                        String::new()
-                    }
-                    ViMode::Normal => {
-                        //TODO: status line
-                        String::new()
-                    }
+                let status = match &tab.editor.lock().unwrap().parser().mode {
+                    ViMode::Normal => String::new(),
                     ViMode::Insert => {
                         format!("-- INSERT --")
+                    }
+                    ViMode::Extra(extra) => {
+                        format!("{}", extra)
+                    }
+                    ViMode::Replace => {
+                        format!("-- REPLACE --")
+                    }
+                    ViMode::Visual => {
+                        format!("-- VISUAL --")
+                    }
+                    ViMode::VisualLine => {
+                        format!("-- VISUAL LINE --")
                     }
                     ViMode::Command { value } => {
                         format!(":{value}|")
