@@ -431,11 +431,8 @@ where
             Event::Keyboard(KeyEvent::CharacterReceived(character)) => {
                 // Only parse keys when Super, Ctrl, and Alt are not pressed
                 if !state.modifiers.logo() && !state.modifiers.control() && !state.modifiers.alt() {
-                    match character {
-                        '\n' | '\r' | '\t' => {}
-                        _ => {
-                            editor.action(Action::Insert(character));
-                        }
+                    if !character.is_control() {
+                        editor.action(Action::Insert(character));
                     }
                     status = Status::Captured;
                 }
