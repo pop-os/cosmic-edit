@@ -54,17 +54,17 @@ spell-check = Έλεγχος ορθογραφίας...
 
 ## View
 view = Προβολή
-indentation = Indentation
+indentation = Εσοχές
 
 ### Indentation
 automatic-indentation = Automatic Indentation
-tab-width = Tab width: {$tab_width}
-convert-indentation-to-spaces = Convert indentation to spaces
-convert-indentation-to-tabs = Convert indentation to tabs
+tab-width = Πλάτος Tabs: {$tab_width}
+convert-indentation-to-spaces = Μετατροπή εσοχών σε spaces
+convert-indentation-to-tabs = Μετατροπή εσοχών σε tabs
 
 word-wrap = Περιτύλιξη λέξεων
 show-line-numbers = Εμφάνιση αριθμού γραμμών
-highlight-current-line = Highlight current line
+highlight-current-line = Υπογράμμιση τρέχουσας γραμμής
 syntax-highlighting = Syntax highlighting...
 menu-settings = Ρυθμίσεις...
 menu-keyboard-shortcuts = Συντομεύσεις πλήκτρων...
