@@ -1,4 +1,4 @@
 fn main() {
     // Rebuild if i18n files change
-    println!("cargo:rerun-if-changed=i18n/*/cosmic_edit.ftl")
+    println!("cargo:rerun-if-changed=i18n")
 }
