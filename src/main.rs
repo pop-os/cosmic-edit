@@ -38,6 +38,8 @@ mod tab;
 use self::text_box::text_box;
 mod text_box;
 
+mod name_comparaison;
+
 //TODO: re-use iced FONT_SYSTEM
 lazy_static::lazy_static! {
     static ref FONT_SYSTEM: Mutex<FontSystem> = Mutex::new(FontSystem::new());
