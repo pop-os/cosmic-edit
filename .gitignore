@@ -1,7 +1,7 @@
 /.cargo/
 /debian/*debhelper*
-/debian/cosmic-greeter.substvars
-/debian/cosmic-greeter/
+/debian/cosmic-edit.substvars
+/debian/cosmic-edit/
 /debian/files
 /target/
 /vendor.tar
