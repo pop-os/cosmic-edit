@@ -15,7 +15,9 @@ use cosmic::{
 };
 use cosmic_text::{Cursor, Edit, Family, FontSystem, SwashCache, SyntaxSystem, ViMode};
 use std::{
-    env, fs,
+    env,
+    fmt::Write,
+    fs,
     path::{Path, PathBuf},
     process,
     sync::Mutex,
@@ -891,36 +893,42 @@ impl cosmic::Application for App {
 
         match self.active_tab() {
             Some(tab) => {
-                tab_column =
-                    tab_column.push(text_box(&tab.editor, self.config.metrics()).padding(8));
-                let status = match &tab.editor.lock().unwrap().parser().mode {
-                    ViMode::Normal => String::new(),
-                    ViMode::Insert => {
-                        format!("-- INSERT --")
-                    }
-                    ViMode::Extra(extra) => {
-                        format!("{}", extra)
-                    }
-                    ViMode::Replace => {
-                        format!("-- REPLACE --")
-                    }
-                    ViMode::Visual => {
-                        format!("-- VISUAL --")
-                    }
-                    ViMode::VisualLine => {
-                        format!("-- VISUAL LINE --")
-                    }
-                    ViMode::Command { value } => {
-                        format!(":{value}|")
-                    }
-                    ViMode::Search { value, forwards } => {
-                        if *forwards {
-                            format!("/{value}|")
-                        } else {
-                            format!("?{value}|")
+                let status = {
+                    let editor = tab.editor.lock().unwrap();
+                    let parser = editor.parser();
+                    match &parser.mode {
+                        ViMode::Normal => {
+                            format!("{}", parser.cmd)
+                        }
+                        ViMode::Insert => {
+                            format!("-- INSERT --")
+                        }
+                        ViMode::Extra(extra) => {
+                            format!("{}{}", parser.cmd, extra)
+                        }
+                        ViMode::Replace => {
+                            format!("-- REPLACE --")
+                        }
+                        ViMode::Visual => {
+                            format!("-- VISUAL -- {}", parser.cmd)
+                        }
+                        ViMode::VisualLine => {
+                            format!("-- VISUAL LINE -- {}", parser.cmd)
+                        }
+                        ViMode::Command { value } => {
+                            format!(":{value}|")
+                        }
+                        ViMode::Search { value, forwards } => {
+                            if *forwards {
+                                format!("/{value}|")
+                            } else {
+                                format!("?{value}|")
+                            }
                         }
                     }
                 };
+                tab_column =
+                    tab_column.push(text_box(&tab.editor, self.config.metrics()).padding(8));
                 tab_column = tab_column.push(text(status).font(cosmic::font::Font::MONOSPACE));
             }
             None => {
