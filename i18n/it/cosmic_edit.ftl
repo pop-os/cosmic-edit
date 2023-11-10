@@ -48,6 +48,7 @@ redo = Ripeti
 cut = Taglia
 copy = Copia
 paste = Incolla
+select-all = Seleziona tutto
 find = Trova
 replace = Sostituisci
 spell-check = Controllo ortografico...
