@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
+//AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+
 use cosmic::{
     app::{message, Command, Core, Settings},
     cosmic_config::{self, CosmicConfigEntry},
@@ -15,9 +17,7 @@ use cosmic::{
 };
 use cosmic_text::{Cursor, Edit, Family, FontSystem, SwashCache, SyntaxSystem, ViMode};
 use std::{
-    env,
-    fmt::Write,
-    fs,
+    env, fs,
     path::{Path, PathBuf},
     process,
     sync::Mutex,
@@ -927,8 +927,7 @@ impl cosmic::Application for App {
                         }
                     }
                 };
-                tab_column =
-                    tab_column.push(text_box(&tab.editor, self.config.metrics()).padding(8));
+                tab_column = tab_column.push(text_box(&tab.editor, self.config.metrics()));
                 tab_column = tab_column.push(text(status).font(cosmic::font::Font::MONOSPACE));
             }
             None => {

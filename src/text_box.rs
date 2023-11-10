@@ -5,13 +5,13 @@ use cosmic::{
         event::{Event, Status},
         keyboard::{Event as KeyEvent, KeyCode, Modifiers},
         mouse::{self, Button, Event as MouseEvent, ScrollDelta},
-        Color, Element, Length, Padding, Rectangle, Size,
+        Color, Element, Length, Padding, Point, Rectangle, Size, Vector,
     },
     iced_core::{
         clipboard::Clipboard,
         image,
         layout::{self, Layout},
-        renderer,
+        renderer::{self, Quad},
         widget::{self, tree, Widget},
         Shell,
     },
@@ -195,17 +195,32 @@ where
 
     fn mouse_interaction(
         &self,
-        _tree: &widget::Tree,
+        tree: &widget::Tree,
         layout: Layout<'_>,
         cursor_position: mouse::Cursor,
         _viewport: &Rectangle,
         _renderer: &Renderer,
     ) -> mouse::Interaction {
-        if cursor_position.is_over(layout.bounds()) {
-            mouse::Interaction::Text
-        } else {
-            mouse::Interaction::Idle
+        let state = tree.state.downcast_ref::<State>();
+
+        match &state.dragging {
+            Some(Dragging::Scrollbar { .. }) => return mouse::Interaction::Idle,
+            _ => {}
         }
+
+        if let Some(p) = cursor_position.position_in(layout.bounds()) {
+            let scale_factor = state.scale_factor.get();
+            let editor = self.editor.lock().unwrap();
+            let buffer_size = editor.buffer().size();
+
+            let x = (p.x - self.padding.left) * scale_factor;
+            let y = (p.y - self.padding.top) * scale_factor;
+            if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
+                return mouse::Interaction::Text;
+            }
+        }
+
+        mouse::Interaction::Idle
     }
 
     fn draw(
@@ -250,10 +265,12 @@ where
         let view_h = cmp::min(viewport.height as i32, layout.bounds().height as i32)
             - self.padding.vertical() as i32;
 
-        let scale_factor = style.scale_factor;
+        let scale_factor = style.scale_factor as f32;
 
-        let image_w = (view_w as f64 * scale_factor) as i32;
-        let image_h = (view_h as f64 * scale_factor) as i32;
+        let image_w = (view_w as f32 * scale_factor) as i32;
+        let image_h = (view_h as f32 * scale_factor) as i32;
+
+        //TODO: make this configurable and do not repeat
         let scrollbar_w = (8.0 * scale_factor) as i32;
 
         if image_w <= scrollbar_w || image_h <= 0 {
@@ -261,12 +278,15 @@ where
             return;
         }
 
+        // Adjust image width by scrollbar width
+        let image_w = image_w - scrollbar_w;
+
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
 
         // Set metrics and size
         editor.buffer_mut().set_metrics_and_size(
-            self.metrics.scale(scale_factor as f32),
+            self.metrics.scale(scale_factor),
             image_w as f32,
             image_h as f32,
         );
@@ -293,7 +313,7 @@ where
                     },
                 );
 
-                // Draw scrollbar
+                // Calculate scrollbar
                 {
                     let mut start_line_opt = None;
                     let mut end_line = 0;
@@ -308,16 +328,15 @@ where
                     let lines = editor.buffer().lines.len();
                     let start_y = (start_line * image_h as usize) / lines;
                     let end_y = ((end_line * image_h as usize) / lines).max(start_y + 1);
-                    draw_rect(
-                        buffer,
-                        image_w,
-                        image_h,
-                        image_w - scrollbar_w,
-                        start_y as i32,
-                        scrollbar_w,
-                        end_y as i32 - start_y as i32,
-                        0x40FFFFFF,
+
+                    let rect = Rectangle::new(
+                        [image_w as f32 / scale_factor, start_y as f32 / scale_factor].into(),
+                        Size::new(
+                            scrollbar_w as f32 / scale_factor,
+                            (end_y as f32 - start_y as f32) / scale_factor,
+                        ),
                     );
+                    state.scrollbar_rect.set(rect);
                 }
             }
 
@@ -330,14 +349,33 @@ where
         }
 
         let handle = state.handle.lock().unwrap().clone();
+        let image_position =
+            layout.position() + [self.padding.left as f32, self.padding.top as f32].into();
+        let image_size = image::Renderer::dimensions(renderer, &handle);
         image::Renderer::draw(
             renderer,
             handle,
             Rectangle::new(
-                layout.position() + [self.padding.left as f32, self.padding.top as f32].into(),
-                Size::new(view_w as f32, view_h as f32),
+                image_position,
+                Size::new(image_size.width as f32, image_size.height as f32),
             ),
             [0.0; 4],
+        );
+
+        // Draw scrollbar
+        let scrollbar_alpha = match &state.dragging {
+            Some(Dragging::Scrollbar { .. }) => 0.5,
+            _ => 0.25,
+        };
+        renderer.fill_quad(
+            Quad {
+                bounds: state.scrollbar_rect.get()
+                    + Vector::new(image_position.x, image_position.y),
+                border_radius: 0.0.into(),
+                border_width: 0.0,
+                border_color: Color::TRANSPARENT,
+            },
+            Color::new(1.0, 1.0, 1.0, scrollbar_alpha),
         );
 
         let duration = instant.elapsed();
@@ -356,8 +394,10 @@ where
         _viewport: &Rectangle<f32>,
     ) -> Status {
         let state = tree.state.downcast_mut::<State>();
-        let scale_factor = state.scale_factor.get() as f32;
+        let scale_factor = state.scale_factor.get();
+        let scrollbar_rect = state.scrollbar_rect.get();
         let mut editor = self.editor.lock().unwrap();
+        let buffer_size = editor.buffer().size();
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
 
@@ -439,27 +479,51 @@ where
             }
             Event::Mouse(MouseEvent::ButtonPressed(Button::Left)) => {
                 if let Some(p) = cursor_position.position_in(layout.bounds()) {
-                    editor.action(Action::Click {
-                        x: ((p.x - self.padding.left) * scale_factor) as i32,
-                        y: ((p.y - self.padding.top) * scale_factor) as i32,
-                    });
-                    state.is_dragging = true;
+                    let x = (p.x - self.padding.left) * scale_factor;
+                    let y = (p.y - self.padding.top) * scale_factor;
+                    if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
+                        editor.action(Action::Click {
+                            x: x as i32,
+                            y: y as i32,
+                        });
+                        state.dragging = Some(Dragging::Buffer);
+                    } else if scrollbar_rect.contains(Point::new(x, y)) {
+                        state.dragging = Some(Dragging::Scrollbar {
+                            start_y: y,
+                            start_scroll: editor.buffer().scroll(),
+                        });
+                    }
+                    //TODO: support clicking below or above scrollbar
                     status = Status::Captured;
                 }
             }
             Event::Mouse(MouseEvent::ButtonReleased(Button::Left)) => {
-                state.is_dragging = false;
+                state.dragging = None;
                 status = Status::Captured;
             }
             Event::Mouse(MouseEvent::CursorMoved { .. }) => {
-                if state.is_dragging {
+                if let Some(dragging) = &state.dragging {
                     if let Some(p) = cursor_position.position() {
-                        editor.action(Action::Drag {
-                            x: (((p.x - layout.bounds().x) - self.padding.left) * scale_factor)
-                                as i32,
-                            y: (((p.y - layout.bounds().y) - self.padding.top) * scale_factor)
-                                as i32,
-                        });
+                        let x = ((p.x - layout.bounds().x) - self.padding.left) * scale_factor;
+                        let y = ((p.y - layout.bounds().y) - self.padding.top) * scale_factor;
+                        match dragging {
+                            Dragging::Buffer => {
+                                editor.action(Action::Drag {
+                                    x: x as i32,
+                                    y: y as i32,
+                                });
+                            }
+                            Dragging::Scrollbar {
+                                start_y,
+                                start_scroll,
+                            } => {
+                                let mut buffer = editor.buffer_mut();
+                                let scroll_offset = (((y - start_y) / buffer.size().1)
+                                    * buffer.lines.len() as f32)
+                                    as i32;
+                                buffer.set_scroll(start_scroll + scroll_offset);
+                            }
+                        }
                     }
                     status = Status::Captured;
                 }
@@ -490,10 +554,16 @@ where
     }
 }
 
+enum Dragging {
+    Buffer,
+    Scrollbar { start_y: f32, start_scroll: i32 },
+}
+
 pub struct State {
     modifiers: Modifiers,
-    is_dragging: bool,
-    scale_factor: Cell<f64>,
+    dragging: Option<Dragging>,
+    scale_factor: Cell<f32>,
+    scrollbar_rect: Cell<Rectangle<f32>>,
     handle: Mutex<image::Handle>,
 }
 
@@ -502,8 +572,9 @@ impl State {
     pub fn new() -> State {
         State {
             modifiers: Modifiers::empty(),
-            is_dragging: false,
+            dragging: None,
             scale_factor: Cell::new(1.0),
+            scrollbar_rect: Cell::new(Rectangle::default()),
             //TODO: make option!
             handle: Mutex::new(image::Handle::from_pixels(1, 1, vec![0, 0, 0, 0])),
         }

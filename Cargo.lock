@@ -865,7 +865,7 @@ dependencies = [
 [[package]]
 name = "cosmic-text"
 version = "0.10.0"
-source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#9efcc41a5aca6df16a66da53aae75b1191ba0576"
+source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#e8dd8ec7d1a75219980a653998552a78eb9ec0c0"
 dependencies = [
  "fontdb 0.15.0",
  "libm",
@@ -874,7 +874,7 @@ dependencies = [
  "rangemap",
  "rustc-hash",
  "rustybuzz 0.11.0",
- "self_cell 1.0.1",
+ "self_cell 1.0.2",
  "swash",
  "syntect",
  "sys-locale",
@@ -1206,9 +1206,9 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85cdab6a89accf66733ad5a1693a4dcced6aeff64602b634530dd73c1f3ee9f0"
+checksum = "95b3f3e67048839cb0d0781f445682a35113da7121f7c949db0e2be96a4fbece"
 dependencies = [
  "humantime",
  "is-terminal",
@@ -2744,7 +2744,7 @@ dependencies = [
 [[package]]
 name = "modit"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/modit.git#0bfedf9b11412b2f3612bdc5ffebcf882f88eb01"
+source = "git+https://github.com/pop-os/modit.git#6e8bcf69b7c2790e70c328374811699237520ba1"
 dependencies = [
  "log",
 ]
@@ -3954,9 +3954,9 @@ checksum = "1ef965a420fe14fdac7dd018862966a4c14094f900e1650bbc71ddd7d580c8af"
 
 [[package]]
 name = "self_cell"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c309e515543e67811222dbc9e3dd7e1056279b782e1dacffe4242b718734fb6"
+checksum = "e388332cd64eb80cd595a00941baf513caffae8dce9cfd0467fc9c66397dade6"
 
 [[package]]
 name = "serde"
@@ -4081,9 +4081,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.11.1"
+version = "1.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "942b4a808e05215192e39f4ab80813e599068285906cc91aa64f923db842bd5a"
+checksum = "4dccd0940a2dcdf68d092b8cbab7dc0ad8fa938bf95787e1b916b0e3d0e8e970"
 
 [[package]]
 name = "smithay-client-toolkit"
