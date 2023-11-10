@@ -865,7 +865,7 @@ dependencies = [
 [[package]]
 name = "cosmic-text"
 version = "0.10.0"
-source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#e8dd8ec7d1a75219980a653998552a78eb9ec0c0"
+source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#ddcd3c8795b05f502582fbae30c96b439033725a"
 dependencies = [
  "fontdb 0.15.0",
  "libm",
@@ -2744,7 +2744,7 @@ dependencies = [
 [[package]]
 name = "modit"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/modit.git#6e8bcf69b7c2790e70c328374811699237520ba1"
+source = "git+https://github.com/pop-os/modit.git#2348763ffd7b47b1cffcafc8ee313042fb69cfb8"
 dependencies = [
  "log",
 ]
