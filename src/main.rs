@@ -120,6 +120,7 @@ pub enum Message {
     Paste,
     PasteValue(String),
     Quit,
+    Redo,
     Save,
     SelectAll,
     SyntaxTheme(usize, bool),
@@ -128,6 +129,7 @@ pub enum Message {
     Todo,
     ToggleContextPage(ContextPage),
     ToggleWordWrap,
+    Undo,
     VimBindings(bool),
 }
 
@@ -689,6 +691,13 @@ impl Application for App {
                 //TODO: prompt for save?
                 return window::close();
             }
+            Message::Redo => match self.active_tab() {
+                Some(tab) => {
+                    let mut editor = tab.editor.lock().unwrap();
+                    editor.redo();
+                }
+                None => {}
+            },
             Message::Save => {
                 let mut title_opt = None;
 
@@ -785,6 +794,13 @@ impl Application for App {
                 self.config.word_wrap = !self.config.word_wrap;
                 return self.save_config();
             }
+            Message::Undo => match self.active_tab() {
+                Some(tab) => {
+                    let mut editor = tab.editor.lock().unwrap();
+                    editor.undo();
+                }
+                None => {}
+            },
             Message::VimBindings(vim_bindings) => {
                 self.config.vim_bindings = vim_bindings;
                 return self.save_config();

@@ -132,8 +132,8 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
         MenuTree::with_children(
             menu_root(fl!("edit")),
             vec![
-                menu_key(fl!("undo"), "Ctrl + Z", Message::Todo),
-                menu_key(fl!("redo"), "Ctrl + Shift + Z", Message::Todo),
+                menu_item(fl!("undo"), Message::Undo),
+                menu_item(fl!("redo"), Message::Redo),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("cut"), Message::Cut),
                 menu_item(fl!("copy"), Message::Copy),

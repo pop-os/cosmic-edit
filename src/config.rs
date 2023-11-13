@@ -23,10 +23,12 @@ pub enum Action {
     OpenProjectDialog,
     Paste,
     Quit,
+    Redo,
     Save,
     SelectAll,
     ToggleSettingsPage,
     ToggleWordWrap,
+    Undo,
 }
 
 impl Action {
@@ -42,10 +44,12 @@ impl Action {
             Self::OpenProjectDialog => Message::OpenProjectDialog,
             Self::Paste => Message::Paste,
             Self::Quit => Message::Quit,
+            Self::Redo => Message::Redo,
             Self::Save => Message::Save,
             Self::SelectAll => Message::SelectAll,
             Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
             Self::ToggleWordWrap => Message::ToggleWordWrap,
+            Self::Undo => Message::Undo,
         }
     }
 }
@@ -107,10 +111,12 @@ impl KeyBind {
         bind!([Ctrl], O, OpenFileDialog);
         bind!([Ctrl, Shift], O, OpenProjectDialog);
         bind!([Ctrl], Q, Quit);
+        bind!([Ctrl, Shift], Z, Redo);
         bind!([Ctrl], S, Save);
         bind!([Ctrl], A, SelectAll);
         bind!([Ctrl], Comma, ToggleSettingsPage);
         bind!([Alt], Z, ToggleWordWrap);
+        bind!([Ctrl], Z, Undo);
 
         keybinds
     }

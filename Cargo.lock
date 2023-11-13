@@ -878,7 +878,7 @@ dependencies = [
 [[package]]
 name = "cosmic-text"
 version = "0.10.0"
-source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#d001e5c09eef98ee0c3b1f549132924d32aa63ec"
+source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#5352fdee940ef009ea978837afdfc44c468f7be8"
 dependencies = [
  "fontdb 0.15.0",
  "libm",
@@ -891,6 +891,7 @@ dependencies = [
  "swash",
  "syntect",
  "sys-locale",
+ "undo_2",
  "unicode-bidi",
  "unicode-linebreak",
  "unicode-script",
@@ -2764,7 +2765,7 @@ dependencies = [
 [[package]]
 name = "modit"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/modit.git#94896d457c31079b9d6c19e592984c4262e4774e"
+source = "git+https://github.com/pop-os/modit.git#add73b87f02db213b74a8f03ad24a691e9b2446b"
 dependencies = [
  "log",
 ]
@@ -3845,6 +3846,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
+name = "rustc_version"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
+dependencies = [
+ "semver",
+]
+
+[[package]]
 name = "rustix"
 version = "0.37.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3980,6 +3990,21 @@ name = "self_cell"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e388332cd64eb80cd595a00941baf513caffae8dce9cfd0467fc9c66397dade6"
+
+[[package]]
+name = "semver"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
+dependencies = [
+ "semver-parser",
+]
+
+[[package]]
+name = "semver-parser"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
 name = "serde"
@@ -4632,6 +4657,18 @@ checksum = "ce65604324d3cce9b966701489fbd0cf318cb1f7bd9dd07ac9a4ee6fb791930d"
 dependencies = [
  "tempfile",
  "winapi",
+]
+
+[[package]]
+name = "undo_2"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9355dd2f470d984344735b95ac12d8da371ac662f68bfecf7f05f3b4fd5416c3"
+dependencies = [
+ "cfg-if",
+ "derivative",
+ "rustc_version",
+ "serde",
 ]
 
 [[package]]
