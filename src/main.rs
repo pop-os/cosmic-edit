@@ -72,6 +72,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Message {
     Config(Config),
+    CloseFile,
+    CloseProject,
     Copy,
     Cut,
     DefaultFont(usize),
@@ -522,6 +524,12 @@ impl cosmic::Application for App {
                     self.config = config;
                     self.update_config();
                 }
+            }
+            Message::CloseFile => {
+                return self.update(Message::TabClose(self.tab_model.active()));
+            }
+            Message::CloseProject => {
+                log::info!("TODO");
             }
             Message::Copy => match self.active_tab() {
                 Some(tab) => {

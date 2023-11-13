@@ -1,5 +1,6 @@
 new-document = New document
 open-project = Open project
+todo = TODO
 
 # Context Pages
 
@@ -30,8 +31,11 @@ file = File
 new-file = New file
 new-window = New window
 open-file = Open file...
-open-recent = Open recent
-todo = TODO
+open-recent-file = Open recent file
+close-file = Close file
+menu-open-project = Open project...
+open-recent-project = Open recent project
+close-project = Close project
 save = Save
 save-as = Save as...
 revert-all-changes = Revert all changes

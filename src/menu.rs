@@ -101,9 +101,17 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("open-file"), Message::OpenFileDialog),
                 MenuTree::with_children(
-                    menu_folder(fl!("open-recent")),
+                    menu_folder(fl!("open-recent-file")),
                     vec![menu_item(fl!("todo"), Message::Todo)],
                 ),
+                menu_item(fl!("close-file"), Message::CloseFile),
+                MenuTree::new(horizontal_rule(1)),
+                menu_item(fl!("menu-open-project"), Message::OpenProjectDialog),
+                MenuTree::with_children(
+                    menu_folder(fl!("open-recent-project")),
+                    vec![menu_item(fl!("todo"), Message::Todo)],
+                ),
+                menu_item(fl!("close-project"), Message::CloseProject),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("save"), Message::Save),
                 menu_key(fl!("save-as"), "Ctrl + Shift + S", Message::Todo),

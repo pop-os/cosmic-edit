@@ -12,11 +12,14 @@ pub const CONFIG_VERSION: u64 = 1;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Action {
+    CloseFile,
+    CloseProject,
     Copy,
     Cut,
     NewFile,
     NewWindow,
     OpenFileDialog,
+    OpenProjectDialog,
     Paste,
     Quit,
     Save,
@@ -28,11 +31,14 @@ pub enum Action {
 impl Action {
     pub fn message(&self) -> Message {
         match self {
+            Self::CloseFile => Message::CloseFile,
+            Self::CloseProject => Message::CloseProject,
             Self::Copy => Message::Copy,
             Self::Cut => Message::Cut,
             Self::NewFile => Message::NewFile,
             Self::NewWindow => Message::NewWindow,
             Self::OpenFileDialog => Message::OpenFileDialog,
+            Self::OpenProjectDialog => Message::OpenProjectDialog,
             Self::Paste => Message::Paste,
             Self::Quit => Message::Quit,
             Self::Save => Message::Save,
@@ -74,12 +80,14 @@ impl KeyBind {
             }};
         }
 
+        bind!([Ctrl], W, CloseFile);
         bind!([Ctrl], X, Cut);
         bind!([Ctrl], C, Copy);
         bind!([Ctrl], V, Paste);
-        bind!([Ctrl], N, NewFile);
-        bind!([Ctrl, Shift], N, NewWindow);
+        bind!([Ctrl], T, NewFile);
+        bind!([Ctrl], N, NewWindow);
         bind!([Ctrl], O, OpenFileDialog);
+        bind!([Ctrl, Shift], O, OpenProjectDialog);
         bind!([Ctrl], Q, Quit);
         bind!([Ctrl], S, Save);
         bind!([Ctrl], A, SelectAll);
