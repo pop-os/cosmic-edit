@@ -57,18 +57,23 @@ impl StyleSheet for Theme {
     }
 }
 
-pub struct TextBox<'a> {
+pub struct TextBox<'a, Message> {
     editor: &'a Mutex<ViEditor<'static>>,
     metrics: Metrics,
     padding: Padding,
+    on_changed: Option<Message>,
 }
 
-impl<'a> TextBox<'a> {
+impl<'a, Message> TextBox<'a, Message>
+where
+    Message: Clone,
+{
     pub fn new(editor: &'a Mutex<ViEditor<'static>>, metrics: Metrics) -> Self {
         Self {
             editor,
             metrics,
             padding: Padding::new(0.0),
+            on_changed: None,
         }
     }
 
@@ -76,9 +81,20 @@ impl<'a> TextBox<'a> {
         self.padding = padding.into();
         self
     }
+
+    pub fn on_changed(mut self, on_changed: Message) -> Self {
+        self.on_changed = Some(on_changed);
+        self
+    }
 }
 
-pub fn text_box<'a>(editor: &'a Mutex<ViEditor<'static>>, metrics: Metrics) -> TextBox<'a> {
+pub fn text_box<'a, Message>(
+    editor: &'a Mutex<ViEditor<'static>>,
+    metrics: Metrics,
+) -> TextBox<'a, Message>
+where
+    Message: Clone,
+{
     TextBox::new(editor, metrics)
 }
 
@@ -149,8 +165,9 @@ fn draw_rect(
     }
 }
 
-impl<'a, 'editor, Message, Renderer> Widget<Message, Renderer> for TextBox<'a>
+impl<'a, 'editor, Message, Renderer> Widget<Message, Renderer> for TextBox<'a, Message>
 where
+    Message: Clone,
     Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
     Renderer::Theme: StyleSheet,
 {
@@ -393,7 +410,7 @@ where
         cursor_position: mouse::Cursor,
         _renderer: &Renderer,
         _clipboard: &mut dyn Clipboard,
-        _shell: &mut Shell<'_, Message>,
+        shell: &mut Shell<'_, Message>,
         _viewport: &Rectangle<f32>,
     ) -> Status {
         let state = tree.state.downcast_mut::<State>();
@@ -401,6 +418,7 @@ where
         let scrollbar_rect = state.scrollbar_rect.get();
         let mut editor = self.editor.lock().unwrap();
         let buffer_size = editor.buffer().size();
+        let last_changed = editor.changed();
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
 
@@ -567,16 +585,23 @@ where
             _ => (),
         }
 
+        if editor.changed() != last_changed {
+            if let Some(on_changed) = &self.on_changed {
+                shell.publish(on_changed.clone());
+            }
+        }
+
         status
     }
 }
 
-impl<'a, 'editor, Message, Renderer> From<TextBox<'a>> for Element<'a, Message, Renderer>
+impl<'a, 'editor, Message, Renderer> From<TextBox<'a, Message>> for Element<'a, Message, Renderer>
 where
+    Message: Clone + 'a,
     Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
     Renderer::Theme: StyleSheet,
 {
-    fn from(text_box: TextBox<'a>) -> Self {
+    fn from(text_box: TextBox<'a, Message>) -> Self {
         Self::new(text_box)
     }
 }

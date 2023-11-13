@@ -125,6 +125,7 @@ pub enum Message {
     SelectAll,
     SyntaxTheme(usize, bool),
     TabActivate(segmented_button::Entity),
+    TabChanged(segmented_button::Entity),
     TabClose(segmented_button::Entity),
     Todo,
     ToggleContextPage(ContextPage),
@@ -706,8 +707,8 @@ impl Application for App {
                         if tab.path_opt.is_none() {
                             //TODO: use async file dialog
                             tab.path_opt = rfd::FileDialog::new().save_file();
-                            title_opt = Some(tab.title());
                         }
+                        title_opt = Some(tab.title());
                         tab.save();
                     }
                     None => {
@@ -754,6 +755,15 @@ impl Application for App {
                 self.tab_model.activate(entity);
                 return self.update_tab();
             }
+            Message::TabChanged(entity) => match self.tab_model.data::<Tab>(entity) {
+                Some(tab) => {
+                    let mut title = tab.title();
+                    //TODO: better way of adding change indicator
+                    title.push_str(" \u{2022}");
+                    self.tab_model.text_set(entity, title);
+                }
+                None => {}
+            },
             Message::TabClose(entity) => {
                 // Activate closest item
                 if let Some(position) = self.tab_model.position(entity) {
@@ -997,7 +1007,10 @@ impl Application for App {
                         }
                     }
                 };
-                tab_column = tab_column.push(text_box(&tab.editor, self.config.metrics()));
+                tab_column = tab_column.push(
+                    text_box(&tab.editor, self.config.metrics())
+                        .on_changed(Message::TabChanged(self.tab_model.active())),
+                );
                 tab_column = tab_column.push(text(status).font(cosmic::font::Font::MONOSPACE));
             }
             None => {

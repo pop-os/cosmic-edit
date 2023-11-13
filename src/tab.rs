@@ -77,7 +77,7 @@ impl Tab {
 
     pub fn save(&mut self) {
         if let Some(path) = &self.path_opt {
-            let editor = self.editor.lock().unwrap();
+            let mut editor = self.editor.lock().unwrap();
             let mut text = String::new();
             for line in editor.buffer().lines.iter() {
                 text.push_str(line.text());
@@ -85,6 +85,7 @@ impl Tab {
             }
             match fs::write(path, text) {
                 Ok(()) => {
+                    editor.set_changed(false);
                     log::info!("saved {:?}", path);
                 }
                 Err(err) => {
@@ -94,6 +95,11 @@ impl Tab {
         } else {
             log::warn!("tab has no path yet");
         }
+    }
+
+    pub fn changed(&self) -> bool {
+        let editor = self.editor.lock().unwrap();
+        editor.changed()
     }
 
     pub fn icon(&self, size: u16) -> Icon {
