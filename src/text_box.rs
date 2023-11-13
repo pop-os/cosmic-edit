@@ -508,7 +508,7 @@ where
                             y: y as i32,
                         });
                         state.dragging = Some(Dragging::Buffer);
-                    } else if scrollbar_rect.contains(Point::new(x, y)) {
+                    } else if scrollbar_rect.contains(Point::new(x / scale_factor, y / scale_factor)) {
                         state.dragging = Some(Dragging::Scrollbar {
                             start_y: y,
                             start_scroll: editor.buffer().scroll(),
