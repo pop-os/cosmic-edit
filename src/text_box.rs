@@ -531,35 +531,39 @@ where
                     status = Status::Captured;
                 }
             }
-            Event::Mouse(MouseEvent::WheelScrolled { delta }) => match delta {
-                ScrollDelta::Lines { x, y } => {
-                    //TODO: this adjustment is just a guess!
-                    state.scroll_pixels = 0.0;
-                    let lines = (-y * 6.0) as i32;
-                    if lines != 0 {
-                        editor.action(Action::Scroll { lines });
+            Event::Mouse(MouseEvent::WheelScrolled { delta }) => {
+                if let Some(_p) = cursor_position.position_in(layout.bounds()) {
+                    match delta {
+                        ScrollDelta::Lines { x, y } => {
+                            //TODO: this adjustment is just a guess!
+                            state.scroll_pixels = 0.0;
+                            let lines = (-y * 6.0) as i32;
+                            if lines != 0 {
+                                editor.action(Action::Scroll { lines });
+                            }
+                            status = Status::Captured;
+                        }
+                        ScrollDelta::Pixels { x, y } => {
+                            //TODO: this adjustment is just a guess!
+                            state.scroll_pixels -= y * 6.0;
+                            let mut lines = 0;
+                            let metrics = editor.buffer().metrics();
+                            while state.scroll_pixels <= -metrics.line_height {
+                                lines -= 1;
+                                state.scroll_pixels += metrics.line_height;
+                            }
+                            while state.scroll_pixels >= metrics.line_height {
+                                lines += 1;
+                                state.scroll_pixels -= metrics.line_height;
+                            }
+                            if lines != 0 {
+                                editor.action(Action::Scroll { lines });
+                            }
+                            status = Status::Captured;
+                        }
                     }
-                    status = Status::Captured;
                 }
-                ScrollDelta::Pixels { x, y } => {
-                    //TODO: this adjustment is just a guess!
-                    state.scroll_pixels -= y * 6.0;
-                    let mut lines = 0;
-                    let metrics = editor.buffer().metrics();
-                    while state.scroll_pixels <= -metrics.line_height {
-                        lines -= 1;
-                        state.scroll_pixels += metrics.line_height;
-                    }
-                    while state.scroll_pixels >= metrics.line_height {
-                        lines += 1;
-                        state.scroll_pixels -= metrics.line_height;
-                    }
-                    if lines != 0 {
-                        editor.action(Action::Scroll { lines });
-                    }
-                    status = Status::Captured;
-                }
-            },
+            }
             _ => (),
         }
 
