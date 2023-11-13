@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
+use cosmic::widget::{icon, Icon};
 use cosmic_text::{Attrs, Buffer, Edit, Shaping, SyntaxEditor, ViEditor, Wrap};
 use std::{fs, path::PathBuf, sync::Mutex};
 
-use crate::{fl, Config, FONT_SYSTEM, SYNTAX_SYSTEM};
+use crate::{fl, mime_icon, Config, FALLBACK_MIME_ICON, FONT_SYSTEM, SYNTAX_SYSTEM};
 
 pub struct Tab {
     pub path_opt: Option<PathBuf>,
@@ -92,6 +93,13 @@ impl Tab {
             }
         } else {
             log::warn!("tab has no path yet");
+        }
+    }
+
+    pub fn icon(&self, size: u16) -> Icon {
+        match &self.path_opt {
+            Some(path) => mime_icon(path, size),
+            None => icon::from_name(FALLBACK_MIME_ICON).size(size).icon(),
         }
     }
 

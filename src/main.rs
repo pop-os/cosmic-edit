@@ -26,6 +26,9 @@ mod config;
 
 mod localize;
 
+pub use self::mime_icon::{mime_icon, FALLBACK_MIME_ICON};
+mod mime_icon;
+
 use self::menu::menu_bar;
 mod menu;
 
@@ -212,7 +215,7 @@ impl App {
                 .insert()
                 .position(position)
                 .indent(indent)
-                .icon(icon::from_name(node.icon_name()).size(16).icon())
+                .icon(node.icon(16))
                 .text(node.name().to_string())
                 .data(node);
 
@@ -247,7 +250,7 @@ impl App {
         let id = self
             .nav_model
             .insert()
-            .icon(icon::from_name(node.icon_name()).size(16).icon())
+            .icon(node.icon(16))
             .text(node.name().to_string())
             .data(node)
             .id();
@@ -265,7 +268,7 @@ impl App {
         self.tab_model
             .insert()
             .text(tab.title())
-            .icon(icon::from_name("text-x-generic").size(16).icon())
+            .icon(tab.icon(16))
             .data::<Tab>(tab)
             .closable()
             .activate();
@@ -494,8 +497,7 @@ impl Application for App {
         match node_opt {
             Some(node) => {
                 // Update icon
-                self.nav_model
-                    .icon_set(id, icon::from_name(node.icon_name()).size(16).icon());
+                self.nav_model.icon_set(id, node.icon(16));
 
                 match node {
                     ProjectNode::Folder { path, open, .. } => {
