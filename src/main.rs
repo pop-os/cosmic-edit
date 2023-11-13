@@ -264,10 +264,41 @@ impl App {
     }
 
     pub fn open_tab(&mut self, path_opt: Option<PathBuf>) {
-        let mut tab = Tab::new(&self.config);
-        if let Some(path) = path_opt {
-            tab.open(path);
-        }
+        let tab = match path_opt {
+            Some(path) => {
+                let canonical = match fs::canonicalize(&path) {
+                    Ok(ok) => ok,
+                    Err(err) => {
+                        log::error!("failed to canonicalize {:?}: {}", path, err);
+                        return;
+                    }
+                };
+
+                //TODO: allow files to be open multiple times
+                let mut activate_opt = None;
+                for entity in self.tab_model.iter() {
+                    match self.tab_model.data::<Tab>(entity) {
+                        Some(tab) => {
+                            if tab.path_opt.as_ref() == Some(&canonical) {
+                                activate_opt = Some(entity);
+                                break;
+                            }
+                        }
+                        None => {}
+                    }
+                }
+                if let Some(entity) = activate_opt {
+                    self.tab_model.activate(entity);
+                    return;
+                }
+
+                let mut tab = Tab::new(&self.config);
+                tab.open(canonical);
+                tab
+            }
+            None => Tab::new(&self.config),
+        };
+
         self.tab_model
             .insert()
             .text(tab.title())
