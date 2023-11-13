@@ -500,21 +500,33 @@ where
             }
             Event::Mouse(MouseEvent::ButtonPressed(Button::Left)) => {
                 if let Some(p) = cursor_position.position_in(layout.bounds()) {
-                    let x = (p.x - self.padding.left) * scale_factor;
-                    let y = (p.y - self.padding.top) * scale_factor;
+                    let x_logical = p.x - self.padding.left;
+                    let y_logical = p.y - self.padding.top;
+                    let x = x_logical * scale_factor;
+                    let y = y_logical * scale_factor;
                     if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
                         editor.action(Action::Click {
                             x: x as i32,
                             y: y as i32,
                         });
                         state.dragging = Some(Dragging::Buffer);
-                    } else if scrollbar_rect.contains(Point::new(x / scale_factor, y / scale_factor)) {
+                    } else if scrollbar_rect.contains(Point::new(x_logical, y_logical)) {
+                        state.dragging = Some(Dragging::Scrollbar {
+                            start_y: y,
+                            start_scroll: editor.buffer().scroll(),
+                        });
+                    } else if x_logical >= scrollbar_rect.x
+                        && x_logical < (scrollbar_rect.x + scrollbar_rect.width)
+                    {
+                        let mut buffer = editor.buffer_mut();
+                        let scroll_offset =
+                            ((y / buffer.size().1) * buffer.lines.len() as f32) as i32;
+                        buffer.set_scroll(scroll_offset);
                         state.dragging = Some(Dragging::Scrollbar {
                             start_y: y,
                             start_scroll: editor.buffer().scroll(),
                         });
                     }
-                    //TODO: support clicking below or above scrollbar
                     status = Status::Captured;
                 }
             }
