@@ -533,12 +533,32 @@ where
             }
             Event::Mouse(MouseEvent::WheelScrolled { delta }) => match delta {
                 ScrollDelta::Lines { x, y } => {
-                    editor.action(Action::Scroll {
-                        lines: (-y * 6.0) as i32,
-                    });
+                    //TODO: this adjustment is just a guess!
+                    state.scroll_pixels = 0.0;
+                    let lines = (-y * 6.0) as i32;
+                    if lines != 0 {
+                        editor.action(Action::Scroll { lines });
+                    }
                     status = Status::Captured;
                 }
-                _ => (),
+                ScrollDelta::Pixels { x, y } => {
+                    //TODO: this adjustment is just a guess!
+                    state.scroll_pixels -= y * 6.0;
+                    let mut lines = 0;
+                    let metrics = editor.buffer().metrics();
+                    while state.scroll_pixels <= -metrics.line_height {
+                        lines -= 1;
+                        state.scroll_pixels += metrics.line_height;
+                    }
+                    while state.scroll_pixels >= metrics.line_height {
+                        lines += 1;
+                        state.scroll_pixels -= metrics.line_height;
+                    }
+                    if lines != 0 {
+                        editor.action(Action::Scroll { lines });
+                    }
+                    status = Status::Captured;
+                }
             },
             _ => (),
         }
@@ -566,6 +586,7 @@ pub struct State {
     modifiers: Modifiers,
     dragging: Option<Dragging>,
     scale_factor: Cell<f32>,
+    scroll_pixels: f32,
     scrollbar_rect: Cell<Rectangle<f32>>,
     handle: Mutex<image::Handle>,
 }
@@ -577,6 +598,7 @@ impl State {
             modifiers: Modifiers::empty(),
             dragging: None,
             scale_factor: Cell::new(1.0),
+            scroll_pixels: 0.0,
             scrollbar_rect: Cell::new(Rectangle::default()),
             //TODO: make option!
             handle: Mutex::new(image::Handle::from_pixels(1, 1, vec![0, 0, 0, 0])),
