@@ -30,7 +30,7 @@ features = ["syntect", "vi"]
 git = "https://github.com/pop-os/libcosmic"
 branch = "menu"
 default-features = false
-features = ["winit"]
+features = ["winit", "wgpu"]
 #path = "../libcosmic"
 
 [patch.crates-io]
