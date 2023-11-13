@@ -49,7 +49,7 @@ source = "git+https://github.com/wash2/accesskit.git?tag=winit-0.28#db6f2587f663
 dependencies = [
  "accesskit",
  "accesskit_consumer",
- "async-channel",
+ "async-channel 1.9.0",
  "atspi",
  "futures-lite 1.13.0",
  "log",
@@ -244,16 +244,29 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-executor"
-version = "1.6.0"
+name = "async-channel"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b0c4a4f319e45986f347ee47fef8bf5e81c9abc3f6f58dc2391439f30df65f0"
+checksum = "d37875bd9915b7d67c2f117ea2c30a0989874d0b2cb694fe25403c85763c0c9e"
 dependencies = [
- "async-lock 2.8.0",
+ "concurrent-queue",
+ "event-listener 3.1.0",
+ "event-listener-strategy",
+ "futures-core",
+ "pin-project-lite",
+]
+
+[[package]]
+name = "async-executor"
+version = "1.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0de517d5a758a65a16d18d8f605e7a6beed477444cca270116af40fd3cd59d27"
+dependencies = [
+ "async-lock 3.1.0",
  "async-task",
  "concurrent-queue",
  "fastrand 2.0.1",
- "futures-lite 1.13.0",
+ "futures-lite 2.0.1",
  "slab",
 ]
 
@@ -295,7 +308,7 @@ version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "41ed9d5715c2d329bf1b4da8d60455b99b187f27ba726df2883799af9af60997"
 dependencies = [
- "async-lock 3.0.0",
+ "async-lock 3.1.0",
  "cfg-if",
  "concurrent-queue",
  "futures-io",
@@ -320,11 +333,11 @@ dependencies = [
 
 [[package]]
 name = "async-lock"
-version = "3.0.0"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45e900cdcd39bb94a14487d3f7ef92ca222162e6c7c3fe7cb3550ea75fb486ed"
+checksum = "deb2ab2aa8a746e221ab826c73f48bc6ba41be6763f0855cb249eb6d154cf1d7"
 dependencies = [
- "event-listener 3.0.1",
+ "event-listener 3.1.0",
  "event-listener-strategy",
  "pin-project-lite",
 ]
@@ -340,7 +353,7 @@ dependencies = [
  "async-signal",
  "blocking",
  "cfg-if",
- "event-listener 3.0.1",
+ "event-listener 3.1.0",
  "futures-lite 1.13.0",
  "rustix 0.38.21",
  "windows-sys 0.48.0",
@@ -556,16 +569,16 @@ dependencies = [
 
 [[package]]
 name = "blocking"
-version = "1.4.1"
+version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c36a4d0d48574b3dd360b4b7d95cc651d2b6557b6402848a27d4b228a473e2a"
+checksum = "6a37913e8dc4ddcc604f0c6d3bf2887c995153af3611de9e23c352b44c1b9118"
 dependencies = [
- "async-channel",
- "async-lock 2.8.0",
+ "async-channel 2.1.0",
+ "async-lock 3.1.0",
  "async-task",
  "fastrand 2.0.1",
  "futures-io",
- "futures-lite 1.13.0",
+ "futures-lite 2.0.1",
  "piper",
  "tracing",
 ]
@@ -628,11 +641,10 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.83"
+version = "1.0.84"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1174fb0b6ec23863f8b971027804a42614e347eafb0a95bf0b12cdae21fc4d0"
+checksum = "0f8e7c90afad890484a21653d08b6e209ae34770fb5ee298f9c699fcc1e5c856"
 dependencies = [
- "jobserver",
  "libc",
 ]
 
@@ -865,7 +877,7 @@ dependencies = [
 [[package]]
 name = "cosmic-text"
 version = "0.10.0"
-source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#ddcd3c8795b05f502582fbae30c96b439033725a"
+source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#d001e5c09eef98ee0c3b1f549132924d32aa63ec"
 dependencies = [
  "fontdb 0.15.0",
  "libm",
@@ -1245,9 +1257,9 @@ dependencies = [
 
 [[package]]
 name = "etagere"
-version = "0.2.9"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5bf70b9ea3a235a7432b4f481854815e2d4fb2fe824c1f5fb09b8985dd06b3e9"
+checksum = "fcf22f748754352918e082e0039335ee92454a5d62bcaf69b5e8daf5907d9644"
 dependencies = [
  "euclid",
  "svg_fmt",
@@ -1270,9 +1282,9 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
 name = "event-listener"
-version = "3.0.1"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01cec0252c2afff729ee6f00e903d479fba81784c8e2bd77447673471fdfaea1"
+checksum = "d93877bcde0eb80ca09131a08d23f0a5c18a620b01db137dba666d18cd9b30c2"
 dependencies = [
  "concurrent-queue",
  "parking",
@@ -1285,7 +1297,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d96b852f1345da36d551b9473fa1e2b1eb5c5195585c6c018118bc92a8d91160"
 dependencies = [
- "event-listener 3.0.1",
+ "event-listener 3.1.0",
  "pin-project-lite",
 ]
 
@@ -1399,7 +1411,7 @@ dependencies = [
  "intl-memoizer",
  "intl_pluralrules",
  "rustc-hash",
- "self_cell 0.10.2",
+ "self_cell 0.10.3",
  "smallvec",
  "unic-langid",
 ]
@@ -2341,15 +2353,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8eaf4bc02d17cbdd7ff4c7438cafcdf7fb9a4613313ad11b4f8fefe7d3fa0130"
 
 [[package]]
-name = "jobserver"
-version = "0.1.27"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c37f63953c4c63420ed5fd3d6d398c719489b9f872b9fa683262f8edd363c7d"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "jpeg-decoder"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2744,7 +2747,7 @@ dependencies = [
 [[package]]
 name = "modit"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/modit.git#2348763ffd7b47b1cffcafc8ee313042fb69cfb8"
+source = "git+https://github.com/pop-os/modit.git#94896d457c31079b9d6c19e592984c4262e4774e"
 dependencies = [
  "log",
 ]
@@ -3948,9 +3951,12 @@ dependencies = [
 
 [[package]]
 name = "self_cell"
-version = "0.10.2"
+version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ef965a420fe14fdac7dd018862966a4c14094f900e1650bbc71ddd7d580c8af"
+checksum = "e14e4d63b804dc0c7ec4a1e52bcb63f02c7ac94476755aa579edac21e01f915d"
+dependencies = [
+ "self_cell 1.0.2",
+]
 
 [[package]]
 name = "self_cell"
