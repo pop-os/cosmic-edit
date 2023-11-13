@@ -357,7 +357,10 @@ where
             handle,
             Rectangle::new(
                 image_position,
-                Size::new(image_size.width as f32, image_size.height as f32),
+                Size::new(
+                    image_size.width as f32 / scale_factor,
+                    image_size.height as f32 / scale_factor,
+                ),
             ),
             [0.0; 4],
         );
