@@ -1,6 +1,7 @@
 use cosmic::{
     cosmic_config::{self, cosmic_config_derive::CosmicConfigEntry, CosmicConfigEntry},
     iced::keyboard::{KeyCode, Modifiers},
+    theme,
 };
 use cosmic_text::Metrics;
 use serde::{Deserialize, Serialize};
@@ -45,6 +46,23 @@ impl Action {
             Self::SelectAll => Message::SelectAll,
             Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
             Self::ToggleWordWrap => Message::ToggleWordWrap,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum AppTheme {
+    Dark,
+    Light,
+    System,
+}
+
+impl AppTheme {
+    pub fn theme(&self) -> theme::Theme {
+        match self {
+            Self::Dark => theme::Theme::dark(),
+            Self::Light => theme::Theme::light(),
+            Self::System => theme::system_preference(),
         }
     }
 }
@@ -117,6 +135,7 @@ impl fmt::Display for KeyBind {
 
 #[derive(Clone, CosmicConfigEntry, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Config {
+    pub app_theme: AppTheme,
     pub font_name: String,
     pub font_size: u16,
     pub syntax_theme_dark: String,
@@ -129,6 +148,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            app_theme: AppTheme::System,
             font_name: "Fira Mono".to_string(),
             font_size: 14,
             syntax_theme_dark: "gruvbox-dark".to_string(),
@@ -149,7 +169,8 @@ impl Config {
     }
 
     // Get current syntax theme based on dark mode
-    pub fn syntax_theme(&self, dark: bool) -> &str {
+    pub fn syntax_theme(&self) -> &str {
+        let dark = self.app_theme.theme().theme_type.is_dark();
         if dark {
             &self.syntax_theme_dark
         } else {

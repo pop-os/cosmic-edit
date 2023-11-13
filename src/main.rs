@@ -11,7 +11,7 @@ use cosmic::{
     },
     style,
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
-    ApplicationExt, Element,
+    Application, ApplicationExt, Element,
 };
 use cosmic_text::{Cursor, Edit, Family, FontSystem, SwashCache, SyntaxSystem, ViMode};
 use std::{
@@ -21,7 +21,7 @@ use std::{
     sync::Mutex,
 };
 
-use config::{Config, CONFIG_VERSION};
+use config::{AppTheme, Config, CONFIG_VERSION};
 mod config;
 
 mod localize;
@@ -57,20 +57,49 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     localize::localize();
 
-    let settings = Settings::default();
+    let (config_handler, config) = match cosmic_config::Config::new(App::APP_ID, CONFIG_VERSION) {
+        Ok(config_handler) => {
+            let config = match Config::get_entry(&config_handler) {
+                Ok(ok) => ok,
+                Err((errs, config)) => {
+                    log::warn!("errors loading config: {:?}", errs);
+                    config
+                }
+            };
+            (Some(config_handler), config)
+        }
+        Err(err) => {
+            log::error!("failed to create config handler: {}", err);
+            (None, Config::default())
+        }
+    };
+
+    let mut settings = Settings::default();
+    println!("{:?}", config.app_theme);
+    settings = settings.theme(config.app_theme.theme());
 
     //TODO: allow size limits on iced_winit
     //settings = settings.size_limits(Limits::NONE.min_width(400.0).min_height(200.0));
 
-    let flags = ();
+    let flags = Flags {
+        config_handler,
+        config,
+    };
     cosmic::app::run::<App>(settings, flags)?;
 
     Ok(())
 }
 
+#[derive(Clone, Debug)]
+pub struct Flags {
+    config_handler: Option<cosmic_config::Config>,
+    config: Config,
+}
+
 #[allow(dead_code)]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Message {
+    AppTheme(AppTheme),
     Config(Config),
     CloseFile,
     CloseProject,
@@ -120,6 +149,7 @@ pub struct App {
     tab_model: segmented_button::SingleSelectModel,
     config_handler: Option<cosmic_config::Config>,
     config: Config,
+    app_themes: Vec<String>,
     font_names: Vec<String>,
     font_size_names: Vec<String>,
     font_sizes: Vec<u16>,
@@ -241,7 +271,7 @@ impl App {
             .activate();
     }
 
-    fn update_config(&mut self) {
+    fn update_config(&mut self) -> Command<Message> {
         //TODO: provide iterator over data
         let entities: Vec<_> = self.tab_model.iter().collect();
         for entity in entities {
@@ -249,9 +279,10 @@ impl App {
                 tab.set_config(&self.config);
             }
         }
+        cosmic::app::command::set_theme(self.config.app_theme.theme())
     }
 
-    fn save_config(&mut self) {
+    fn save_config(&mut self) -> Command<Message> {
         match self.config_handler {
             Some(ref config_handler) => match self.config.write_entry(&config_handler) {
                 Ok(()) => {}
@@ -263,7 +294,7 @@ impl App {
                 //TODO: log that there is no handler?
             }
         }
-        self.update_config();
+        self.update_config()
     }
 
     fn update_nav_bar_active(&mut self) {
@@ -302,7 +333,7 @@ impl App {
                         Some(id) => {
                             //TODO: can this be optimized?
                             // Command not used becuase opening a folder just returns Command::none
-                            let _ = cosmic::Application::on_nav_select(self, id);
+                            let _ = self.on_nav_select(id);
                         }
                         None => {
                             break;
@@ -335,12 +366,12 @@ impl App {
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
-impl cosmic::Application for App {
+impl Application for App {
     /// Default async executor to use with the app.
     type Executor = executor::Default;
 
     /// Argument received [`cosmic::Application::new`].
-    type Flags = ();
+    type Flags = Flags;
 
     /// Message type specific to our [`App`].
     type Message = Message;
@@ -357,30 +388,16 @@ impl cosmic::Application for App {
     }
 
     /// Creates the application, and optionally emits command on initialize.
-    fn init(core: Core, _flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        let (config_handler, config) =
-            match cosmic_config::Config::new(Self::APP_ID, CONFIG_VERSION) {
-                Ok(config_handler) => {
-                    let config = match Config::get_entry(&config_handler) {
-                        Ok(ok) => ok,
-                        Err((errs, config)) => {
-                            log::warn!("errors loading config: {:?}", errs);
-                            config
-                        }
-                    };
-                    (Some(config_handler), config)
-                }
-                Err(err) => {
-                    log::error!("failed to create config handler: {}", err);
-                    (None, Config::default())
-                }
-            };
-
+    fn init(core: Core, flags: Self::Flags) -> (Self, Command<Self::Message>) {
         // Update font name from config
         {
             let mut font_system = FONT_SYSTEM.lock().unwrap();
-            font_system.db_mut().set_monospace_family(&config.font_name);
+            font_system
+                .db_mut()
+                .set_monospace_family(&flags.config.font_name);
         }
+
+        let app_themes = vec![fl!("match-desktop"), fl!("dark"), fl!("light")];
 
         let font_names = {
             let mut font_names = Vec::new();
@@ -417,8 +434,9 @@ impl cosmic::Application for App {
             core,
             nav_model: nav_bar::Model::builder().build(),
             tab_model: segmented_button::Model::builder().build(),
-            config_handler,
-            config,
+            config_handler: flags.config_handler,
+            config: flags.config,
+            app_themes,
             font_names,
             font_size_names,
             font_sizes,
@@ -449,6 +467,7 @@ impl cosmic::Application for App {
             app.open_tab(None);
         }
 
+        //TODO: try update_config here? It breaks loading system theme by default
         let command = app.update_tab();
         (app, command)
     }
@@ -517,12 +536,16 @@ impl cosmic::Application for App {
 
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
+            Message::AppTheme(app_theme) => {
+                self.config.app_theme = app_theme;
+                return self.save_config();
+            }
             Message::Config(config) => {
                 if config != self.config {
                     log::info!("update config");
                     //TODO: update syntax theme by clearing tabs, only if needed
                     self.config = config;
-                    self.update_config();
+                    return self.update_config();
                 }
             }
             Message::CloseFile => {
@@ -574,7 +597,7 @@ impl cosmic::Application for App {
                             }
 
                             self.config.font_name = font_name.to_string();
-                            self.save_config();
+                            return self.save_config();
                         }
                     }
                     None => {
@@ -585,7 +608,7 @@ impl cosmic::Application for App {
             Message::DefaultFontSize(index) => match self.font_sizes.get(index) {
                 Some(font_size) => {
                     self.config.font_size = *font_size;
-                    self.save_config();
+                    return self.save_config();
                 }
                 None => {
                     log::warn!("failed to find font with index {}", index);
@@ -710,7 +733,7 @@ impl cosmic::Application for App {
                     } else {
                         self.config.syntax_theme_light = theme_name.to_string();
                     }
-                    self.save_config();
+                    return self.save_config();
                 }
                 None => {
                     log::warn!("failed to find syntax theme with index {}", index);
@@ -758,11 +781,11 @@ impl cosmic::Application for App {
             }
             Message::ToggleWordWrap => {
                 self.config.word_wrap = !self.config.word_wrap;
-                self.save_config();
+                return self.save_config();
             }
             Message::VimBindings(vim_bindings) => {
                 self.config.vim_bindings = vim_bindings;
-                self.save_config();
+                return self.save_config();
             }
         }
 
@@ -819,16 +842,19 @@ impl cosmic::Application for App {
                 .into()
             }
             ContextPage::Settings => {
-                let dark = cosmic::theme::is_dark();
-                let current_theme_name = if dark {
-                    &self.config.syntax_theme_dark
-                } else {
-                    &self.config.syntax_theme_light
+                let app_theme_selected = match self.config.app_theme {
+                    AppTheme::Dark => 1,
+                    AppTheme::Light => 2,
+                    AppTheme::System => 0,
                 };
-                let theme_selected = self
+                let dark_selected = self
                     .theme_names
                     .iter()
-                    .position(|theme_name| theme_name == current_theme_name);
+                    .position(|theme_name| theme_name == &self.config.syntax_theme_dark);
+                let light_selected = self
+                    .theme_names
+                    .iter()
+                    .position(|theme_name| theme_name == &self.config.syntax_theme_light);
                 let font_selected = {
                     let font_system = FONT_SYSTEM.lock().unwrap();
                     let current_font_name = font_system.db().family_name(&Family::Monospace);
@@ -843,10 +869,30 @@ impl cosmic::Application for App {
                 widget::settings::view_column(vec![
                     widget::settings::view_section(fl!("appearance"))
                         .add(widget::settings::item::builder(fl!("theme")).control(
-                            widget::dropdown(&self.theme_names, theme_selected, move |index| {
-                                Message::SyntaxTheme(index, dark)
+                            widget::dropdown(
+                                &self.app_themes,
+                                Some(app_theme_selected),
+                                move |index| {
+                                    Message::AppTheme(match index {
+                                        1 => AppTheme::Dark,
+                                        2 => AppTheme::Light,
+                                        _ => AppTheme::System,
+                                    })
+                                },
+                            ),
+                        ))
+                        .add(widget::settings::item::builder(fl!("syntax-dark")).control(
+                            widget::dropdown(&self.theme_names, dark_selected, move |index| {
+                                Message::SyntaxTheme(index, true)
                             }),
                         ))
+                        .add(
+                            widget::settings::item::builder(fl!("syntax-light")).control(
+                                widget::dropdown(&self.theme_names, light_selected, move |index| {
+                                    Message::SyntaxTheme(index, false)
+                                }),
+                            ),
+                        )
                         .add(
                             widget::settings::item::builder(fl!("default-font")).control(
                                 widget::dropdown(&self.font_names, font_selected, |index| {

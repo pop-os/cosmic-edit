@@ -24,12 +24,7 @@ impl Tab {
             Shaping::Advanced,
         );
 
-        let editor = SyntaxEditor::new(
-            buffer,
-            &SYNTAX_SYSTEM,
-            config.syntax_theme(cosmic::theme::is_dark()),
-        )
-        .unwrap();
+        let editor = SyntaxEditor::new(buffer, &SYNTAX_SYSTEM, config.syntax_theme()).unwrap();
 
         let mut tab = Self {
             path_opt: None,
@@ -54,11 +49,7 @@ impl Tab {
             Wrap::None
         });
         //TODO: dynamically discover light/dark changes
-        editor.update_theme(if cosmic::theme::is_dark() {
-            &config.syntax_theme_dark
-        } else {
-            &config.syntax_theme_light
-        });
+        editor.update_theme(config.syntax_theme());
     }
 
     pub fn open(&mut self, path: PathBuf) {
