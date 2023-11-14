@@ -315,7 +315,7 @@ dependencies = [
  "futures-lite 2.0.1",
  "parking",
  "polling 3.3.0",
- "rustix 0.38.22",
+ "rustix 0.38.23",
  "slab",
  "tracing",
  "waker-fn",
@@ -355,7 +355,7 @@ dependencies = [
  "cfg-if",
  "event-listener 3.1.0",
  "futures-lite 1.13.0",
- "rustix 0.38.22",
+ "rustix 0.38.23",
  "windows-sys 0.48.0",
 ]
 
@@ -382,7 +382,7 @@ dependencies = [
  "cfg-if",
  "futures-core",
  "futures-io",
- "rustix 0.38.22",
+ "rustix 0.38.23",
  "signal-hook-registry",
  "slab",
  "windows-sys 0.48.0",
@@ -429,7 +429,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4d45f362125ed144544e57b0ec6de8fd6a296d41a6252fc4a20c0cf12e9ed3a"
 dependencies = [
- "rustix 0.38.22",
+ "rustix 0.38.23",
  "tempfile",
  "windows-sys 0.48.0",
 ]
@@ -878,7 +878,7 @@ dependencies = [
 [[package]]
 name = "cosmic-text"
 version = "0.10.0"
-source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#4c85a6be721b729350acddcc8a4396353786b901"
+source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#0eefb12608b96c62272b7ddd61c5216a8ca1afe1"
 dependencies = [
  "fontdb 0.15.0",
  "libm",
@@ -2338,7 +2338,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb0889898416213fab133e1d33a0e5858a48177452750691bde3666d0fdbaf8b"
 dependencies = [
  "hermit-abi",
- "rustix 0.38.22",
+ "rustix 0.38.23",
  "windows-sys 0.48.0",
 ]
 
@@ -2766,7 +2766,7 @@ dependencies = [
 [[package]]
 name = "modit"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/modit.git#add73b87f02db213b74a8f03ad24a691e9b2446b"
+source = "git+https://github.com/pop-os/modit.git#2e03c84186f645f494ff4e5717b14a80a2d20e76"
 dependencies = [
  "log",
 ]
@@ -3465,7 +3465,7 @@ dependencies = [
  "cfg-if",
  "concurrent-queue",
  "pin-project-lite",
- "rustix 0.38.22",
+ "rustix 0.38.23",
  "tracing",
  "windows-sys 0.48.0",
 ]
@@ -3871,9 +3871,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.38.22"
+version = "0.38.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80109a168d9bc0c7f483083244543a6eb0dba02295d33ca268145e6190d6df0c"
+checksum = "ffb93593068e9babdad10e4fce47dc9b3ac25315a72a59766ffd9e9a71996a04"
 dependencies = [
  "bitflags 2.4.1",
  "errno",
@@ -4362,15 +4362,15 @@ dependencies = [
  "cfg-if",
  "fastrand 2.0.1",
  "redox_syscall 0.4.1",
- "rustix 0.38.22",
+ "rustix 0.38.23",
  "windows-sys 0.48.0",
 ]
 
 [[package]]
 name = "termcolor"
-version = "1.3.0"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6093bad37da69aab9d123a8091e4be0aa4a03e4d601ec641c327398315f62b64"
+checksum = "ff1bc3d3f05aff0403e8ac0d92ced918ec05b666a43f83297ccef5bea8a3d449"
 dependencies = [
  "winapi-util",
 ]
