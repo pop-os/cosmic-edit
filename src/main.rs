@@ -3,7 +3,7 @@
 use cosmic::{
     app::{message, Command, Core, Settings},
     cosmic_config::{self, CosmicConfigEntry},
-    executor,
+    cosmic_theme, executor,
     iced::{
         clipboard, event, keyboard, subscription,
         widget::{row, text},
@@ -123,6 +123,7 @@ pub enum Message {
     Redo,
     Save,
     SelectAll,
+    SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
     TabActivate(segmented_button::Entity),
     TabChanged(segmented_button::Entity),
@@ -769,6 +770,9 @@ impl Application for App {
                     None => {}
                 }
             }
+            Message::SystemThemeModeChange(_theme_mode) => {
+                return self.update_config();
+            }
             Message::SyntaxTheme(index, dark) => match self.theme_names.get(index) {
                 Some(theme_name) => {
                     if dark {
@@ -1074,6 +1078,18 @@ impl Application for App {
                     }
                 },
             ),
+            cosmic_config::config_subscription::<_, cosmic_theme::ThemeMode>(
+                0,
+                cosmic_theme::THEME_MODE_ID.into(),
+                cosmic_theme::ThemeMode::version(),
+            )
+            .map(|(_, u)| match u {
+                Ok(t) => Message::SystemThemeModeChange(t),
+                Err((errs, t)) => {
+                    log::warn!("errors loading theme mode: {:#?}", errs);
+                    Message::SystemThemeModeChange(t)
+                }
+            }),
         ])
     }
 }
