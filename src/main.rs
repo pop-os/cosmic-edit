@@ -677,6 +677,7 @@ impl Application for App {
                 }
             }
             Message::OpenFileDialog => {
+                #[cfg(feature = "rfd")]
                 return Command::perform(
                     async {
                         if let Some(handle) = rfd::AsyncFileDialog::new().pick_file().await {
@@ -693,6 +694,7 @@ impl Application for App {
                 return self.update_tab();
             }
             Message::OpenProjectDialog => {
+                #[cfg(feature = "rfd")]
                 return Command::perform(
                     async {
                         if let Some(handle) = rfd::AsyncFileDialog::new().pick_folder().await {
@@ -736,6 +738,7 @@ impl Application for App {
 
                 match self.active_tab_mut() {
                     Some(tab) => {
+                        #[cfg(feature = "rfd")]
                         if tab.path_opt.is_none() {
                             //TODO: use async file dialog
                             tab.path_opt = rfd::FileDialog::new().save_file();
