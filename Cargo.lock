@@ -4218,7 +4218,7 @@ dependencies = [
 [[package]]
 name = "softbuffer"
 version = "0.2.0"
-source = "git+https://github.com/pop-os/softbuffer?tag=cosmic-2.0-old#ece901a9f60dc89ca740dc3bd11f3c909e801723"
+source = "git+https://github.com/pop-os/softbuffer?tag=cosmic-2.0-old#e11ceac52589f9cad0cac95f86382c1f5fa9f440"
 dependencies = [
  "bytemuck",
  "cfg_aliases",
@@ -4230,7 +4230,7 @@ dependencies = [
  "nix 0.26.4",
  "objc",
  "raw-window-handle",
- "redox_syscall 0.3.5",
+ "redox_syscall 0.4.1",
  "thiserror",
  "wasm-bindgen",
  "wayland-backend",
