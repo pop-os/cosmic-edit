@@ -1,5 +1,6 @@
 new-document = Novi dokument
 open-project = Otvori projekat
+todo = TODO
 
 # Context Pages
 
@@ -16,6 +17,11 @@ settings = Podešavanja
 ## Appearance
 appearance = Izgled
 theme = Tema
+match-desktop = Kao sistem
+dark = Tamna
+light = Svetla
+syntax-dark = Tamna sintaksa
+syntax-light = Svetla sintaksa
 default-font = Podrazumevani font
 default-font-size = Podrazumevana veličina fonta
 
@@ -30,8 +36,11 @@ file = Datoteka
 new-file = Nova datoteka
 new-window = Novi prozor
 open-file = Otvori datoteku...
-open-recent = Otvori nedavno
-todo = TODO
+open-recent-file = Otvori nedavnu datoteku
+close-file = Zatvori datoteku
+menu-open-project = Otvori projekat...
+open-recent-project = Otvori nedavni projekat
+close-project = Zatvori projekat
 save = Sačuvaj
 save-as = Sačuvaj kao...
 revert-all-changes = Vrati sve izmene
