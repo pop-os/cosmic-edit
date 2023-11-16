@@ -92,6 +92,14 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
         )
     };
 
+    let menu_tab_width = |tab_width: u16| {
+        menu_checkbox(
+            fl!("tab-width", tab_width = tab_width),
+            config.tab_width == tab_width,
+            Message::TabWidth(tab_width),
+        )
+    };
+
     MenuBar::new(vec![
         MenuTree::with_children(
             menu_root(fl!("file")),
@@ -154,10 +162,14 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                     vec![
                         menu_item(fl!("automatic-indentation"), Message::Todo),
                         MenuTree::new(horizontal_rule(1)),
-                        menu_item(fl!("tab-width", tab_width = 1), Message::Todo),
-                        menu_item(fl!("tab-width", tab_width = 2), Message::Todo),
-                        menu_item(fl!("tab-width", tab_width = 4), Message::Todo),
-                        menu_item(fl!("tab-width", tab_width = 8), Message::Todo),
+                        menu_tab_width(1),
+                        menu_tab_width(2),
+                        menu_tab_width(3),
+                        menu_tab_width(4),
+                        menu_tab_width(5),
+                        menu_tab_width(6),
+                        menu_tab_width(7),
+                        menu_tab_width(8),
                         MenuTree::new(horizontal_rule(1)),
                         menu_item(fl!("convert-indentation-to-spaces"), Message::Todo),
                         menu_item(fl!("convert-indentation-to-tabs"), Message::Todo),

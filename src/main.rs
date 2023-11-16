@@ -133,6 +133,7 @@ pub enum Message {
     TabActivate(segmented_button::Entity),
     TabChanged(segmented_button::Entity),
     TabClose(segmented_button::Entity),
+    TabWidth(u16),
     Todo,
     ToggleContextPage(ContextPage),
     ToggleWordWrap,
@@ -826,6 +827,10 @@ impl Application for App {
                 }
 
                 return self.update_tab();
+            }
+            Message::TabWidth(tab_width) => {
+                self.config.tab_width = tab_width;
+                return self.save_config();
             }
             Message::Todo => {
                 log::warn!("TODO");

@@ -44,6 +44,7 @@ impl Tab {
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
         editor.set_passthrough(!config.vim_bindings);
+        editor.set_tab_width(config.tab_width);
         editor.buffer_mut().set_wrap(if config.word_wrap {
             Wrap::Word
         } else {
