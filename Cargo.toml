@@ -28,7 +28,6 @@ features = ["syntect", "vi"]
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
-branch = "menu"
 default-features = false
 features = ["winit", "wgpu"]
 #path = "../libcosmic"
