@@ -142,6 +142,7 @@ impl fmt::Display for KeyBind {
 #[derive(Clone, CosmicConfigEntry, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Config {
     pub app_theme: AppTheme,
+    pub auto_indent: bool,
     pub font_name: String,
     pub font_size: u16,
     pub syntax_theme_dark: String,
@@ -156,6 +157,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             app_theme: AppTheme::System,
+            auto_indent: true,
             font_name: "Fira Mono".to_string(),
             font_size: 14,
             syntax_theme_dark: "gruvbox-dark".to_string(),

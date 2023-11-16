@@ -135,6 +135,7 @@ pub enum Message {
     TabClose(segmented_button::Entity),
     TabWidth(u16),
     Todo,
+    ToggleAutoIndent,
     ToggleContextPage(ContextPage),
     ToggleWordWrap,
     Undo,
@@ -834,6 +835,10 @@ impl Application for App {
             }
             Message::Todo => {
                 log::warn!("TODO");
+            }
+            Message::ToggleAutoIndent => {
+                self.config.auto_indent = !self.config.auto_indent;
+                return self.save_config();
             }
             Message::ToggleContextPage(context_page) => {
                 if self.context_page == context_page {

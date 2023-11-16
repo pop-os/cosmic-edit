@@ -160,7 +160,11 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                 MenuTree::with_children(
                     menu_folder(fl!("indentation")),
                     vec![
-                        menu_item(fl!("automatic-indentation"), Message::Todo),
+                        menu_checkbox(
+                            fl!("automatic-indentation"),
+                            config.auto_indent,
+                            Message::ToggleAutoIndent,
+                        ),
                         MenuTree::new(horizontal_rule(1)),
                         menu_tab_width(1),
                         menu_tab_width(2),

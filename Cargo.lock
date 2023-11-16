@@ -897,7 +897,7 @@ dependencies = [
 [[package]]
 name = "cosmic-text"
 version = "0.10.0"
-source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#1207fd6d804b76b52137a368a58b27150eb865b8"
+source = "git+https://github.com/pop-os/cosmic-text?branch=vi-editor#7d21045b2f93a382f7ddea209b8f28204888d418"
 dependencies = [
  "cosmic_undo_2",
  "fontdb 0.16.0",
