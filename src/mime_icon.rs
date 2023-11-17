@@ -24,7 +24,10 @@ impl MimeIconCache {
         self.cache
             .entry(key)
             .or_insert_with_key(|key| match systemicons::get_icon(&key.path, key.size) {
-                Ok(ok) => Some(icon::from_raster_bytes(ok)),
+                Ok(icon_kind) => match icon_kind {
+                    systemicons::Icon::Png(bytes) => Some(icon::from_raster_bytes(bytes)),
+                    systemicons::Icon::Svg(bytes) => Some(icon::from_svg_bytes(bytes)),
+                },
                 Err(err) => {
                     log::warn!("failed to get icon for {:?}: {:?}", key, err);
                     None

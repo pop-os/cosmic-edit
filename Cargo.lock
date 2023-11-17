@@ -1275,12 +1275,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d7439c3735f405729d52c3fbbe4de140eaf938a1fe47d227c27f8254d4302a5"
 
 [[package]]
-name = "data-url"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41b319d1b62ffbd002e057f36bebd1f42b9f97927c9577461d855f3513c4289f"
-
-[[package]]
 name = "deflate"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2500,7 +2494,7 @@ dependencies = [
  "kurbo",
  "log",
  "raw-window-handle 0.5.2",
- "resvg 0.35.0",
+ "resvg",
  "rustc-hash",
  "softbuffer",
  "tiny-skia 0.10.0",
@@ -2523,7 +2517,7 @@ dependencies = [
  "lyon",
  "once_cell",
  "raw-window-handle 0.5.2",
- "resvg 0.35.0",
+ "resvg",
  "rustc-hash",
  "twox-hash",
  "wgpu",
@@ -4375,26 +4369,9 @@ dependencies = [
  "pico-args",
  "png 0.17.10",
  "rgb",
- "svgtypes 0.11.0",
+ "svgtypes",
  "tiny-skia 0.10.0",
- "usvg 0.35.0",
-]
-
-[[package]]
-name = "resvg"
-version = "0.36.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc7980f653f9a7db31acff916a262c3b78c562919263edea29bf41a056e20497"
-dependencies = [
- "gif 0.12.0",
- "jpeg-decoder 0.3.0",
- "log",
- "pico-args",
- "png 0.17.10",
- "rgb",
- "svgtypes 0.12.0",
- "tiny-skia 0.11.2",
- "usvg 0.36.0",
+ "usvg",
 ]
 
 [[package]]
@@ -4582,22 +4559,6 @@ dependencies = [
  "unicode-bidi-mirroring",
  "unicode-ccc",
  "unicode-general-category",
- "unicode-script",
-]
-
-[[package]]
-name = "rustybuzz"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71cd15fef9112a1f94ac64b58d1e4628192631ad6af4dc69997f995459c874e7"
-dependencies = [
- "bitflags 1.3.2",
- "bytemuck",
- "smallvec",
- "ttf-parser 0.19.2",
- "unicode-bidi-mirroring",
- "unicode-ccc",
- "unicode-properties",
  "unicode-script",
 ]
 
@@ -4982,16 +4943,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "svgtypes"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d71499ff2d42f59d26edb21369a308ede691421f79ebc0f001e2b1fd3a7c9e52"
-dependencies = [
- "kurbo",
- "siphasher",
-]
-
-[[package]]
 name = "swash"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5069,15 +5020,13 @@ dependencies = [
 [[package]]
 name = "systemicons"
 version = "0.7.0"
-source = "git+https://github.com/jackpot51/systemicons#d6f1a503bca9f6e1077771fc64d17474261aa5cf"
+source = "git+https://github.com/jackpot51/systemicons#501887629ebf3f9b9d3384383da62d352af3fbd7"
 dependencies = [
  "cocoa 0.24.1",
  "freedesktop-icons",
  "image 0.23.14",
  "lazy_static",
  "objc",
- "png 0.17.10",
- "resvg 0.36.0",
  "winapi",
  "winit 0.25.0",
  "xdg-mime",
@@ -5223,21 +5172,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tiny-skia"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b72a92a05db376db09fe6d50b7948d106011761c05a6a45e23e17ee9b556222"
-dependencies = [
- "arrayref",
- "arrayvec 0.7.4",
- "bytemuck",
- "cfg-if 1.0.0",
- "log",
- "png 0.17.10",
- "tiny-skia-path 0.11.2",
-]
-
-[[package]]
 name = "tiny-skia-path"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5253,17 +5187,6 @@ name = "tiny-skia-path"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f60aa35c89ac2687ace1a2556eaaea68e8c0d47408a2e3e7f5c98a489e7281c"
-dependencies = [
- "arrayref",
- "bytemuck",
- "strict-num",
-]
-
-[[package]]
-name = "tiny-skia-path"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ac3865b9708fc7e1961a65c3a4fa55e984272f33092d3c859929f887fceb647"
 dependencies = [
  "arrayref",
  "bytemuck",
@@ -5591,24 +5514,9 @@ dependencies = [
  "base64",
  "log",
  "pico-args",
- "usvg-parser 0.35.0",
- "usvg-text-layout 0.35.0",
- "usvg-tree 0.35.0",
- "xmlwriter",
-]
-
-[[package]]
-name = "usvg"
-version = "0.36.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c51daa774fe9ee5efcf7b4fec13019b8119cda764d9a8b5b06df02bb1445c656"
-dependencies = [
- "base64",
- "log",
- "pico-args",
- "usvg-parser 0.36.0",
- "usvg-text-layout 0.36.0",
- "usvg-tree 0.36.0",
+ "usvg-parser",
+ "usvg-text-layout",
+ "usvg-tree",
  "xmlwriter",
 ]
 
@@ -5618,7 +5526,7 @@ version = "0.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d19bf93d230813599927d88557014e0908ecc3531666d47c634c6838bc8db408"
 dependencies = [
- "data-url 0.2.0",
+ "data-url",
  "flate2",
  "imagesize",
  "kurbo",
@@ -5626,26 +5534,8 @@ dependencies = [
  "roxmltree",
  "simplecss",
  "siphasher",
- "svgtypes 0.11.0",
- "usvg-tree 0.35.0",
-]
-
-[[package]]
-name = "usvg-parser"
-version = "0.36.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45c88a5ffaa338f0e978ecf3d4e00d8f9f493e29bed0752e1a808a1db16afc40"
-dependencies = [
- "data-url 0.3.0",
- "flate2",
- "imagesize",
- "kurbo",
- "log",
- "roxmltree",
- "simplecss",
- "siphasher",
- "svgtypes 0.12.0",
- "usvg-tree 0.36.0",
+ "svgtypes",
+ "usvg-tree",
 ]
 
 [[package]]
@@ -5661,23 +5551,7 @@ dependencies = [
  "unicode-bidi",
  "unicode-script",
  "unicode-vo",
- "usvg-tree 0.35.0",
-]
-
-[[package]]
-name = "usvg-text-layout"
-version = "0.36.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d2374378cb7a3fb8f33894e0fdb8625e1bbc4f25312db8d91f862130b541593"
-dependencies = [
- "fontdb 0.15.0",
- "kurbo",
- "log",
- "rustybuzz 0.10.0",
- "unicode-bidi",
- "unicode-script",
- "unicode-vo",
- "usvg-tree 0.36.0",
+ "usvg-tree",
 ]
 
 [[package]]
@@ -5688,20 +5562,8 @@ checksum = "7939a7e4ed21cadb5d311d6339730681c3e24c3e81d60065be80e485d3fc8b92"
 dependencies = [
  "rctree",
  "strict-num",
- "svgtypes 0.11.0",
+ "svgtypes",
  "tiny-skia-path 0.10.0",
-]
-
-[[package]]
-name = "usvg-tree"
-version = "0.36.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6cacb0c5edeaf3e80e5afcf5b0d4004cc1d36318befc9a7c6606507e5d0f4062"
-dependencies = [
- "rctree",
- "strict-num",
- "svgtypes 0.12.0",
- "tiny-skia-path 0.11.2",
 ]
 
 [[package]]
