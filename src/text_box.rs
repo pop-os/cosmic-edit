@@ -344,7 +344,7 @@ where
                     let start_line = start_line_opt.unwrap_or(end_line);
                     let lines = editor.buffer().lines.len();
                     let start_y = (start_line * image_h as usize) / lines;
-                    let end_y = (((end_line + 1) * image_h as usize) / lines);
+                    let end_y = ((end_line + 1) * image_h as usize) / lines;
 
                     let rect = Rectangle::new(
                         [image_w as f32 / scale_factor, start_y as f32 / scale_factor].into(),
