@@ -1,28 +1,53 @@
 use cosmic::widget::icon;
-use std::path::Path;
+use std::{collections::HashMap, path::Path, sync::Mutex};
 
 pub const FALLBACK_MIME_ICON: &str = "text-x-generic";
 
+#[derive(Debug, Eq, Hash, PartialEq)]
+struct MimeIconKey {
+    path: String,
+    size: u16,
+}
+
+struct MimeIconCache {
+    cache: HashMap<MimeIconKey, Option<icon::Handle>>,
+}
+
+impl MimeIconCache {
+    pub fn new() -> Self {
+        Self {
+            cache: HashMap::new(),
+        }
+    }
+
+    pub fn get(&mut self, key: MimeIconKey) -> Option<icon::Handle> {
+        self.cache
+            .entry(key)
+            .or_insert_with_key(|key| match systemicons::get_icon(&key.path, key.size) {
+                Ok(ok) => Some(icon::from_raster_bytes(ok)),
+                Err(err) => {
+                    log::warn!("failed to get icon for {:?}: {:?}", key, err);
+                    None
+                }
+            })
+            .clone()
+    }
+}
+
 lazy_static::lazy_static! {
-    static ref SHARED_MIME_INFO: xdg_mime::SharedMimeInfo = xdg_mime::SharedMimeInfo::new();
+    static ref MIME_ICON_CACHE: Mutex<MimeIconCache> = Mutex::new(MimeIconCache::new());
 }
 
 pub fn mime_icon<P: AsRef<Path>>(path: P, size: u16) -> icon::Icon {
-    let path = path.as_ref();
-    //TODO: SHARED_MIME_INFO.get_mime_types_from_file_name(path)
-    for mime_type in mime_guess::from_path(path) {
-        for icon_name in SHARED_MIME_INFO.lookup_icon_names(&mime_type) {
-            let named = icon::from_name(icon_name).size(size);
-            if named.clone().path().is_some() {
-                return named.icon();
-            }
-        }
-
-        let icon_name = mime_type.essence_str().replace("/", "-");
-        let named = icon::from_name(icon_name).size(size);
-        if named.clone().path().is_some() {
-            return named.icon();
-        }
+    //TODO: smarter path handling
+    let path = path
+        .as_ref()
+        .to_str()
+        .expect("failed to convert path to UTF-8")
+        .to_owned();
+    let mut mime_icon_cache = MIME_ICON_CACHE.lock().unwrap();
+    match mime_icon_cache.get(MimeIconKey { path, size }) {
+        Some(handle) => icon::icon(handle).size(size),
+        None => icon::from_name(FALLBACK_MIME_ICON).size(size).icon(),
     }
-    icon::from_name(FALLBACK_MIME_ICON).size(size).icon()
 }
