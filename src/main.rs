@@ -7,7 +7,7 @@ use cosmic::{
     iced::{
         clipboard, event, keyboard, subscription,
         widget::{row, text},
-        window, Alignment, Length,
+        window, Alignment, Length, Point,
     },
     style,
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
@@ -21,7 +21,7 @@ use std::{
     sync::Mutex,
 };
 
-use config::{AppTheme, Config, CONFIG_VERSION};
+use config::{Action, AppTheme, Config, CONFIG_VERSION};
 mod config;
 
 mod localize;
@@ -105,7 +105,7 @@ pub struct Flags {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Message {
     AppTheme(AppTheme),
     Config(Config),
@@ -133,6 +133,8 @@ pub enum Message {
     TabActivate(segmented_button::Entity),
     TabChanged(segmented_button::Entity),
     TabClose(segmented_button::Entity),
+    TabContextAction(segmented_button::Entity, Action),
+    TabContextMenu(segmented_button::Entity, Option<Point>),
     TabWidth(u16),
     Todo,
     ToggleAutoIndent,
@@ -829,6 +831,30 @@ impl Application for App {
 
                 return self.update_tab();
             }
+            Message::TabContextAction(entity, action) => {
+                match self.tab_model.data_mut::<Tab>(entity) {
+                    Some(tab) => {
+                        // Close context menu
+                        tab.context_menu = None;
+                        // Hack to ensure editor redraws
+                        tab.editor.lock().unwrap().buffer_mut().set_redraw(true);
+                        // Run action's message
+                        return self.update(action.message());
+                    }
+                    None => {}
+                }
+            }
+            Message::TabContextMenu(entity, position_opt) => {
+                match self.tab_model.data_mut::<Tab>(entity) {
+                    Some(tab) => {
+                        // Update context menu
+                        tab.context_menu = position_opt;
+                        // Hack to ensure editor redraws
+                        tab.editor.lock().unwrap().buffer_mut().set_redraw(true);
+                    }
+                    None => {}
+                }
+            }
             Message::TabWidth(tab_width) => {
                 self.config.tab_width = tab_width;
                 return self.save_config();
@@ -1024,7 +1050,8 @@ impl Application for App {
             .align_items(Alignment::Center),
         );
 
-        match self.active_tab() {
+        let tab_id = self.tab_model.active();
+        match self.tab_model.data::<Tab>(tab_id) {
             Some(tab) => {
                 let status = {
                     let editor = tab.editor.lock().unwrap();
@@ -1060,10 +1087,21 @@ impl Application for App {
                         }
                     }
                 };
-                tab_column = tab_column.push(
-                    text_box(&tab.editor, self.config.metrics())
-                        .on_changed(Message::TabChanged(self.tab_model.active())),
-                );
+                let text_box = text_box(&tab.editor, self.config.metrics())
+                    .on_changed(Message::TabChanged(tab_id))
+                    .on_context_menu(move |position_opt| {
+                        Message::TabContextMenu(tab_id, position_opt)
+                    });
+                let tab_element: Element<'_, Message> = match tab.context_menu {
+                    Some(position) => widget::popover(
+                        text_box.context_menu(position),
+                        menu::context_menu(&self.config, tab_id),
+                    )
+                    .position(position)
+                    .into(),
+                    None => text_box.into(),
+                };
+                tab_column = tab_column.push(tab_element);
                 tab_column = tab_column.push(text(status).font(cosmic::font::Font::MONOSPACE));
             }
             None => {

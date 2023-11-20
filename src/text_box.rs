@@ -62,6 +62,8 @@ pub struct TextBox<'a, Message> {
     metrics: Metrics,
     padding: Padding,
     on_changed: Option<Message>,
+    context_menu: Option<Point>,
+    on_context_menu: Option<Box<dyn Fn(Option<Point>) -> Message + 'a>>,
 }
 
 impl<'a, Message> TextBox<'a, Message>
@@ -74,6 +76,8 @@ where
             metrics,
             padding: Padding::new(0.0),
             on_changed: None,
+            context_menu: None,
+            on_context_menu: None,
         }
     }
 
@@ -84,6 +88,19 @@ where
 
     pub fn on_changed(mut self, on_changed: Message) -> Self {
         self.on_changed = Some(on_changed);
+        self
+    }
+
+    pub fn context_menu(mut self, position: Point) -> Self {
+        self.context_menu = Some(position);
+        self
+    }
+
+    pub fn on_context_menu(
+        mut self,
+        on_context_menu: impl Fn(Option<Point>) -> Message + 'a,
+    ) -> Self {
+        self.on_context_menu = Some(Box::new(on_context_menu));
         self
     }
 }
@@ -498,35 +515,50 @@ where
                     status = Status::Captured;
                 }
             }
-            Event::Mouse(MouseEvent::ButtonPressed(Button::Left)) => {
+            Event::Mouse(MouseEvent::ButtonPressed(button)) => {
                 if let Some(p) = cursor_position.position_in(layout.bounds()) {
-                    let x_logical = p.x - self.padding.left;
-                    let y_logical = p.y - self.padding.top;
-                    let x = x_logical * scale_factor;
-                    let y = y_logical * scale_factor;
-                    if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
-                        editor.action(Action::Click {
-                            x: x as i32,
-                            y: y as i32,
-                        });
-                        state.dragging = Some(Dragging::Buffer);
-                    } else if scrollbar_rect.contains(Point::new(x_logical, y_logical)) {
-                        state.dragging = Some(Dragging::Scrollbar {
-                            start_y: y,
-                            start_scroll: editor.buffer().scroll(),
-                        });
-                    } else if x_logical >= scrollbar_rect.x
-                        && x_logical < (scrollbar_rect.x + scrollbar_rect.width)
-                    {
-                        let mut buffer = editor.buffer_mut();
-                        let scroll_offset =
-                            ((y / buffer.size().1) * buffer.lines.len() as f32) as i32;
-                        buffer.set_scroll(scroll_offset);
-                        state.dragging = Some(Dragging::Scrollbar {
-                            start_y: y,
-                            start_scroll: editor.buffer().scroll(),
-                        });
+                    // Handle left click drag
+                    if let Button::Left = button {
+                        let x_logical = p.x - self.padding.left;
+                        let y_logical = p.y - self.padding.top;
+                        let x = x_logical * scale_factor;
+                        let y = y_logical * scale_factor;
+                        if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
+                            editor.action(Action::Click {
+                                x: x as i32,
+                                y: y as i32,
+                            });
+                            state.dragging = Some(Dragging::Buffer);
+                        } else if scrollbar_rect.contains(Point::new(x_logical, y_logical)) {
+                            state.dragging = Some(Dragging::Scrollbar {
+                                start_y: y,
+                                start_scroll: editor.buffer().scroll(),
+                            });
+                        } else if x_logical >= scrollbar_rect.x
+                            && x_logical < (scrollbar_rect.x + scrollbar_rect.width)
+                        {
+                            let mut buffer = editor.buffer_mut();
+                            let scroll_offset =
+                                ((y / buffer.size().1) * buffer.lines.len() as f32) as i32;
+                            buffer.set_scroll(scroll_offset);
+                            state.dragging = Some(Dragging::Scrollbar {
+                                start_y: y,
+                                start_scroll: editor.buffer().scroll(),
+                            });
+                        }
                     }
+
+                    // Update context menu state
+                    if let Some(on_context_menu) = &self.on_context_menu {
+                        shell.publish((on_context_menu)(match self.context_menu {
+                            Some(_) => None,
+                            None => match button {
+                                Button::Right => Some(p),
+                                _ => None,
+                            },
+                        }));
+                    }
+
                     status = Status::Captured;
                 }
             }

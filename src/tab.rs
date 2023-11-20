@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use cosmic::widget::{icon, Icon};
+use cosmic::{
+    iced::Point,
+    widget::{icon, Icon},
+};
 use cosmic_text::{Attrs, Buffer, Edit, Shaping, SyntaxEditor, ViEditor, Wrap};
 use std::{fs, path::PathBuf, sync::Mutex};
 
@@ -10,6 +13,7 @@ pub struct Tab {
     pub path_opt: Option<PathBuf>,
     attrs: Attrs<'static>,
     pub editor: Mutex<ViEditor<'static>>,
+    pub context_menu: Option<Point>,
 }
 
 impl Tab {
@@ -31,6 +35,7 @@ impl Tab {
             path_opt: None,
             attrs,
             editor: Mutex::new(ViEditor::new(editor)),
+            context_menu: None,
         };
 
         // Update any other config settings

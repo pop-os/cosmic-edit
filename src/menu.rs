@@ -1,17 +1,69 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::{
+    cosmic_theme,
     //TODO: export in cosmic::widget
-    iced::{widget::horizontal_rule, Alignment, Length},
+    iced::{
+        widget::{column, horizontal_rule},
+        Alignment, Length,
+    },
     theme,
     widget::{
         self, horizontal_space,
         menu::{ItemHeight, ItemWidth, MenuBar, MenuTree},
+        segmented_button,
     },
     Element,
 };
 
-use crate::{fl, Config, ContextPage, Message};
+use crate::{fl, Action, Config, ContextPage, Message};
+
+macro_rules! menu_button {
+    ($($x:expr),+ $(,)?) => (
+        widget::button(
+            widget::Row::with_children(
+                vec![$(Element::from($x)),+]
+            )
+            .align_items(Alignment::Center)
+        )
+        .height(Length::Fixed(32.0))
+        .padding([4, 16])
+        .width(Length::Fill)
+        .style(theme::Button::MenuItem)
+    );
+}
+
+pub fn context_menu<'a>(config: &Config, entity: segmented_button::Entity) -> Element<'a, Message> {
+    let menu_item = |label, action| {
+        let mut key = String::new();
+        for (key_bind, action) in config.keybinds.iter() {
+            if action == action {
+                key = key_bind.to_string();
+                break;
+            }
+        }
+        menu_button!(
+            widget::text(label),
+            horizontal_space(Length::Fill),
+            widget::text(key)
+        )
+        .on_press(Message::TabContextAction(entity, action))
+    };
+
+    widget::cosmic_container::container(column!(
+        menu_item(fl!("undo"), Action::Undo),
+        menu_item(fl!("redo"), Action::Redo),
+        horizontal_rule(1),
+        menu_item(fl!("cut"), Action::Cut),
+        menu_item(fl!("copy"), Action::Copy),
+        menu_item(fl!("paste"), Action::Paste),
+        menu_item(fl!("select-all"), Action::SelectAll),
+    ))
+    .layer(cosmic_theme::Layer::Background)
+    .style(theme::Container::Card)
+    .width(Length::Fixed(240.0))
+    .into()
+}
 
 pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
     //TODO: port to libcosmic
@@ -20,21 +72,6 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
             .padding([4, 12])
             .style(theme::Button::MenuRoot)
     };
-
-    macro_rules! menu_button {
-        ($($x:expr),+ $(,)?) => (
-            widget::button(
-                widget::Row::with_children(
-                    vec![$(Element::from($x)),+]
-                )
-                .align_items(Alignment::Center)
-            )
-            .height(Length::Fixed(32.0))
-            .padding([4, 16])
-            .width(Length::Fill)
-            .style(theme::Button::MenuItem)
-        );
-    }
 
     let menu_folder =
         |label| menu_button!(widget::text(label), horizontal_space(Length::Fill), ">");
