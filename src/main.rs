@@ -1101,6 +1101,7 @@ impl Application for App {
         tab_column = tab_column.push(
             row![
                 view_switcher::horizontal(&self.tab_model)
+                    .button_height(32)
                     .on_activate(Message::TabActivate)
                     .on_close(Message::TabClose)
                     .width(Length::Shrink),
