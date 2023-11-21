@@ -398,11 +398,7 @@ impl App {
         self.update_nav_bar_active();
 
         let title = match self.active_tab() {
-            Some(tab) => {
-                // Hack to ensure redraw on changing tabs
-                tab.editor.lock().unwrap().buffer_mut().set_redraw(true);
-                tab.title()
-            }
+            Some(tab) => tab.title(),
             None => format!("No Open File"),
         };
 
@@ -836,8 +832,6 @@ impl Application for App {
                     Some(tab) => {
                         // Close context menu
                         tab.context_menu = None;
-                        // Hack to ensure editor redraws
-                        tab.editor.lock().unwrap().buffer_mut().set_redraw(true);
                         // Run action's message
                         return self.update(action.message());
                     }
@@ -849,8 +843,6 @@ impl Application for App {
                     Some(tab) => {
                         // Update context menu
                         tab.context_menu = position_opt;
-                        // Hack to ensure editor redraws
-                        tab.editor.lock().unwrap().buffer_mut().set_redraw(true);
                     }
                     None => {}
                 }
@@ -874,10 +866,6 @@ impl Application for App {
                     self.core.window.show_context = true;
                 }
                 self.set_context_title(context_page.title());
-
-                // Hack to ensure tab redraws.
-                //TODO: tab does not redraw when using Close button!
-                return self.update_tab();
             }
             Message::ToggleWordWrap => {
                 self.config.word_wrap = !self.config.word_wrap;

@@ -328,7 +328,8 @@ where
         // Shape and layout as needed
         editor.shape_as_needed();
 
-        if editor.buffer().redraw() {
+        let mut handle_opt = state.handle_opt.lock().unwrap();
+        if editor.buffer().redraw() || handle_opt.is_none() {
             // Draw to pixel buffer
             let mut pixels = vec![0; image_w as usize * image_h as usize * 4];
             {
@@ -378,26 +379,30 @@ where
             editor.buffer_mut().set_redraw(false);
 
             state.scale_factor.set(scale_factor);
-            *state.handle.lock().unwrap() =
-                image::Handle::from_pixels(image_w as u32, image_h as u32, pixels);
+            *handle_opt = Some(image::Handle::from_pixels(
+                image_w as u32,
+                image_h as u32,
+                pixels,
+            ));
         }
 
-        let handle = state.handle.lock().unwrap().clone();
         let image_position =
             layout.position() + [self.padding.left as f32, self.padding.top as f32].into();
-        let image_size = image::Renderer::dimensions(renderer, &handle);
-        image::Renderer::draw(
-            renderer,
-            handle,
-            Rectangle::new(
-                image_position,
-                Size::new(
-                    image_size.width as f32 / scale_factor,
-                    image_size.height as f32 / scale_factor,
+        if let Some(ref handle) = *handle_opt {
+            let image_size = image::Renderer::dimensions(renderer, &handle);
+            image::Renderer::draw(
+                renderer,
+                handle.clone(),
+                Rectangle::new(
+                    image_position,
+                    Size::new(
+                        image_size.width as f32 / scale_factor,
+                        image_size.height as f32 / scale_factor,
+                    ),
                 ),
-            ),
-            [0.0; 4],
-        );
+                [0.0; 4],
+            );
+        }
 
         // Draw scrollbar
         let scrollbar_alpha = match &state.dragging {
@@ -661,7 +666,7 @@ pub struct State {
     scale_factor: Cell<f32>,
     scroll_pixels: f32,
     scrollbar_rect: Cell<Rectangle<f32>>,
-    handle: Mutex<image::Handle>,
+    handle_opt: Mutex<Option<image::Handle>>,
 }
 
 impl State {
@@ -673,8 +678,7 @@ impl State {
             scale_factor: Cell::new(1.0),
             scroll_pixels: 0.0,
             scrollbar_rect: Cell::new(Rectangle::default()),
-            //TODO: make option!
-            handle: Mutex::new(image::Handle::from_pixels(1, 1, vec![0, 0, 0, 0])),
+            handle_opt: Mutex::new(None),
         }
     }
 }
