@@ -1,5 +1,6 @@
 new-document = Nuovo documento
 open-project = Apri progetto
+todo = TODO
 
 # Context Pages
 
@@ -16,6 +17,11 @@ settings = Impostazioni
 ## Appearance
 appearance = Aspetto
 theme = Tema
+match-desktop = Sistema
+dark = Scuro
+light = Chiaro
+syntax-dark = Sintassi scura
+syntax-light = Sintassi chiara
 default-font = Font predefinito
 default-font-size = Dimensione font predefinita
 
@@ -30,8 +36,11 @@ file = File
 new-file = Nuovo file
 new-window = Nuova finestra
 open-file = Apri file...
-open-recent = Apri recente
-todo = TODO
+open-recent-file = Apri recente
+close-file = Chiudi file
+menu-open-project = Apri progetto...
+open-recent-project = Apri progetto recente
+close-project = Chiudi progetto
 save = Salva
 save-as = Salva come...
 revert-all-changes = Annulla tutte le modifiche
