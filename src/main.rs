@@ -5,7 +5,9 @@ use cosmic::{
     cosmic_config::{self, CosmicConfigEntry},
     cosmic_theme, executor,
     iced::{
-        clipboard, event, keyboard, subscription,
+        clipboard, event,
+        futures::{self, SinkExt},
+        keyboard, subscription,
         widget::{row, text},
         window, Alignment, Length, Point,
     },
@@ -20,6 +22,7 @@ use std::{
     process,
     sync::Mutex,
 };
+use tokio::time;
 
 use config::{Action, AppTheme, Config, CONFIG_VERSION};
 mod config;
@@ -104,6 +107,23 @@ pub struct Flags {
     config: Config,
 }
 
+#[derive(Debug)]
+pub struct WatcherWrapper {
+    watcher_opt: Option<notify::RecommendedWatcher>,
+}
+
+impl Clone for WatcherWrapper {
+    fn clone(&self) -> Self {
+        Self { watcher_opt: None }
+    }
+}
+
+impl PartialEq for WatcherWrapper {
+    fn eq(&self, _other: &Self) -> bool {
+        false
+    }
+}
+
 #[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum Message {
@@ -118,6 +138,8 @@ pub enum Message {
     Key(keyboard::Modifiers, keyboard::KeyCode),
     NewFile,
     NewWindow,
+    NotifyEvent(notify::Event),
+    NotifyWatcher(WatcherWrapper),
     OpenFileDialog,
     OpenFile(PathBuf),
     OpenProjectDialog,
@@ -171,6 +193,7 @@ pub struct App {
     font_sizes: Vec<u16>,
     theme_names: Vec<String>,
     context_page: ContextPage,
+    watcher_opt: Option<notify::RecommendedWatcher>,
 }
 
 impl App {
@@ -304,6 +327,7 @@ impl App {
 
                 let mut tab = Tab::new(&self.config);
                 tab.open(canonical);
+                tab.watch(&mut self.watcher_opt);
                 tab
             }
             None => Tab::new(&self.config),
@@ -337,9 +361,7 @@ impl App {
                     log::error!("failed to save config: {}", err);
                 }
             },
-            None => {
-                //TODO: log that there is no handler?
-            }
+            None => {}
         }
         self.update_config()
     }
@@ -485,6 +507,7 @@ impl Application for App {
             font_sizes,
             theme_names,
             context_page: ContextPage::Settings,
+            watcher_opt: None,
         };
 
         for arg in env::args().skip(1) {
@@ -681,6 +704,57 @@ impl Application for App {
                     }
                 }
             }
+            Message::NotifyEvent(event) => {
+                let mut needs_reload = Vec::new();
+                for entity in self.tab_model.iter() {
+                    match self.tab_model.data::<Tab>(entity) {
+                        Some(tab) => {
+                            if let Some(path) = &tab.path_opt {
+                                if event.paths.contains(&path) {
+                                    if tab.changed() {
+                                        log::warn!(
+                                            "file changed externally before being saved: {:?}",
+                                            path
+                                        );
+                                    } else {
+                                        needs_reload.push(entity);
+                                    }
+                                }
+                            }
+                        }
+                        None => {}
+                    }
+                }
+
+                for entity in needs_reload {
+                    match self.tab_model.data_mut::<Tab>(entity) {
+                        Some(tab) => {
+                            tab.reload();
+                        }
+                        None => {
+                            log::warn!("failed to find tab {:?} that needs reload", entity);
+                        }
+                    }
+                }
+            }
+            Message::NotifyWatcher(mut watcher_wrapper) => match watcher_wrapper.watcher_opt.take()
+            {
+                Some(watcher) => {
+                    self.watcher_opt = Some(watcher);
+
+                    for entity in self.tab_model.iter() {
+                        match self.tab_model.data::<Tab>(entity) {
+                            Some(tab) => {
+                                tab.watch(&mut self.watcher_opt);
+                            }
+                            None => {}
+                        }
+                    }
+                }
+                None => {
+                    log::warn!("message did not contain notify watcher");
+                }
+            },
             Message::OpenFileDialog => {
                 #[cfg(feature = "rfd")]
                 return Command::perform(
@@ -1112,6 +1186,63 @@ impl Application for App {
                     key_code,
                 }) => Some(Message::Key(modifiers, key_code)),
                 _ => None,
+            }),
+            subscription::channel(0, 100, |mut output| async move {
+                let watcher_res = {
+                    let mut output = output.clone();
+                    notify::recommended_watcher(
+                        move |event_res: Result<notify::Event, notify::Error>| match event_res {
+                            Ok(event) => {
+                                match &event.kind {
+                                    notify::EventKind::Access(_)
+                                    | notify::EventKind::Modify(
+                                        notify::event::ModifyKind::Metadata(_),
+                                    ) => {
+                                        // Data not mutated
+                                        return;
+                                    }
+                                    _ => {}
+                                }
+
+                                match futures::executor::block_on(async {
+                                    output.send(Message::NotifyEvent(event)).await
+                                }) {
+                                    Ok(()) => {}
+                                    Err(err) => {
+                                        log::warn!("failed to send notify event: {:?}", err);
+                                    }
+                                }
+                            }
+                            Err(err) => {
+                                log::warn!("failed to watch files: {:?}", err);
+                            }
+                        },
+                    )
+                };
+
+                match watcher_res {
+                    Ok(watcher) => {
+                        match output
+                            .send(Message::NotifyWatcher(WatcherWrapper {
+                                watcher_opt: Some(watcher),
+                            }))
+                            .await
+                        {
+                            Ok(()) => {}
+                            Err(err) => {
+                                log::warn!("failed to send notify watcher: {:?}", err);
+                            }
+                        }
+                    }
+                    Err(err) => {
+                        log::warn!("failed to create file watcher: {:?}", err);
+                    }
+                }
+
+                //TODO: how to properly kill this task?
+                loop {
+                    time::sleep(time::Duration::new(1, 0)).await;
+                }
             }),
             cosmic_config::config_subscription(0, Self::APP_ID.into(), CONFIG_VERSION).map(
                 |(_, res)| match res {

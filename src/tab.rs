@@ -5,6 +5,7 @@ use cosmic::{
     widget::{icon, Icon},
 };
 use cosmic_text::{Attrs, Buffer, Edit, Shaping, SyntaxEditor, ViEditor, Wrap};
+use notify::Watcher;
 use std::{fs, path::PathBuf, sync::Mutex};
 
 use crate::{fl, mime_icon, Config, FALLBACK_MIME_ICON, FONT_SYSTEM, SYNTAX_SYSTEM};
@@ -82,6 +83,31 @@ impl Tab {
         }
     }
 
+    pub fn reload(&mut self) {
+        let mut editor = self.editor.lock().unwrap();
+        let mut font_system = FONT_SYSTEM.lock().unwrap();
+        let mut editor = editor.borrow_with(&mut font_system);
+        if let Some(path) = &self.path_opt {
+            // Save scroll
+            let scroll = editor.buffer().scroll();
+            //TODO: save/restore more?
+
+            match editor.load_text(path, self.attrs) {
+                Ok(()) => {
+                    log::info!("reloaded {:?}", path);
+                }
+                Err(err) => {
+                    log::error!("failed to reload {:?}: {}", path, err);
+                }
+            }
+
+            // Restore scroll
+            editor.buffer_mut().set_scroll(scroll);
+        } else {
+            log::warn!("tried to reload with no path");
+        }
+    }
+
     pub fn save(&mut self) {
         if let Some(path) = &self.path_opt {
             let mut editor = self.editor.lock().unwrap();
@@ -101,6 +127,21 @@ impl Tab {
             }
         } else {
             log::warn!("tab has no path yet");
+        }
+    }
+
+    pub fn watch(&self, watcher_opt: &mut Option<notify::RecommendedWatcher>) {
+        if let Some(path) = &self.path_opt {
+            if let Some(watcher) = watcher_opt {
+                match watcher.watch(&path, notify::RecursiveMode::NonRecursive) {
+                    Ok(()) => {
+                        log::info!("watching {:?} for changes", path);
+                    }
+                    Err(err) => {
+                        log::warn!("failed to watch {:?} for changes: {:?}", path, err);
+                    }
+                }
+            }
         }
     }
 

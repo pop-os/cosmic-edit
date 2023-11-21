@@ -9,9 +9,12 @@ license = "GPL-3.0-only"
 env_logger = "0.10.0"
 lazy_static = "1.4.0"
 log = "0.4.20"
+notify = "6.1.1"
 #TODO: this is using gtk for file dialogues
 rfd = { version = "0.12.0", optional = true }
 serde = { version = "1", features = ["serde_derive"] }
+tokio = { version = "1", features = ["time"] }
+# Extra syntax highlighting
 syntect = "5.1.0"
 two-face = "0.3.0"
 # Internationalization
@@ -27,7 +30,7 @@ features = ["syntect", "vi"]
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
 default-features = false
-features = ["winit", "wgpu"]
+features = ["tokio", "winit", "wgpu"]
 #path = "../libcosmic"
 
 #TODO: clean up and send changes upstream
