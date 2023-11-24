@@ -1,5 +1,6 @@
 new-document = Nový dokument
 open-project = Otvoriť projekt
+todo = TODO
 
 # Context Pages
 
@@ -16,6 +17,11 @@ settings = Nastavenia
 ## Appearance
 appearance = Vzhľad
 theme = Téma
+match-desktop = Podľa systému
+dark = Tmavá
+light = Svetlá
+syntax-dark = Syntax tmavá
+syntax-light = Syntax svetlá
 default-font = Východzie písmo
 default-font-size = Východzia veľkosť písma
 
@@ -30,8 +36,11 @@ file = Súbor
 new-file = Nový súbor
 new-window = Nové okno
 open-file = Otvoriť súbor...
-open-recent = Otvoriť nedávne
-todo = TODO
+open-recent-file = Otvoriť nedávny súbor
+close-file = Zatvoriť súbor
+menu-open-project = Otvoriť projekt...
+open-recent-project = Otvoriť nedávny projekt
+close-project = Zatvoriť projekt
 save = Uložiť
 save-as = Uložiť ako...
 revert-all-changes = Vrátiť všetky zmeny
@@ -48,6 +57,7 @@ redo = Znovu
 cut = Vystrihnúť
 copy = Kopírovať
 paste = Vložiť
+select-all = Vybrať všetko
 find = Nájsť
 replace = Nahradiť
 spell-check = Kontrola pravopisu...
