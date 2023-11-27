@@ -11,9 +11,9 @@ use cosmic::{
         widget::{row, text},
         window, Alignment, Length, Point,
     },
-    style,
+    style, theme,
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
-    Application, ApplicationExt, Element,
+    Application, ApplicationExt, Apply, Element,
 };
 use cosmic_text::{Cursor, Edit, Family, FontSystem, SwashCache, SyntaxSystem, ViMode};
 use std::{
@@ -537,6 +537,38 @@ impl Application for App {
         //TODO: try update_config here? It breaks loading system theme by default
         let command = app.update_tab();
         (app, command)
+    }
+
+    // The default nav_bar widget needs to be condensed for cosmic-edit
+    fn nav_bar(&self) -> Option<Element<message::Message<Self::Message>>> {
+        if !self.core().nav_bar_active() {
+            return None;
+        }
+
+        let nav_model = self.nav_model()?;
+
+        let mut nav = segmented_button::vertical(nav_model)
+            .button_height(24)
+            .button_padding([16, 4, 16, 4])
+            .button_spacing(4)
+            .on_activate(|entity| message::cosmic(cosmic::app::cosmic::Message::NavBar(entity)))
+            .spacing(0)
+            .style(theme::SegmentedButton::ViewSwitcher)
+            .apply(widget::container)
+            .padding([8, 16])
+            .width(Length::Fill);
+
+        if !self.core().is_condensed() {
+            nav = nav.max_width(300);
+        }
+
+        Some(
+            nav.apply(widget::scrollable)
+                .apply(widget::container)
+                .height(Length::Fill)
+                .style(theme::Container::custom(nav_bar::nav_bar_style))
+                .into(),
+        )
     }
 
     fn nav_model(&self) -> Option<&nav_bar::Model> {
