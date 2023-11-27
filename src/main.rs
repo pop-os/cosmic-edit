@@ -60,7 +60,7 @@ lazy_static::lazy_static! {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    match fork::daemon(false, false) {
+    match fork::daemon(true, true) {
         Ok(fork::Fork::Child) => (),
         Ok(fork::Fork::Parent(_child_pid)) => process::exit(0),
         Err(err) => {
@@ -68,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             process::exit(1);
         }
     }
-    
+
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
 
     localize::localize();
@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let config = match Config::get_entry(&config_handler) {
                 Ok(ok) => ok,
                 Err((errs, config)) => {
-                    log::warn!("errors loading config: {:?}", errs);
+                    log::info!("errors loading config: {:?}", errs);
                     config
                 }
             };
@@ -1303,7 +1303,7 @@ impl Application for App {
             .map(|(_, res)| match res {
                 Ok(config) => Message::Config(config),
                 Err((errs, config)) => {
-                    log::warn!("errors loading config: {:#?}", errs);
+                    log::info!("errors loading config: {:?}", errs);
                     Message::Config(config)
                 }
             }),
@@ -1315,7 +1315,7 @@ impl Application for App {
             .map(|(_, u)| match u {
                 Ok(t) => Message::SystemThemeModeChange(t),
                 Err((errs, t)) => {
-                    log::warn!("errors loading theme mode: {:#?}", errs);
+                    log::info!("errors loading theme mode: {:?}", errs);
                     Message::SystemThemeModeChange(t)
                 }
             }),
