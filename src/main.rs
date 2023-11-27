@@ -17,6 +17,7 @@ use cosmic::{
 };
 use cosmic_text::{Cursor, Edit, Family, FontSystem, SwashCache, SyntaxSystem, ViMode};
 use std::{
+    any::TypeId,
     env, fs,
     path::{Path, PathBuf},
     process,
@@ -1180,6 +1181,10 @@ impl Application for App {
     }
 
     fn subscription(&self) -> subscription::Subscription<Message> {
+        struct WatcherSubscription;
+        struct ConfigSubscription;
+        struct ThemeSubscription;
+
         subscription::Subscription::batch([
             subscription::events_with(|event, _status| match event {
                 event::Event::Keyboard(keyboard::Event::KeyPressed {
@@ -1188,74 +1193,81 @@ impl Application for App {
                 }) => Some(Message::Key(modifiers, key_code)),
                 _ => None,
             }),
-            subscription::channel(0, 100, |mut output| async move {
-                let watcher_res = {
-                    let mut output = output.clone();
-                    notify::recommended_watcher(
-                        move |event_res: Result<notify::Event, notify::Error>| match event_res {
-                            Ok(event) => {
-                                match &event.kind {
-                                    notify::EventKind::Access(_)
-                                    | notify::EventKind::Modify(
-                                        notify::event::ModifyKind::Metadata(_),
-                                    ) => {
-                                        // Data not mutated
-                                        return;
+            subscription::channel(
+                TypeId::of::<WatcherSubscription>(),
+                100,
+                |mut output| async move {
+                    let watcher_res = {
+                        let mut output = output.clone();
+                        notify::recommended_watcher(
+                            move |event_res: Result<notify::Event, notify::Error>| match event_res {
+                                Ok(event) => {
+                                    match &event.kind {
+                                        notify::EventKind::Access(_)
+                                        | notify::EventKind::Modify(
+                                            notify::event::ModifyKind::Metadata(_),
+                                        ) => {
+                                            // Data not mutated
+                                            return;
+                                        }
+                                        _ => {}
                                     }
-                                    _ => {}
-                                }
 
-                                match futures::executor::block_on(async {
-                                    output.send(Message::NotifyEvent(event)).await
-                                }) {
-                                    Ok(()) => {}
-                                    Err(err) => {
-                                        log::warn!("failed to send notify event: {:?}", err);
+                                    match futures::executor::block_on(async {
+                                        output.send(Message::NotifyEvent(event)).await
+                                    }) {
+                                        Ok(()) => {}
+                                        Err(err) => {
+                                            log::warn!("failed to send notify event: {:?}", err);
+                                        }
                                     }
                                 }
-                            }
-                            Err(err) => {
-                                log::warn!("failed to watch files: {:?}", err);
-                            }
-                        },
-                    )
-                };
+                                Err(err) => {
+                                    log::warn!("failed to watch files: {:?}", err);
+                                }
+                            },
+                        )
+                    };
 
-                match watcher_res {
-                    Ok(watcher) => {
-                        match output
-                            .send(Message::NotifyWatcher(WatcherWrapper {
-                                watcher_opt: Some(watcher),
-                            }))
-                            .await
-                        {
-                            Ok(()) => {}
-                            Err(err) => {
-                                log::warn!("failed to send notify watcher: {:?}", err);
+                    match watcher_res {
+                        Ok(watcher) => {
+                            match output
+                                .send(Message::NotifyWatcher(WatcherWrapper {
+                                    watcher_opt: Some(watcher),
+                                }))
+                                .await
+                            {
+                                Ok(()) => {}
+                                Err(err) => {
+                                    log::warn!("failed to send notify watcher: {:?}", err);
+                                }
                             }
                         }
+                        Err(err) => {
+                            log::warn!("failed to create file watcher: {:?}", err);
+                        }
                     }
-                    Err(err) => {
-                        log::warn!("failed to create file watcher: {:?}", err);
-                    }
-                }
 
-                //TODO: how to properly kill this task?
-                loop {
-                    time::sleep(time::Duration::new(1, 0)).await;
-                }
-            }),
-            cosmic_config::config_subscription(0, Self::APP_ID.into(), CONFIG_VERSION).map(
-                |(_, res)| match res {
-                    Ok(config) => Message::Config(config),
-                    Err((errs, config)) => {
-                        log::warn!("errors loading config: {:#?}", errs);
-                        Message::Config(config)
+                    //TODO: how to properly kill this task?
+                    loop {
+                        time::sleep(time::Duration::new(1, 0)).await;
                     }
                 },
             ),
+            cosmic_config::config_subscription(
+                TypeId::of::<ConfigSubscription>(),
+                Self::APP_ID.into(),
+                CONFIG_VERSION,
+            )
+            .map(|(_, res)| match res {
+                Ok(config) => Message::Config(config),
+                Err((errs, config)) => {
+                    log::warn!("errors loading config: {:#?}", errs);
+                    Message::Config(config)
+                }
+            }),
             cosmic_config::config_subscription::<_, cosmic_theme::ThemeMode>(
-                0,
+                TypeId::of::<ThemeSubscription>(),
                 cosmic_theme::THEME_MODE_ID.into(),
                 cosmic_theme::ThemeMode::version(),
             )
