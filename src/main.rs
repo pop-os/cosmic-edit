@@ -15,7 +15,7 @@ use cosmic::{
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
     Application, ApplicationExt, Apply, Element,
 };
-use cosmic_text::{Cursor, Edit, Family, FontSystem, SwashCache, SyntaxSystem, ViMode};
+use cosmic_text::{Cursor, Edit, Family, FontSystem, Selection, SwashCache, SyntaxSystem, ViMode};
 use std::{
     any::TypeId,
     env, fs,
@@ -889,7 +889,7 @@ impl Application for App {
                         let buffer = editor.buffer();
                         let last_line = buffer.lines.len().saturating_sub(1);
                         let last_index = buffer.lines[last_line].text().len();
-                        editor.set_select_opt(Some(Cursor::new(last_line, last_index)));
+                        editor.set_selection(Selection::Normal(Cursor::new(last_line, last_index)));
                     }
                     None => {}
                 }

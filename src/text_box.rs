@@ -350,7 +350,16 @@ where
                         image_color |= (color.0 & 0x00FF0000) >> 16;
                         // Shift blue channel
                         image_color |= (color.0 & 0x000000FF) << 16;
-                        draw_rect(buffer, image_w, image_h, x, y, w as i32, h as i32, image_color);
+                        draw_rect(
+                            buffer,
+                            image_w,
+                            image_h,
+                            x,
+                            y,
+                            w as i32,
+                            h as i32,
+                            image_color,
+                        );
                     },
                 );
 
