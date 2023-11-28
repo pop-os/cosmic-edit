@@ -30,7 +30,6 @@ features = ["syntect", "vi"]
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
-branch = "customizable-nav-bar"
 default-features = false
 features = ["tokio", "winit", "wgpu"]
 #path = "../libcosmic"
