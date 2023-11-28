@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use cosmic::widget::{icon, Icon};
+use cosmic::widget::Icon;
 use std::{
     cmp::Ordering,
     fs, io,
     path::{Path, PathBuf},
 };
 
-use crate::mime_icon;
+use crate::{icon_cache_get, mime_icon};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ProjectNode {
@@ -53,13 +53,13 @@ impl ProjectNode {
     pub fn icon(&self, size: u16) -> Icon {
         match self {
             //TODO: different icon for project root?
-            Self::Folder { open, .. } => icon::from_name(if *open {
-                "go-down-symbolic"
-            } else {
-                "go-next-symbolic"
-            })
-            .size(size)
-            .icon(),
+            Self::Folder { open, .. } => {
+                if *open {
+                    icon_cache_get("go-down-symbolic", size)
+                } else {
+                    icon_cache_get("go-next-symbolic", size)
+                }
+            }
             Self::File { path, .. } => mime_icon(path, size),
         }
     }

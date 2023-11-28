@@ -28,6 +28,9 @@ use tokio::time;
 use config::{Action, AppTheme, Config, CONFIG_VERSION};
 mod config;
 
+use icon_cache::IconCache;
+mod icon_cache;
+
 mod localize;
 
 pub use self::mime_icon::{mime_icon, FALLBACK_MIME_ICON};
@@ -48,6 +51,7 @@ mod text_box;
 //TODO: re-use iced FONT_SYSTEM
 lazy_static::lazy_static! {
     static ref FONT_SYSTEM: Mutex<FontSystem> = Mutex::new(FontSystem::new());
+    static ref ICON_CACHE: Mutex<IconCache> = Mutex::new(IconCache::new());
     static ref SWASH_CACHE: Mutex<SwashCache> = Mutex::new(SwashCache::new());
     static ref SYNTAX_SYSTEM: SyntaxSystem = {
         let lazy_theme_set = two_face::theme::LazyThemeSet::from(two_face::theme::extra());
@@ -57,6 +61,11 @@ lazy_static::lazy_static! {
             theme_set: syntect::highlighting::ThemeSet::from(&lazy_theme_set),
         }
     };
+}
+
+pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
+    let mut icon_cache = ICON_CACHE.lock().unwrap();
+    icon_cache.get(name, size)
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -539,7 +548,7 @@ impl Application for App {
             app.core.nav_bar_toggle();
             app.nav_model
                 .insert()
-                .icon(icon::from_name("folder-open-symbolic").size(16).icon())
+                .icon(icon_cache_get("folder-open-symbolic", 16))
                 .text(fl!("open-project"));
         }
 
@@ -1149,10 +1158,11 @@ impl Application for App {
             row![
                 view_switcher::horizontal(&self.tab_model)
                     .button_height(32)
+                    .close_icon(icon_cache_get("window-close-symbolic", 16))
                     .on_activate(Message::TabActivate)
                     .on_close(Message::TabClose)
                     .width(Length::Shrink),
-                button(icon::from_name("list-add-symbolic").size(16).icon())
+                button(icon_cache_get("list-add-symbolic", 16))
                     .on_press(Message::NewFile)
                     .padding(8)
                     .style(style::Button::Icon)

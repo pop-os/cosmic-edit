@@ -15,7 +15,7 @@ use cosmic::{
     Element,
 };
 
-use crate::{fl, Action, Config, ContextPage, Message};
+use crate::{fl, icon_cache_get, Action, Config, ContextPage, Message};
 
 macro_rules! menu_button {
     ($($x:expr),+ $(,)?) => (
@@ -113,10 +113,7 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
     //TODO: support key lookup?
     let menu_checkbox = |label, value, message| {
         let check: Element<_> = if value {
-            widget::icon::from_name("object-select-symbolic")
-                .size(16)
-                .icon()
-                .into()
+            icon_cache_get("object-select-symbolic", 16).into()
         } else {
             widget::Space::with_width(Length::Fixed(16.0)).into()
         };
