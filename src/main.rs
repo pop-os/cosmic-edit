@@ -60,6 +60,7 @@ lazy_static::lazy_static! {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(unix)]
     match fork::daemon(true, true) {
         Ok(fork::Fork::Child) => (),
         Ok(fork::Fork::Parent(_child_pid)) => process::exit(0),

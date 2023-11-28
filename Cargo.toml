@@ -7,7 +7,6 @@ license = "GPL-3.0-only"
 
 [dependencies]
 env_logger = "0.10.0"
-fork = "0.1"
 lazy_static = "1.4.0"
 log = "0.4.20"
 notify = "6.1.1"
@@ -37,6 +36,9 @@ features = ["tokio", "winit", "wgpu"]
 #TODO: clean up and send changes upstream
 [dependencies.systemicons]
 git = "https://github.com/jackpot51/systemicons"
+
+[target.'cfg(unix)'.dependencies]
+fork = "0.1"
 
 [features]
 default = ["rfd"]
