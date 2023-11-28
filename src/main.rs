@@ -430,7 +430,11 @@ impl App {
         self.update_nav_bar_active();
 
         let title = match self.active_tab() {
-            Some(tab) => tab.title(),
+            Some(tab) => {
+                // Force redraw on tab switches
+                tab.editor.lock().unwrap().buffer_mut().set_redraw(true);
+                tab.title()
+            }
             None => format!("No Open File"),
         };
 
