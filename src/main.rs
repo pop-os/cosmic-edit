@@ -225,6 +225,7 @@ pub struct App {
     font_sizes: Vec<u16>,
     theme_names: Vec<String>,
     context_page: ContextPage,
+    project_search_id: widget::Id,
     project_search_value: String,
     project_search_result: Option<ProjectSearchResult>,
     watcher_opt: Option<notify::RecommendedWatcher>,
@@ -548,6 +549,7 @@ impl Application for App {
             font_sizes,
             theme_names,
             context_page: ContextPage::Settings,
+            project_search_id: widget::Id::unique(),
             project_search_value: String::new(),
             project_search_result: None,
             watcher_opt: None,
@@ -915,6 +917,9 @@ impl Application for App {
             },
             Message::ProjectSearchResult(project_search_result) => {
                 self.project_search_result = Some(project_search_result);
+
+                // Ensure input remains focused
+                return widget::text_input::focus(self.project_search_id.clone());
             }
             Message::ProjectSearchSubmit => {
                 //TODO: cache projects outside of nav model?
@@ -1104,6 +1109,16 @@ impl Application for App {
                     self.core.window.show_context = true;
                 }
                 self.set_context_title(context_page.title());
+
+                // Ensure focus of correct input
+                if self.core.window.show_context {
+                    match self.context_page {
+                        ContextPage::ProjectSearch => {
+                            return widget::text_input::focus(self.project_search_id.clone());
+                        }
+                        _ => {}
+                    }
+                }
             }
             Message::ToggleWordWrap => {
                 self.config.word_wrap = !self.config.word_wrap;
@@ -1178,7 +1193,8 @@ impl Application for App {
                 let search_input = widget::text_input::search_input(
                     &fl!("project-search"),
                     &self.project_search_value,
-                );
+                )
+                .id(self.project_search_id.clone());
 
                 let items = match &self.project_search_result {
                     Some(project_search_result) => {
@@ -1238,7 +1254,10 @@ impl Application for App {
                     }
                 };
 
-                widget::settings::view_column(items).into()
+                widget::column::with_children(items)
+                    .spacing(16)
+                    .padding([8, 0])
+                    .into()
             }
             ContextPage::Settings => {
                 let app_theme_selected = match self.config.app_theme {
