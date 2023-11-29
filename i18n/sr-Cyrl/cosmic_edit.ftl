@@ -11,6 +11,9 @@ character-count = Знакови
 character-count-no-spaces = Знакови (без размака)
 line-count = Редови
 
+## Project search
+project-search = Претрага пројекта
+
 ## Settings
 settings = Подешавања
 
@@ -60,6 +63,7 @@ paste = Налепи
 select-all = Изабери све
 find = Пронађи
 replace = Замени
+find-in-project = Пронађи у пројекту...
 spell-check = Провера правописа...
 
 ## View
