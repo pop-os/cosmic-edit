@@ -11,6 +11,9 @@ character-count = Characters
 character-count-no-spaces = Characters (without spaces)
 line-count = Lines
 
+## Project search
+project-search = Project search
+
 ## Settings
 settings = Settings
 
@@ -57,9 +60,10 @@ redo = Redo
 cut = Cut
 copy = Copy
 paste = Paste
-select-all = Select All
+select-all = Select all
 find = Find
 replace = Replace
+find-in-project = Find in project...
 spell-check = Spell check...
 
 ## View

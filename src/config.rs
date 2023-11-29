@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 use cosmic::{
     cosmic_config::{self, cosmic_config_derive::CosmicConfigEntry, CosmicConfigEntry},
     iced::keyboard::{KeyCode, Modifiers},
@@ -26,6 +28,7 @@ pub enum Action {
     Redo,
     Save,
     SelectAll,
+    ToggleProjectSearch,
     ToggleSettingsPage,
     ToggleWordWrap,
     Undo,
@@ -47,6 +50,7 @@ impl Action {
             Self::Redo => Message::Redo,
             Self::Save => Message::Save,
             Self::SelectAll => Message::SelectAll,
+            Self::ToggleProjectSearch => Message::ToggleContextPage(ContextPage::ProjectSearch),
             Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
             Self::ToggleWordWrap => Message::ToggleWordWrap,
             Self::Undo => Message::Undo,
@@ -114,6 +118,7 @@ impl KeyBind {
         bind!([Ctrl, Shift], Z, Redo);
         bind!([Ctrl], S, Save);
         bind!([Ctrl], A, SelectAll);
+        bind!([Ctrl, Shift], F, ToggleProjectSearch);
         bind!([Ctrl], Comma, ToggleSettingsPage);
         bind!([Alt], Z, ToggleWordWrap);
         bind!([Ctrl], Z, Undo);

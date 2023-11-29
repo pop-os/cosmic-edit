@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-only
+
 use cosmic::widget::icon;
 use std::{collections::HashMap, path::Path, sync::Mutex};
 

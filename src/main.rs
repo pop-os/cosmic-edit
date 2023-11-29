@@ -4,6 +4,7 @@ use cosmic::{
     app::{message, Command, Core, Settings},
     cosmic_config::{self, CosmicConfigEntry},
     cosmic_theme, executor,
+    font::Font,
     iced::{
         clipboard, event,
         futures::{self, SinkExt},
@@ -41,6 +42,9 @@ mod menu;
 
 use self::project::ProjectNode;
 mod project;
+
+use self::search::ProjectSearchResult;
+mod search;
 
 use self::tab::Tab;
 mod tab;
@@ -164,8 +168,12 @@ pub enum Message {
     OpenFile(PathBuf),
     OpenProjectDialog,
     OpenProject(PathBuf),
+    OpenSearchResult(usize, usize),
     Paste,
     PasteValue(String),
+    ProjectSearchResult(ProjectSearchResult),
+    ProjectSearchSubmit,
+    ProjectSearchValue(String),
     Quit,
     Redo,
     Save,
@@ -177,6 +185,7 @@ pub enum Message {
     TabClose(segmented_button::Entity),
     TabContextAction(segmented_button::Entity, Action),
     TabContextMenu(segmented_button::Entity, Option<Point>),
+    TabSetCursor(segmented_button::Entity, Cursor),
     TabWidth(u16),
     Todo,
     ToggleAutoIndent,
@@ -189,6 +198,8 @@ pub enum Message {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ContextPage {
     DocumentStatistics,
+    //TODO: Move search to pop-up
+    ProjectSearch,
     Settings,
 }
 
@@ -196,6 +207,7 @@ impl ContextPage {
     fn title(&self) -> String {
         match self {
             Self::DocumentStatistics => fl!("document-statistics"),
+            Self::ProjectSearch => fl!("project-search"),
             Self::Settings => fl!("settings"),
         }
     }
@@ -213,6 +225,8 @@ pub struct App {
     font_sizes: Vec<u16>,
     theme_names: Vec<String>,
     context_page: ContextPage,
+    project_search_value: String,
+    project_search_result: Option<ProjectSearchResult>,
     watcher_opt: Option<notify::RecommendedWatcher>,
 }
 
@@ -316,14 +330,14 @@ impl App {
         self.open_folder(&path, position + 1, 1);
     }
 
-    pub fn open_tab(&mut self, path_opt: Option<PathBuf>) {
+    pub fn open_tab(&mut self, path_opt: Option<PathBuf>) -> Option<segmented_button::Entity> {
         let tab = match path_opt {
             Some(path) => {
                 let canonical = match fs::canonicalize(&path) {
                     Ok(ok) => ok,
                     Err(err) => {
                         log::error!("failed to canonicalize {:?}: {}", path, err);
-                        return;
+                        return None;
                     }
                 };
 
@@ -342,7 +356,7 @@ impl App {
                 }
                 if let Some(entity) = activate_opt {
                     self.tab_model.activate(entity);
-                    return;
+                    return Some(entity);
                 }
 
                 let mut tab = Tab::new(&self.config);
@@ -353,13 +367,16 @@ impl App {
             None => Tab::new(&self.config),
         };
 
-        self.tab_model
-            .insert()
-            .text(tab.title())
-            .icon(tab.icon(16))
-            .data::<Tab>(tab)
-            .closable()
-            .activate();
+        Some(
+            self.tab_model
+                .insert()
+                .text(tab.title())
+                .icon(tab.icon(16))
+                .data::<Tab>(tab)
+                .closable()
+                .activate()
+                .id(),
+        )
     }
 
     fn update_config(&mut self) -> Command<Message> {
@@ -531,6 +548,8 @@ impl Application for App {
             font_sizes,
             theme_names,
             context_page: ContextPage::Settings,
+            project_search_value: String::new(),
+            project_search_result: None,
             watcher_opt: None,
         };
 
@@ -844,6 +863,43 @@ impl Application for App {
             Message::OpenProject(path) => {
                 self.open_project(path);
             }
+            Message::OpenSearchResult(file_i, line_i) => {
+                let path_cursor_opt = match &self.project_search_result {
+                    Some(project_search_result) => match project_search_result.files.get(file_i) {
+                        Some(file_search_result) => match file_search_result.lines.get(line_i) {
+                            Some(line_search_result) => Some((
+                                file_search_result.path.to_path_buf(),
+                                Cursor::new(
+                                    line_search_result.number.saturating_sub(1),
+                                    line_search_result.first.start(),
+                                ),
+                            )),
+                            None => {
+                                log::warn!("failed to find search result {}, {}", file_i, line_i);
+                                None
+                            }
+                        },
+                        None => {
+                            log::warn!("failed to find search result {}", file_i);
+                            None
+                        }
+                    },
+                    None => None,
+                };
+
+                if let Some((path, cursor)) = path_cursor_opt {
+                    if let Some(entity) = self.open_tab(Some(path)) {
+                        return Command::batch([
+                            //TODO: why must this be done in a command?
+                            Command::perform(
+                                async move { message::app(Message::TabSetCursor(entity, cursor)) },
+                                |x| x,
+                            ),
+                            self.update_tab(),
+                        ]);
+                    }
+                }
+            }
             Message::Paste => {
                 return clipboard::read(|value_opt| match value_opt {
                     Some(value) => message::app(Message::PasteValue(value)),
@@ -857,6 +913,51 @@ impl Application for App {
                 }
                 None => {}
             },
+            Message::ProjectSearchResult(project_search_result) => {
+                self.project_search_result = Some(project_search_result);
+            }
+            Message::ProjectSearchSubmit => {
+                //TODO: cache projects outside of nav model?
+                let mut project_paths = Vec::new();
+                for id in self.nav_model.iter() {
+                    match self.nav_model.data(id) {
+                        Some(ProjectNode::Folder { path, root, .. }) => {
+                            if *root {
+                                project_paths.push(path.clone())
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                let project_search_value = self.project_search_value.clone();
+                let mut project_search_result = ProjectSearchResult {
+                    value: project_search_value.clone(),
+                    in_progress: true,
+                    files: Vec::new(),
+                };
+                self.project_search_result = Some(project_search_result.clone());
+                return Command::perform(
+                    async move {
+                        let task_res = tokio::task::spawn_blocking(move || {
+                            project_search_result.search_projects(project_paths);
+                            message::app(Message::ProjectSearchResult(project_search_result))
+                        })
+                        .await;
+                        match task_res {
+                            Ok(message) => message,
+                            Err(err) => {
+                                log::error!("failed to run search task: {}", err);
+                                message::none()
+                            }
+                        }
+                    },
+                    |x| x,
+                );
+            }
+            Message::ProjectSearchValue(value) => {
+                self.project_search_value = value;
+            }
             Message::Quit => {
                 //TODO: prompt for save?
                 return window::close();
@@ -977,6 +1078,13 @@ impl Application for App {
                     None => {}
                 }
             }
+            Message::TabSetCursor(entity, cursor) => match self.tab_model.data::<Tab>(entity) {
+                Some(tab) => {
+                    let mut editor = tab.editor.lock().unwrap();
+                    editor.set_cursor(cursor);
+                }
+                None => {}
+            },
             Message::TabWidth(tab_width) => {
                 self.config.tab_width = tab_width;
                 return self.save_config();
@@ -1065,6 +1173,72 @@ impl Application for App {
                     )
                     .into()])
                 .into()
+            }
+            ContextPage::ProjectSearch => {
+                let search_input = widget::text_input::search_input(
+                    &fl!("project-search"),
+                    &self.project_search_value,
+                );
+
+                let items = match &self.project_search_result {
+                    Some(project_search_result) => {
+                        let mut items =
+                            Vec::with_capacity(project_search_result.files.len().saturating_add(1));
+
+                        if project_search_result.in_progress {
+                            items.push(search_input.into());
+                        } else {
+                            items.push(
+                                search_input
+                                    .on_input(Message::ProjectSearchValue)
+                                    .on_submit(Message::ProjectSearchSubmit)
+                                    .into(),
+                            );
+                        }
+
+                        for (file_i, file_search_result) in
+                            project_search_result.files.iter().enumerate()
+                        {
+                            let mut column =
+                                widget::column::with_capacity(file_search_result.lines.len());
+                            for (line_i, line_search_result) in
+                                file_search_result.lines.iter().enumerate()
+                            {
+                                column = column.push(
+                                    widget::button(
+                                        widget::text(format!(
+                                            "{}: {}",
+                                            line_search_result.number, line_search_result.text
+                                        ))
+                                        .font(Font::MONOSPACE),
+                                    )
+                                    .on_press(Message::OpenSearchResult(file_i, line_i))
+                                    .width(Length::Fill)
+                                    .style(theme::Button::AppletMenu),
+                                );
+                            }
+
+                            items.push(
+                                widget::settings::view_section(format!(
+                                    "{}",
+                                    file_search_result.path.display(),
+                                ))
+                                .add(column)
+                                .into(),
+                            );
+                        }
+
+                        items
+                    }
+                    None => {
+                        vec![search_input
+                            .on_input(Message::ProjectSearchValue)
+                            .on_submit(Message::ProjectSearchSubmit)
+                            .into()]
+                    }
+                };
+
+                widget::settings::view_column(items).into()
             }
             ContextPage::Settings => {
                 let app_theme_selected = match self.config.app_theme {
@@ -1222,7 +1396,7 @@ impl Application for App {
                     None => text_box.into(),
                 };
                 tab_column = tab_column.push(tab_element);
-                tab_column = tab_column.push(text(status).font(cosmic::font::Font::MONOSPACE));
+                tab_column = tab_column.push(text(status).font(Font::MONOSPACE));
             }
             None => {
                 log::warn!("TODO: No tab open");
