@@ -591,15 +591,22 @@ impl Application for App {
 
         let nav_model = self.nav_model()?;
 
+        let cosmic_theme::Spacing {
+            space_none,
+            space_s,
+            space_xxxs,
+            ..
+        } = self.core().system_theme().cosmic().spacing;
+
         let mut nav = segmented_button::vertical(nav_model)
-            .button_height(28)
-            .button_padding([16, 4, 16, 4])
-            .button_spacing(4)
+            .button_height(space_xxxs + 20 /* line height */ + space_xxxs)
+            .button_padding([space_s, space_xxxs, space_s, space_xxxs])
+            .button_spacing(space_xxxs)
             .on_activate(|entity| message::cosmic(cosmic::app::cosmic::Message::NavBar(entity)))
-            .spacing(0)
+            .spacing(space_none)
             .style(theme::SegmentedButton::ViewSwitcher)
             .apply(widget::container)
-            .padding([8, 16])
+            .padding(space_s)
             .width(Length::Fill);
 
         if !self.core().is_condensed() {
@@ -1148,6 +1155,13 @@ impl Application for App {
             return None;
         }
 
+        let cosmic_theme::Spacing {
+            space_none,
+            space_s,
+            space_xxs,
+            ..
+        } = self.core().system_theme().cosmic().spacing;
+
         Some(match self.context_page {
             ContextPage::DocumentStatistics => {
                 //TODO: calculate in the background
@@ -1258,8 +1272,8 @@ impl Application for App {
                 };
 
                 widget::column::with_children(items)
-                    .spacing(16)
-                    .padding([8, 0])
+                    .spacing(space_s)
+                    .padding([space_xxs, space_none])
                     .into()
             }
             ContextPage::Settings => {
@@ -1348,7 +1362,13 @@ impl Application for App {
     }
 
     fn view(&self) -> Element<Message> {
-        let mut tab_column = widget::column::with_capacity(3).padding([0, 8]);
+        let cosmic_theme::Spacing {
+            space_none,
+            space_xxs,
+            ..
+        } = self.core().system_theme().cosmic().spacing;
+
+        let mut tab_column = widget::column::with_capacity(3).padding([space_none, space_xxs]);
 
         tab_column = tab_column.push(
             row![
@@ -1360,7 +1380,7 @@ impl Application for App {
                     .width(Length::Shrink),
                 button(icon_cache_get("list-add-symbolic", 16))
                     .on_press(Message::NewFile)
-                    .padding(8)
+                    .padding(space_xxs)
                     .style(style::Button::Icon)
             ]
             .align_items(Alignment::Center),
