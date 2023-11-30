@@ -32,6 +32,9 @@ mod config;
 use icon_cache::IconCache;
 mod icon_cache;
 
+use line_number::LineNumberCache;
+mod line_number;
+
 mod localize;
 
 pub use self::mime_icon::{mime_icon, FALLBACK_MIME_ICON};
@@ -56,6 +59,7 @@ mod text_box;
 lazy_static::lazy_static! {
     static ref FONT_SYSTEM: Mutex<FontSystem> = Mutex::new(FontSystem::new());
     static ref ICON_CACHE: Mutex<IconCache> = Mutex::new(IconCache::new());
+    static ref LINE_NUMBER_CACHE: Mutex<LineNumberCache> = Mutex::new(LineNumberCache::new());
     static ref SWASH_CACHE: Mutex<SwashCache> = Mutex::new(SwashCache::new());
     static ref SYNTAX_SYSTEM: SyntaxSystem = {
         let lazy_theme_set = two_face::theme::LazyThemeSet::from(two_face::theme::extra());
@@ -190,6 +194,7 @@ pub enum Message {
     Todo,
     ToggleAutoIndent,
     ToggleContextPage(ContextPage),
+    ToggleLineNumbers,
     ToggleWordWrap,
     Undo,
     VimBindings(bool),
@@ -734,6 +739,12 @@ impl Application for App {
                                 font_system.db_mut().set_monospace_family(font_name);
                             }
 
+                            // Reset line number cache
+                            {
+                                let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
+                                line_number_cache.clear();
+                            }
+
                             // This does a complete reset of shaping data!
                             let entities: Vec<_> = self.tab_model.iter().collect();
                             for entity in entities {
@@ -1130,6 +1141,20 @@ impl Application for App {
                     }
                 }
             }
+            Message::ToggleLineNumbers => {
+                self.config.line_numbers = !self.config.line_numbers;
+
+                // This forces a redraw of all buffers
+                let entities: Vec<_> = self.tab_model.iter().collect();
+                for entity in entities {
+                    if let Some(tab) = self.tab_model.data_mut::<Tab>(entity) {
+                        let mut editor = tab.editor.lock().unwrap();
+                        editor.buffer_mut().set_redraw(true);
+                    }
+                }
+
+                return self.save_config();
+            }
             Message::ToggleWordWrap => {
                 self.config.word_wrap = !self.config.word_wrap;
                 return self.save_config();
@@ -1424,11 +1449,14 @@ impl Application for App {
                         }
                     }
                 };
-                let text_box = text_box(&tab.editor, self.config.metrics())
+                let mut text_box = text_box(&tab.editor, self.config.metrics())
                     .on_changed(Message::TabChanged(tab_id))
                     .on_context_menu(move |position_opt| {
                         Message::TabContextMenu(tab_id, position_opt)
                     });
+                if self.config.line_numbers {
+                    text_box = text_box.line_numbers();
+                }
                 let tab_element: Element<'_, Message> = match tab.context_menu {
                     Some(position) => widget::popover(
                         text_box.context_menu(position),

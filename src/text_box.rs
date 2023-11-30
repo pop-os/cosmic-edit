@@ -20,24 +20,21 @@ use cosmic::{
 use cosmic_text::{Action, Edit, Metrics, ViEditor};
 use std::{cell::Cell, cmp, sync::Mutex, time::Instant};
 
-use crate::{FONT_SYSTEM, SWASH_CACHE};
+use crate::{line_number::LineNumberKey, FONT_SYSTEM, LINE_NUMBER_CACHE, SWASH_CACHE};
 
 pub struct Appearance {
-    pub background_color: Option<Color>,
     pub text_color: Color,
 }
 
 impl Appearance {
     pub fn dark() -> Self {
         Self {
-            background_color: Some(Color::from_rgb8(0x34, 0x34, 0x34)),
             text_color: Color::from_rgb8(0xFF, 0xFF, 0xFF),
         }
     }
 
     pub fn light() -> Self {
         Self {
-            background_color: Some(Color::from_rgb8(0xFC, 0xFC, 0xFC)),
             text_color: Color::from_rgb8(0x00, 0x00, 0x00),
         }
     }
@@ -64,6 +61,7 @@ pub struct TextBox<'a, Message> {
     on_changed: Option<Message>,
     context_menu: Option<Point>,
     on_context_menu: Option<Box<dyn Fn(Option<Point>) -> Message + 'a>>,
+    line_numbers: bool,
 }
 
 impl<'a, Message> TextBox<'a, Message>
@@ -78,6 +76,7 @@ where
             on_changed: None,
             context_menu: None,
             on_context_menu: None,
+            line_numbers: false,
         }
     }
 
@@ -103,6 +102,11 @@ where
         self.on_context_menu = Some(Box::new(on_context_menu));
         self
     }
+
+    pub fn line_numbers(mut self) -> Self {
+        self.line_numbers = true;
+        self
+    }
 }
 
 pub fn text_box<'a, Message>(
@@ -124,8 +128,15 @@ fn draw_rect(
     start_y: i32,
     w: i32,
     h: i32,
-    color: u32,
+    cosmic_color: cosmic_text::Color,
 ) {
+    // Grab alpha channel and green channel
+    let mut color = cosmic_color.0 & 0xFF00FF00;
+    // Shift red channel
+    color |= (cosmic_color.0 & 0x00FF0000) >> 16;
+    // Shift blue channel
+    color |= (cosmic_color.0 & 0x000000FF) << 16;
+
     let alpha = (color >> 24) & 0xFF;
     if alpha == 0 {
         // Do not draw if alpha is zero
@@ -273,18 +284,6 @@ where
 
         let appearance = theme.appearance();
 
-        if let Some(background_color) = appearance.background_color {
-            renderer.fill_quad(
-                renderer::Quad {
-                    bounds: layout.bounds(),
-                    border_radius: 0.0.into(),
-                    border_width: 0.0,
-                    border_color: Color::TRANSPARENT,
-                },
-                background_color,
-            );
-        }
-
         let text_color = cosmic_text::Color::rgba(
             cmp::max(0, cmp::min(255, (appearance.text_color.r * 255.0) as i32)) as u8,
             cmp::max(0, cmp::min(255, (appearance.text_color.g * 255.0) as i32)) as u8,
@@ -316,23 +315,25 @@ where
         let image_w = image_w - scrollbar_w;
 
         let mut font_system = FONT_SYSTEM.lock().unwrap();
-        let mut editor = editor.borrow_with(&mut font_system);
 
         // Set metrics and size
         editor.buffer_mut().set_metrics_and_size(
+            &mut font_system,
             self.metrics.scale(scale_factor),
             image_w as f32,
             image_h as f32,
         );
 
         // Shape and layout as needed
-        editor.shape_as_needed();
+        editor.shape_as_needed(&mut font_system);
 
         let mut handle_opt = state.handle_opt.lock().unwrap();
         if editor.buffer().redraw() || handle_opt.is_none() {
             // Draw to pixel buffer
             let mut pixels = vec![0; image_w as usize * image_h as usize * 4];
             {
+                let mut swash_cache = SWASH_CACHE.lock().unwrap();
+
                 let buffer = unsafe {
                     std::slice::from_raw_parts_mut(
                         pixels.as_mut_ptr() as *mut u32,
@@ -340,25 +341,111 @@ where
                     )
                 };
 
+                let (gutter, gutter_foreground) = {
+                    let convert_color = |color: syntect::highlighting::Color| {
+                        cosmic_text::Color::rgba(color.r, color.g, color.b, color.a)
+                    };
+                    let syntax_theme = editor.theme();
+                    let gutter = syntax_theme
+                        .settings
+                        .gutter
+                        .map_or(editor.background_color(), convert_color);
+                    let gutter_foreground = syntax_theme
+                        .settings
+                        .gutter_foreground
+                        .map_or(editor.foreground_color(), convert_color);
+                    (gutter, gutter_foreground)
+                };
+
+                let mut line_number_width = 0.0;
+
+                if self.line_numbers {
+                    // Ensure fill with gutter color
+                    //TODO: optimize to only fill gutter
+                    draw_rect(buffer, image_w, image_h, 0, 0, image_w, image_h, gutter);
+
+                    // Calculate number of characters needed in line number
+                    let mut line_number_chars = 1;
+                    {
+                        let mut line_count = editor.buffer().lines.len();
+                        while line_count >= 10 {
+                            line_count /= 10;
+                            line_number_chars += 1;
+                        }
+                    }
+
+                    // Draw line numbers
+                    //TODO: move to cosmic-text?
+                    {
+                        let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
+                        for run in editor.buffer().layout_runs() {
+                            let line_number = run.line_i.saturating_add(1);
+                            let line_top = run.line_top;
+
+                            for layout_line in line_number_cache.get(
+                                &mut font_system,
+                                LineNumberKey {
+                                    number: line_number,
+                                    width: line_number_chars,
+                                },
+                            ) {
+                                // These values must be scaled since layout is done at font size 1.0
+                                let max_ascent = layout_line.max_ascent * self.metrics.font_size;
+                                let max_descent = layout_line.max_descent * self.metrics.font_size;
+                                let line_width = layout_line.w * self.metrics.font_size;
+                                if line_width > line_number_width {
+                                    line_number_width = line_width;
+                                }
+
+                                // This code comes from cosmic_text::LayoutRunIter
+                                let glyph_height = max_ascent + max_descent;
+                                let centering_offset =
+                                    (self.metrics.line_height - glyph_height) / 2.0;
+                                let line_y = line_top + centering_offset + max_ascent;
+
+                                for layout_glyph in layout_line.glyphs.iter() {
+                                    let physical_glyph =
+                                        layout_glyph.physical((0., line_y), self.metrics.font_size);
+
+                                    swash_cache.with_pixels(
+                                        &mut font_system,
+                                        physical_glyph.cache_key,
+                                        gutter_foreground,
+                                        |x, y, color| {
+                                            draw_rect(
+                                                buffer,
+                                                image_w,
+                                                image_h,
+                                                physical_glyph.x + x,
+                                                physical_glyph.y + y,
+                                                1,
+                                                1,
+                                                color,
+                                            );
+                                        },
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Draw editor
+                let editor_offset_x = (line_number_width + 8.0).ceil() as i32;
                 editor.draw(
-                    &mut SWASH_CACHE.lock().unwrap(),
+                    &mut font_system,
+                    &mut swash_cache,
                     text_color,
                     |x, y, w, h, color| {
-                        // Grab alpha channel and green channel
-                        let mut image_color = color.0 & 0xFF00FF00;
-                        // Shift red channel
-                        image_color |= (color.0 & 0x00FF0000) >> 16;
-                        // Shift blue channel
-                        image_color |= (color.0 & 0x000000FF) << 16;
                         draw_rect(
                             buffer,
                             image_w,
                             image_h,
-                            x,
+                            editor_offset_x + x,
                             y,
                             w as i32,
                             h as i32,
-                            image_color,
+                            color,
                         );
                     },
                 );
