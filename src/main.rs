@@ -922,43 +922,46 @@ impl Application for App {
                 return widget::text_input::focus(self.project_search_id.clone());
             }
             Message::ProjectSearchSubmit => {
-                //TODO: cache projects outside of nav model?
-                let mut project_paths = Vec::new();
-                for id in self.nav_model.iter() {
-                    match self.nav_model.data(id) {
-                        Some(ProjectNode::Folder { path, root, .. }) => {
-                            if *root {
-                                project_paths.push(path.clone())
+                //TODO: Figure out length requirements?
+                if !self.project_search_value.is_empty() {
+                    //TODO: cache projects outside of nav model?
+                    let mut project_paths = Vec::new();
+                    for id in self.nav_model.iter() {
+                        match self.nav_model.data(id) {
+                            Some(ProjectNode::Folder { path, root, .. }) => {
+                                if *root {
+                                    project_paths.push(path.clone())
+                                }
                             }
+                            _ => {}
                         }
-                        _ => {}
                     }
-                }
 
-                let project_search_value = self.project_search_value.clone();
-                let mut project_search_result = ProjectSearchResult {
-                    value: project_search_value.clone(),
-                    in_progress: true,
-                    files: Vec::new(),
-                };
-                self.project_search_result = Some(project_search_result.clone());
-                return Command::perform(
-                    async move {
-                        let task_res = tokio::task::spawn_blocking(move || {
-                            project_search_result.search_projects(project_paths);
-                            message::app(Message::ProjectSearchResult(project_search_result))
-                        })
-                        .await;
-                        match task_res {
-                            Ok(message) => message,
-                            Err(err) => {
-                                log::error!("failed to run search task: {}", err);
-                                message::none()
+                    let project_search_value = self.project_search_value.clone();
+                    let mut project_search_result = ProjectSearchResult {
+                        value: project_search_value.clone(),
+                        in_progress: true,
+                        files: Vec::new(),
+                    };
+                    self.project_search_result = Some(project_search_result.clone());
+                    return Command::perform(
+                        async move {
+                            let task_res = tokio::task::spawn_blocking(move || {
+                                project_search_result.search_projects(project_paths);
+                                message::app(Message::ProjectSearchResult(project_search_result))
+                            })
+                            .await;
+                            match task_res {
+                                Ok(message) => message,
+                                Err(err) => {
+                                    log::error!("failed to run search task: {}", err);
+                                    message::none()
+                                }
                             }
-                        }
-                    },
-                    |x| x,
-                );
+                        },
+                        |x| x,
+                    );
+                }
             }
             Message::ProjectSearchValue(value) => {
                 self.project_search_value = value;
