@@ -542,6 +542,7 @@ where
         _viewport: &Rectangle<f32>,
     ) -> Status {
         let state = tree.state.downcast_mut::<State>();
+        let editor_offset_x = state.editor_offset_x.get();
         let scale_factor = state.scale_factor.get();
         let scrollbar_rect = state.scrollbar_rect.get();
         let mut editor = self.editor.lock().unwrap();
@@ -632,9 +633,13 @@ where
                     if let Button::Left = button {
                         let x_logical = p.x - self.padding.left;
                         let y_logical = p.y - self.padding.top;
-                        let x = x_logical * scale_factor - state.editor_offset_x.get() as f32;
+                        let x = x_logical * scale_factor - editor_offset_x as f32;
                         let y = y_logical * scale_factor;
-                        if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
+                        if x >= 0.0
+                            && x < (buffer_size.0 - editor_offset_x as f32)
+                            && y >= 0.0
+                            && y < buffer_size.1
+                        {
                             editor.action(Action::Click {
                                 x: x as i32,
                                 y: y as i32,
@@ -682,7 +687,7 @@ where
                     if let Some(p) = cursor_position.position() {
                         let x_logical = (p.x - layout.bounds().x) - self.padding.left;
                         let y_logical = (p.y - layout.bounds().y) - self.padding.top;
-                        let x = x_logical * scale_factor - state.editor_offset_x.get() as f32;
+                        let x = x_logical * scale_factor - editor_offset_x as f32;
                         let y = y_logical * scale_factor;
                         match dragging {
                             Dragging::Buffer => {
