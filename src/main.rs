@@ -592,7 +592,7 @@ impl Application for App {
         let nav_model = self.nav_model()?;
 
         let mut nav = segmented_button::vertical(nav_model)
-            .button_height(24)
+            .button_height(28)
             .button_padding([16, 4, 16, 4])
             .button_spacing(4)
             .on_activate(|entity| message::cosmic(cosmic::app::cosmic::Message::NavBar(entity)))
