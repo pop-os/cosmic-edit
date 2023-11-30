@@ -357,9 +357,7 @@ where
                     (gutter, gutter_foreground)
                 };
 
-                let mut line_number_width = 0.0;
-
-                if self.line_numbers {
+                let editor_offset_x = if self.line_numbers {
                     // Ensure fill with gutter color
                     //TODO: optimize to only fill gutter
                     draw_rect(buffer, image_w, image_h, 0, 0, image_w, image_h, gutter);
@@ -376,6 +374,7 @@ where
 
                     // Draw line numbers
                     //TODO: move to cosmic-text?
+                    let mut line_number_width = 0.0;
                     {
                         let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
                         for run in editor.buffer().layout_runs() {
@@ -428,10 +427,15 @@ where
                             }
                         }
                     }
-                }
+
+                    (line_number_width + 8.0).ceil() as i32
+                } else {
+                    0
+                };
+
+                state.editor_offset_x.set(editor_offset_x);
 
                 // Draw editor
-                let editor_offset_x = (line_number_width + 8.0).ceil() as i32;
                 editor.draw(
                     &mut font_system,
                     &mut swash_cache,
@@ -628,7 +632,7 @@ where
                     if let Button::Left = button {
                         let x_logical = p.x - self.padding.left;
                         let y_logical = p.y - self.padding.top;
-                        let x = x_logical * scale_factor;
+                        let x = x_logical * scale_factor - state.editor_offset_x.get() as f32;
                         let y = y_logical * scale_factor;
                         if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
                             editor.action(Action::Click {
@@ -676,8 +680,10 @@ where
             Event::Mouse(MouseEvent::CursorMoved { .. }) => {
                 if let Some(dragging) = &state.dragging {
                     if let Some(p) = cursor_position.position() {
-                        let x = ((p.x - layout.bounds().x) - self.padding.left) * scale_factor;
-                        let y = ((p.y - layout.bounds().y) - self.padding.top) * scale_factor;
+                        let x_logical = (p.x - layout.bounds().x) - self.padding.left;
+                        let y_logical = (p.y - layout.bounds().y) - self.padding.top;
+                        let x = x_logical * scale_factor - state.editor_offset_x.get() as f32;
+                        let y = y_logical * scale_factor;
                         match dragging {
                             Dragging::Buffer => {
                                 editor.action(Action::Drag {
@@ -765,6 +771,7 @@ enum Dragging {
 pub struct State {
     modifiers: Modifiers,
     dragging: Option<Dragging>,
+    editor_offset_x: Cell<i32>,
     scale_factor: Cell<f32>,
     scroll_pixels: f32,
     scrollbar_rect: Cell<Rectangle<f32>>,
@@ -777,6 +784,7 @@ impl State {
         State {
             modifiers: Modifiers::empty(),
             dragging: None,
+            editor_offset_x: Cell::new(0),
             scale_factor: Cell::new(1.0),
             scroll_pixels: 0.0,
             scrollbar_rect: Cell::new(Rectangle::default()),
