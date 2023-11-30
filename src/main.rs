@@ -1374,6 +1374,7 @@ impl Application for App {
             row![
                 view_switcher::horizontal(&self.tab_model)
                     .button_height(32)
+                    .button_spacing(space_xxs)
                     .close_icon(icon_cache_get("window-close-symbolic", 16))
                     .on_activate(Message::TabActivate)
                     .on_close(Message::TabClose)
