@@ -254,12 +254,15 @@ where
         }
 
         if let Some(p) = cursor_position.position_in(layout.bounds()) {
+            let editor_offset_x = state.editor_offset_x.get();
             let scale_factor = state.scale_factor.get();
             let editor = self.editor.lock().unwrap();
             let buffer_size = editor.buffer().size();
 
-            let x = (p.x - self.padding.left) * scale_factor;
-            let y = (p.y - self.padding.top) * scale_factor;
+            let x_logical = p.x - self.padding.left;
+            let y_logical = p.y - self.padding.top;
+            let x = x_logical * scale_factor - editor_offset_x as f32;
+            let y = y_logical * scale_factor;
             if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
                 return mouse::Interaction::Text;
             }
@@ -314,13 +317,56 @@ where
         // Adjust image width by scrollbar width
         let image_w = image_w - scrollbar_w;
 
+        // Lock font system (used throughout)
         let mut font_system = FONT_SYSTEM.lock().unwrap();
+
+        // Calculate line number information
+        let (line_number_chars, editor_offset_x) = if self.line_numbers {
+            // Calculate number of characters needed in line number
+            let mut line_number_chars = 1;
+            let mut line_count = editor.buffer().lines.len();
+            while line_count >= 10 {
+                line_count /= 10;
+                line_number_chars += 1;
+            }
+
+            // Calculate line number width
+            let mut line_number_width = 0.0;
+            {
+                let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
+                if let Some(layout_line) = line_number_cache
+                    .get(
+                        &mut font_system,
+                        LineNumberKey {
+                            number: 1,
+                            width: line_number_chars,
+                        },
+                    )
+                    .first()
+                {
+                    let line_width = layout_line.w * self.metrics.font_size;
+                    if line_width > line_number_width {
+                        line_number_width = line_width;
+                    }
+                }
+            }
+
+            (line_number_chars, (line_number_width + 8.0).ceil() as i32)
+        } else {
+            (0, 0)
+        };
+
+        // Save editor offset in state
+        if state.editor_offset_x.replace(editor_offset_x) != editor_offset_x {
+            // Mark buffer as needing redraw if editor offset has changed
+            editor.buffer_mut().set_redraw(true);
+        }
 
         // Set metrics and size
         editor.buffer_mut().set_metrics_and_size(
             &mut font_system,
             self.metrics.scale(scale_factor),
-            image_w as f32,
+            (image_w - editor_offset_x) as f32,
             image_h as f32,
         );
 
@@ -341,40 +387,37 @@ where
                     )
                 };
 
-                let (gutter, gutter_foreground) = {
-                    let convert_color = |color: syntect::highlighting::Color| {
-                        cosmic_text::Color::rgba(color.r, color.g, color.b, color.a)
+                if self.line_numbers {
+                    let (gutter, gutter_foreground) = {
+                        let convert_color = |color: syntect::highlighting::Color| {
+                            cosmic_text::Color::rgba(color.r, color.g, color.b, color.a)
+                        };
+                        let syntax_theme = editor.theme();
+                        let gutter = syntax_theme
+                            .settings
+                            .gutter
+                            .map_or(editor.background_color(), convert_color);
+                        let gutter_foreground = syntax_theme
+                            .settings
+                            .gutter_foreground
+                            .map_or(editor.foreground_color(), convert_color);
+                        (gutter, gutter_foreground)
                     };
-                    let syntax_theme = editor.theme();
-                    let gutter = syntax_theme
-                        .settings
-                        .gutter
-                        .map_or(editor.background_color(), convert_color);
-                    let gutter_foreground = syntax_theme
-                        .settings
-                        .gutter_foreground
-                        .map_or(editor.foreground_color(), convert_color);
-                    (gutter, gutter_foreground)
-                };
 
-                let editor_offset_x = if self.line_numbers {
                     // Ensure fill with gutter color
-                    //TODO: optimize to only fill gutter
-                    draw_rect(buffer, image_w, image_h, 0, 0, image_w, image_h, gutter);
-
-                    // Calculate number of characters needed in line number
-                    let mut line_number_chars = 1;
-                    {
-                        let mut line_count = editor.buffer().lines.len();
-                        while line_count >= 10 {
-                            line_count /= 10;
-                            line_number_chars += 1;
-                        }
-                    }
+                    draw_rect(
+                        buffer,
+                        image_w,
+                        image_h,
+                        0,
+                        0,
+                        editor_offset_x,
+                        image_h,
+                        gutter,
+                    );
 
                     // Draw line numbers
                     //TODO: move to cosmic-text?
-                    let mut line_number_width = 0.0;
                     {
                         let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
                         for run in editor.buffer().layout_runs() {
@@ -391,10 +434,6 @@ where
                                 // These values must be scaled since layout is done at font size 1.0
                                 let max_ascent = layout_line.max_ascent * self.metrics.font_size;
                                 let max_descent = layout_line.max_descent * self.metrics.font_size;
-                                let line_width = layout_line.w * self.metrics.font_size;
-                                if line_width > line_number_width {
-                                    line_number_width = line_width;
-                                }
 
                                 // This code comes from cosmic_text::LayoutRunIter
                                 let glyph_height = max_ascent + max_descent;
@@ -427,13 +466,7 @@ where
                             }
                         }
                     }
-
-                    (line_number_width + 8.0).ceil() as i32
-                } else {
-                    0
-                };
-
-                state.editor_offset_x.set(editor_offset_x);
+                }
 
                 // Draw editor
                 editor.draw(
@@ -635,11 +668,7 @@ where
                         let y_logical = p.y - self.padding.top;
                         let x = x_logical * scale_factor - editor_offset_x as f32;
                         let y = y_logical * scale_factor;
-                        if x >= 0.0
-                            && x < (buffer_size.0 - editor_offset_x as f32)
-                            && y >= 0.0
-                            && y < buffer_size.1
-                        {
+                        if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
                             editor.action(Action::Click {
                                 x: x as i32,
                                 y: y as i32,
