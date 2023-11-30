@@ -420,17 +420,26 @@ where
                     //TODO: move to cosmic-text?
                     {
                         let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
+                        let mut last_line_number = 0;
                         for run in editor.buffer().layout_runs() {
                             let line_number = run.line_i.saturating_add(1);
-                            let line_top = run.line_top;
+                            if line_number == last_line_number {
+                                // Skip duplicate lines
+                                continue;
+                            } else {
+                                last_line_number = line_number;
+                            }
 
-                            for layout_line in line_number_cache.get(
-                                &mut font_system,
-                                LineNumberKey {
-                                    number: line_number,
-                                    width: line_number_chars,
-                                },
-                            ) {
+                            if let Some(layout_line) = line_number_cache
+                                .get(
+                                    &mut font_system,
+                                    LineNumberKey {
+                                        number: line_number,
+                                        width: line_number_chars,
+                                    },
+                                )
+                                .first()
+                            {
                                 // These values must be scaled since layout is done at font size 1.0
                                 let max_ascent = layout_line.max_ascent * self.metrics.font_size;
                                 let max_descent = layout_line.max_descent * self.metrics.font_size;
@@ -439,7 +448,7 @@ where
                                 let glyph_height = max_ascent + max_descent;
                                 let centering_offset =
                                     (self.metrics.line_height - glyph_height) / 2.0;
-                                let line_y = line_top + centering_offset + max_ascent;
+                                let line_y = run.line_top + centering_offset + max_ascent;
 
                                 for layout_glyph in layout_line.glyphs.iter() {
                                     let physical_glyph =
