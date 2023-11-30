@@ -1033,7 +1033,7 @@ dependencies = [
 [[package]]
 name = "cosmic-text"
 version = "0.10.0"
-source = "git+https://github.com/pop-os/cosmic-text#1cf36f8a5da243ddc1a76504655243ba6c89888b"
+source = "git+https://github.com/pop-os/cosmic-text#afc5b525f12b0160819c1facf8142d607209d0c3"
 dependencies = [
  "cosmic_undo_2",
  "fontdb 0.16.0",
