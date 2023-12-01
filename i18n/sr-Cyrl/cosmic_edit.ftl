@@ -11,6 +11,11 @@ character-count = Знакови
 character-count-no-spaces = Знакови (без размака)
 line-count = Редови
 
+## Git management
+git-management = Гит управљање
+unstaged-changes = Нестејџоване промене
+staged-changes = Стејџоване промене
+
 ## Project search
 project-search = Претрага пројекта
 
@@ -50,6 +55,7 @@ revert-all-changes = Врати све измене
 menu-document-statistics = Статистике документа...
 document-type = Врста документа...
 encoding = Кодирање...
+menu-git-management = Гит управљање...
 print = Штампај
 quit = Изађи
 
