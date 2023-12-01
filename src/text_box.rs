@@ -302,6 +302,7 @@ where
             - self.padding.vertical() as i32;
 
         let scale_factor = style.scale_factor as f32;
+        let metrics = self.metrics.scale(scale_factor);
 
         let image_w = (view_w as f32 * scale_factor) as i32;
         let image_h = (view_h as f32 * scale_factor) as i32;
@@ -344,7 +345,7 @@ where
                     )
                     .first()
                 {
-                    let line_width = layout_line.w * self.metrics.font_size;
+                    let line_width = layout_line.w * metrics.font_size;
                     if line_width > line_number_width {
                         line_number_width = line_width;
                     }
@@ -365,7 +366,7 @@ where
         // Set metrics and size
         editor.buffer_mut().set_metrics_and_size(
             &mut font_system,
-            self.metrics.scale(scale_factor),
+            metrics,
             (image_w - editor_offset_x) as f32,
             image_h as f32,
         );
@@ -441,18 +442,18 @@ where
                                 .first()
                             {
                                 // These values must be scaled since layout is done at font size 1.0
-                                let max_ascent = layout_line.max_ascent * self.metrics.font_size;
-                                let max_descent = layout_line.max_descent * self.metrics.font_size;
+                                let max_ascent = layout_line.max_ascent * metrics.font_size;
+                                let max_descent = layout_line.max_descent * metrics.font_size;
 
                                 // This code comes from cosmic_text::LayoutRunIter
                                 let glyph_height = max_ascent + max_descent;
                                 let centering_offset =
-                                    (self.metrics.line_height - glyph_height) / 2.0;
+                                    (metrics.line_height - glyph_height) / 2.0;
                                 let line_y = run.line_top + centering_offset + max_ascent;
 
                                 for layout_glyph in layout_line.glyphs.iter() {
                                     let physical_glyph =
-                                        layout_glyph.physical((0., line_y), self.metrics.font_size);
+                                        layout_glyph.physical((0., line_y), metrics.font_size);
 
                                     swash_cache.with_pixels(
                                         &mut font_system,
