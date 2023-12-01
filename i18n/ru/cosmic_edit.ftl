@@ -30,7 +30,7 @@ default-font-size = Размер шрифта по умолчанию
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Сочетания клавиш
-enable-vim-bindings = Привязки клавиши Vim
+enable-vim-bindings = Привязки клавиш Vim
 
 # Menu
 
