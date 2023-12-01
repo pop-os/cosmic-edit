@@ -11,6 +11,9 @@ character-count = Символов
 character-count-no-spaces = Символов (без пробелов)
 line-count = Строк
 
+## Project search
+project-search = Поиск проекта
+
 ## Settings
 settings = Параметры
 
@@ -27,7 +30,7 @@ default-font-size = Размер шрифта по умолчанию
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Сочетания клавиш
-enable-vim-bindings = Включить привязки клавиш Vim
+enable-vim-bindings = Привязки клавиш Vim
 
 # Menu
 
@@ -60,6 +63,7 @@ paste = Вставить
 select-all = Выбрать все
 find = Найти
 replace = Заменить
+find-in-project = Найти в проекте...
 spell-check = Проверить правописание...
 
 ## View
