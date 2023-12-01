@@ -1183,6 +1183,7 @@ impl Application for App {
         let cosmic_theme::Spacing {
             space_none,
             space_s,
+            space_xs,
             space_xxs,
             ..
         } = self.core().system_theme().cosmic().spacing;
@@ -1259,16 +1260,32 @@ impl Application for App {
                         {
                             let mut column =
                                 widget::column::with_capacity(file_search_result.lines.len());
+                            let mut line_number_width = 1;
+                            if let Some(line_search_result) = file_search_result.lines.last() {
+                                let mut number = line_search_result.number;
+                                while number >= 10 {
+                                    number /= 10;
+                                    line_number_width += 1;
+                                }
+                            }
                             for (line_i, line_search_result) in
                                 file_search_result.lines.iter().enumerate()
                             {
                                 column = column.push(
                                     widget::button(
-                                        widget::text(format!(
-                                            "{}: {}",
-                                            line_search_result.number, line_search_result.text
-                                        ))
-                                        .font(Font::MONOSPACE),
+                                        widget::row::with_children(vec![
+                                            widget::text(format!(
+                                                "{:width$}",
+                                                line_search_result.number,
+                                                width = line_number_width,
+                                            ))
+                                            .font(Font::MONOSPACE)
+                                            .into(),
+                                            widget::text(format!("{}", line_search_result.text))
+                                                .font(Font::MONOSPACE)
+                                                .into(),
+                                        ])
+                                        .spacing(space_xs),
                                     )
                                     .on_press(Message::OpenSearchResult(file_i, line_i))
                                     .width(Length::Fill)
