@@ -27,14 +27,14 @@ pub struct ProjectSearchResult {
 }
 
 impl ProjectSearchResult {
-    pub fn search_projects(&mut self, project_paths: Vec<PathBuf>) {
+    pub fn search_projects(&mut self, projects: Vec<(String, PathBuf)>) {
         //TODO: support literal search
         //TODO: use ignore::WalkParallel?
         match RegexMatcher::new(&self.value) {
             Ok(matcher) => {
                 let mut searcher = Searcher::new();
                 let mut walk_builder_opt: Option<ignore::WalkBuilder> = None;
-                for project_path in project_paths.iter() {
+                for (_, project_path) in projects.iter() {
                     walk_builder_opt = match walk_builder_opt.take() {
                         Some(mut walk_builder) => {
                             walk_builder.add(project_path);
@@ -49,7 +49,7 @@ impl ProjectSearchResult {
                         let entry = match entry_res {
                             Ok(ok) => ok,
                             Err(err) => {
-                                log::error!("failed to walk projects {:?}: {}", project_paths, err);
+                                log::error!("failed to walk projects {:?}: {}", projects, err);
                                 continue;
                             }
                         };

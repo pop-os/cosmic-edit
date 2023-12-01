@@ -8,16 +8,35 @@ use cosmic_text::{Attrs, Buffer, Edit, Shaping, SyntaxEditor, ViEditor, Wrap};
 use notify::Watcher;
 use std::{fs, path::PathBuf, sync::Mutex};
 
-use crate::{fl, mime_icon, Config, FALLBACK_MIME_ICON, FONT_SYSTEM, SYNTAX_SYSTEM};
+use crate::{fl, git::GitDiff, mime_icon, Config, FALLBACK_MIME_ICON, FONT_SYSTEM, SYNTAX_SYSTEM};
 
-pub struct Tab {
+pub enum Tab {
+    Editor(EditorTab),
+    GitDiff(GitDiffTab),
+}
+
+impl Tab {
+    pub fn title(&self) -> String {
+        match self {
+            Self::Editor(tab) => tab.title(),
+            Self::GitDiff(tab) => tab.title.clone(),
+        }
+    }
+}
+
+pub struct GitDiffTab {
+    pub title: String,
+    pub diff: GitDiff,
+}
+
+pub struct EditorTab {
     pub path_opt: Option<PathBuf>,
     attrs: Attrs<'static>,
     pub editor: Mutex<ViEditor<'static>>,
     pub context_menu: Option<Point>,
 }
 
-impl Tab {
+impl EditorTab {
     pub fn new(config: &Config) -> Self {
         //TODO: do not repeat, used in App::init
         let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Monospace);

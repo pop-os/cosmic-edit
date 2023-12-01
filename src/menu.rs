@@ -177,6 +177,10 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                 ),
                 menu_item(fl!("document-type"), Message::Todo),
                 menu_item(fl!("encoding"), Message::Todo),
+                menu_item(
+                    fl!("menu-git-management"),
+                    Message::ToggleContextPage(ContextPage::GitManagement),
+                ),
                 menu_item(fl!("print"), Message::Todo),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("quit"), Message::Quit),

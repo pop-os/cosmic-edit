@@ -11,6 +11,11 @@ character-count = Characters
 character-count-no-spaces = Characters (without spaces)
 line-count = Lines
 
+## Git management
+git-management = Git management
+unstaged-changes = Unstaged changes
+staged-changes = Staged changes
+
 ## Project search
 project-search = Project search
 
@@ -50,6 +55,7 @@ revert-all-changes = Revert all changes
 menu-document-statistics = Document statistics...
 document-type = Document type...
 encoding = Encoding...
+menu-git-management = Git management...
 print = Print
 quit = Quit
 

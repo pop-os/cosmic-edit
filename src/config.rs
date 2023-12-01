@@ -28,6 +28,7 @@ pub enum Action {
     Redo,
     Save,
     SelectAll,
+    ToggleGitManagement,
     ToggleProjectSearch,
     ToggleSettingsPage,
     ToggleWordWrap,
@@ -50,6 +51,7 @@ impl Action {
             Self::Redo => Message::Redo,
             Self::Save => Message::Save,
             Self::SelectAll => Message::SelectAll,
+            Self::ToggleGitManagement => Message::ToggleContextPage(ContextPage::GitManagement),
             Self::ToggleProjectSearch => Message::ToggleContextPage(ContextPage::ProjectSearch),
             Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
             Self::ToggleWordWrap => Message::ToggleWordWrap,
@@ -118,6 +120,7 @@ impl KeyBind {
         bind!([Ctrl, Shift], Z, Redo);
         bind!([Ctrl], S, Save);
         bind!([Ctrl], A, SelectAll);
+        bind!([Ctrl, Shift], G, ToggleGitManagement);
         bind!([Ctrl, Shift], F, ToggleProjectSearch);
         bind!([Ctrl], Comma, ToggleSettingsPage);
         bind!([Alt], Z, ToggleWordWrap);

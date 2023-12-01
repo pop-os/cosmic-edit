@@ -10,7 +10,7 @@ use cosmic::{
         futures::{self, SinkExt},
         keyboard, subscription,
         widget::{row, text},
-        window, Alignment, Length, Point,
+        window, Alignment, Background, Color, Length, Point,
     },
     style, theme,
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
@@ -28,6 +28,9 @@ use tokio::time;
 
 use config::{Action, AppTheme, Config, CONFIG_VERSION};
 mod config;
+
+use git::{GitDiff, GitDiffLine, GitRepository, GitStatus, GitStatusKind};
+mod git;
 
 use icon_cache::IconCache;
 mod icon_cache;
@@ -49,7 +52,7 @@ mod project;
 use self::search::ProjectSearchResult;
 mod search;
 
-use self::tab::Tab;
+use self::tab::{EditorTab, GitDiffTab, Tab};
 mod tab;
 
 use self::text_box::text_box;
@@ -163,6 +166,7 @@ pub enum Message {
     Cut,
     DefaultFont(usize),
     DefaultFontSize(usize),
+    GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
     Key(keyboard::Modifiers, keyboard::KeyCode),
     NewFile,
     NewWindow,
@@ -170,11 +174,13 @@ pub enum Message {
     NotifyWatcher(WatcherWrapper),
     OpenFileDialog,
     OpenFile(PathBuf),
+    OpenGitDiff(PathBuf, GitDiff),
     OpenProjectDialog,
     OpenProject(PathBuf),
     OpenSearchResult(usize, usize),
     Paste,
     PasteValue(String),
+    PrepareGitDiff(PathBuf, PathBuf, bool),
     ProjectSearchResult(ProjectSearchResult),
     ProjectSearchSubmit,
     ProjectSearchValue(String),
@@ -203,6 +209,7 @@ pub enum Message {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ContextPage {
     DocumentStatistics,
+    GitManagement,
     //TODO: Move search to pop-up
     ProjectSearch,
     Settings,
@@ -212,6 +219,7 @@ impl ContextPage {
     fn title(&self) -> String {
         match self {
             Self::DocumentStatistics => fl!("document-statistics"),
+            Self::GitManagement => fl!("git-management"),
             Self::ProjectSearch => fl!("project-search"),
             Self::Settings => fl!("settings"),
         }
@@ -230,6 +238,8 @@ pub struct App {
     font_sizes: Vec<u16>,
     theme_names: Vec<String>,
     context_page: ContextPage,
+    git_project_status: Option<Vec<(String, PathBuf, Vec<GitStatus>)>>,
+    projects: Vec<(String, PathBuf)>,
     project_search_id: widget::Id,
     project_search_value: String,
     project_search_result: Option<ProjectSearchResult>,
@@ -300,25 +310,31 @@ impl App {
     }
 
     pub fn open_project<P: AsRef<Path>>(&mut self, path: P) {
-        let node = match ProjectNode::new(&path) {
+        let path = path.as_ref();
+        let node = match ProjectNode::new(path) {
             Ok(mut node) => {
                 match &mut node {
-                    ProjectNode::Folder { open, root, .. } => {
+                    ProjectNode::Folder {
+                        name,
+                        path,
+                        open,
+                        root,
+                    } => {
                         *open = true;
                         *root = true;
+
+                        // Save the absolute path
+                        self.projects.push((name.to_string(), path.to_path_buf()));
                     }
                     _ => {
-                        log::error!(
-                            "failed to open project {:?}: not a directory",
-                            path.as_ref()
-                        );
+                        log::error!("failed to open project {:?}: not a directory", path);
                         return;
                     }
                 }
                 node
             }
             Err(err) => {
-                log::error!("failed to open project {:?}: {}", path.as_ref(), err);
+                log::error!("failed to open project {:?}: {}", path, err);
                 return;
             }
         };
@@ -351,13 +367,13 @@ impl App {
                 let mut activate_opt = None;
                 for entity in self.tab_model.iter() {
                     match self.tab_model.data::<Tab>(entity) {
-                        Some(tab) => {
+                        Some(Tab::Editor(tab)) => {
                             if tab.path_opt.as_ref() == Some(&canonical) {
                                 activate_opt = Some(entity);
                                 break;
                             }
                         }
-                        None => {}
+                        _ => {}
                     }
                 }
                 if let Some(entity) = activate_opt {
@@ -365,12 +381,12 @@ impl App {
                     return Some(entity);
                 }
 
-                let mut tab = Tab::new(&self.config);
+                let mut tab = EditorTab::new(&self.config);
                 tab.open(canonical);
                 tab.watch(&mut self.watcher_opt);
                 tab
             }
-            None => Tab::new(&self.config),
+            None => EditorTab::new(&self.config),
         };
 
         Some(
@@ -378,7 +394,7 @@ impl App {
                 .insert()
                 .text(tab.title())
                 .icon(tab.icon(16))
-                .data::<Tab>(tab)
+                .data::<Tab>(Tab::Editor(tab))
                 .closable()
                 .activate()
                 .id(),
@@ -389,7 +405,7 @@ impl App {
         //TODO: provide iterator over data
         let entities: Vec<_> = self.tab_model.iter().collect();
         for entity in entities {
-            if let Some(tab) = self.tab_model.data_mut::<Tab>(entity) {
+            if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
                 tab.set_config(&self.config);
             }
         }
@@ -411,7 +427,8 @@ impl App {
 
     fn update_nav_bar_active(&mut self) {
         let tab_path_opt = match self.active_tab() {
-            Some(tab) => tab.path_opt.clone(),
+            Some(Tab::Editor(tab)) => tab.path_opt.clone(),
+            Some(Tab::GitDiff(tab)) => Some(tab.diff.path.clone()),
             None => None,
         };
 
@@ -464,8 +481,10 @@ impl App {
 
         let title = match self.active_tab() {
             Some(tab) => {
-                // Force redraw on tab switches
-                tab.editor.lock().unwrap().buffer_mut().set_redraw(true);
+                if let Tab::Editor(inner) = tab {
+                    // Force redraw on tab switches
+                    inner.editor.lock().unwrap().buffer_mut().set_redraw(true);
+                }
                 tab.title()
             }
             None => format!("No Open File"),
@@ -554,6 +573,8 @@ impl Application for App {
             font_sizes,
             theme_names,
             context_page: ContextPage::Settings,
+            git_project_status: None,
+            projects: Vec::new(),
             project_search_id: widget::Id::unique(),
             project_search_value: String::new(),
             project_search_result: None,
@@ -709,17 +730,17 @@ impl Application for App {
                 log::info!("TODO");
             }
             Message::Copy => match self.active_tab() {
-                Some(tab) => {
+                Some(Tab::Editor(tab)) => {
                     let editor = tab.editor.lock().unwrap();
                     let selection_opt = editor.copy_selection();
                     if let Some(selection) = selection_opt {
                         return clipboard::write(selection);
                     }
                 }
-                None => {}
+                _ => {}
             },
             Message::Cut => match self.active_tab() {
-                Some(tab) => {
+                Some(Tab::Editor(tab)) => {
                     let mut editor = tab.editor.lock().unwrap();
                     let selection_opt = editor.copy_selection();
                     editor.delete_selection();
@@ -727,7 +748,7 @@ impl Application for App {
                         return clipboard::write(selection);
                     }
                 }
-                None => {}
+                _ => {}
             },
             Message::DefaultFont(index) => {
                 match self.font_names.get(index) {
@@ -748,7 +769,9 @@ impl Application for App {
                             // This does a complete reset of shaping data!
                             let entities: Vec<_> = self.tab_model.iter().collect();
                             for entity in entities {
-                                if let Some(tab) = self.tab_model.data_mut::<Tab>(entity) {
+                                if let Some(Tab::Editor(tab)) =
+                                    self.tab_model.data_mut::<Tab>(entity)
+                                {
                                     let mut editor = tab.editor.lock().unwrap();
                                     for line in editor.buffer_mut().lines.iter_mut() {
                                         line.reset();
@@ -774,6 +797,9 @@ impl Application for App {
                     log::warn!("failed to find font with index {}", index);
                 }
             },
+            Message::GitProjectStatus(project_status) => {
+                self.git_project_status = Some(project_status);
+            }
             Message::Key(modifiers, key_code) => {
                 for (key_bind, action) in self.config.keybinds.iter() {
                     if key_bind.matches(modifiers, key_code) {
@@ -803,7 +829,7 @@ impl Application for App {
                 let mut needs_reload = Vec::new();
                 for entity in self.tab_model.iter() {
                     match self.tab_model.data::<Tab>(entity) {
-                        Some(tab) => {
+                        Some(Tab::Editor(tab)) => {
                             if let Some(path) = &tab.path_opt {
                                 if event.paths.contains(&path) {
                                     if tab.changed() {
@@ -817,16 +843,16 @@ impl Application for App {
                                 }
                             }
                         }
-                        None => {}
+                        _ => {}
                     }
                 }
 
                 for entity in needs_reload {
                     match self.tab_model.data_mut::<Tab>(entity) {
-                        Some(tab) => {
+                        Some(Tab::Editor(tab)) => {
                             tab.reload();
                         }
-                        None => {
+                        _ => {
                             log::warn!("failed to find tab {:?} that needs reload", entity);
                         }
                     }
@@ -839,10 +865,10 @@ impl Application for App {
 
                     for entity in self.tab_model.iter() {
                         match self.tab_model.data::<Tab>(entity) {
-                            Some(tab) => {
+                            Some(Tab::Editor(tab)) => {
                                 tab.watch(&mut self.watcher_opt);
                             }
-                            None => {}
+                            _ => {}
                         }
                     }
                 }
@@ -865,6 +891,39 @@ impl Application for App {
             }
             Message::OpenFile(path) => {
                 self.open_tab(Some(path));
+                return self.update_tab();
+            }
+            Message::OpenGitDiff(project_path, diff) => {
+                let relative_path = match diff.path.strip_prefix(project_path.clone()) {
+                    Ok(ok) => ok,
+                    Err(err) => {
+                        log::warn!(
+                            "failed to find relative path of {:?} in project {:?}: {}",
+                            diff.path,
+                            project_path,
+                            err
+                        );
+                        &diff.path
+                    }
+                };
+                let title = format!(
+                    "{}: {}",
+                    if diff.staged {
+                        fl!("staged-changes")
+                    } else {
+                        fl!("unstaged-changes")
+                    },
+                    relative_path.display()
+                );
+                let icon = mime_icon(&diff.path, 16);
+                let tab = Tab::GitDiff(GitDiffTab { title, diff });
+                self.tab_model
+                    .insert()
+                    .text(tab.title())
+                    .icon(icon)
+                    .data::<Tab>(tab)
+                    .closable()
+                    .activate();
                 return self.update_tab();
             }
             Message::OpenProjectDialog => {
@@ -927,12 +986,43 @@ impl Application for App {
                 });
             }
             Message::PasteValue(value) => match self.active_tab() {
-                Some(tab) => {
+                Some(Tab::Editor(tab)) => {
                     let mut editor = tab.editor.lock().unwrap();
                     editor.insert_string(&value, None);
                 }
-                None => {}
+                _ => {}
             },
+            Message::PrepareGitDiff(project_path, path, staged) => {
+                return Command::perform(
+                    async move {
+                        //TODO: send errors to UI
+                        match GitRepository::new(&project_path) {
+                            Ok(repo) => match repo.diff(&path, staged).await {
+                                Ok(diff) => {
+                                    return message::app(Message::OpenGitDiff(project_path, diff));
+                                }
+                                Err(err) => {
+                                    log::error!(
+                                        "failed to get diff of {:?} in {:?}: {}",
+                                        path,
+                                        project_path,
+                                        err
+                                    );
+                                }
+                            },
+                            Err(err) => {
+                                log::error!(
+                                    "failed to open repository {:?}: {}",
+                                    project_path,
+                                    err
+                                );
+                            }
+                        }
+                        message::none()
+                    },
+                    |x| x,
+                );
+            }
             Message::ProjectSearchResult(project_search_result) => {
                 self.project_search_result = Some(project_search_result);
 
@@ -942,19 +1032,7 @@ impl Application for App {
             Message::ProjectSearchSubmit => {
                 //TODO: Figure out length requirements?
                 if !self.project_search_value.is_empty() {
-                    //TODO: cache projects outside of nav model?
-                    let mut project_paths = Vec::new();
-                    for id in self.nav_model.iter() {
-                        match self.nav_model.data(id) {
-                            Some(ProjectNode::Folder { path, root, .. }) => {
-                                if *root {
-                                    project_paths.push(path.clone())
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-
+                    let projects = self.projects.clone();
                     let project_search_value = self.project_search_value.clone();
                     let mut project_search_result = ProjectSearchResult {
                         value: project_search_value.clone(),
@@ -965,7 +1043,7 @@ impl Application for App {
                     return Command::perform(
                         async move {
                             let task_res = tokio::task::spawn_blocking(move || {
-                                project_search_result.search_projects(project_paths);
+                                project_search_result.search_projects(projects);
                                 message::app(Message::ProjectSearchResult(project_search_result))
                             })
                             .await;
@@ -989,17 +1067,17 @@ impl Application for App {
                 return window::close();
             }
             Message::Redo => match self.active_tab() {
-                Some(tab) => {
+                Some(Tab::Editor(tab)) => {
                     let mut editor = tab.editor.lock().unwrap();
                     editor.redo();
                 }
-                None => {}
+                _ => {}
             },
             Message::Save => {
                 let mut title_opt = None;
 
                 match self.active_tab_mut() {
-                    Some(tab) => {
+                    Some(Tab::Editor(tab)) => {
                         #[cfg(feature = "rfd")]
                         if tab.path_opt.is_none() {
                             //TODO: use async file dialog
@@ -1008,10 +1086,7 @@ impl Application for App {
                         title_opt = Some(tab.title());
                         tab.save();
                     }
-                    None => {
-                        //TODO: disable save button?
-                        log::warn!("TODO: NO TAB OPEN");
-                    }
+                    _ => {}
                 }
 
                 if let Some(title) = title_opt {
@@ -1020,7 +1095,7 @@ impl Application for App {
             }
             Message::SelectAll => {
                 match self.active_tab_mut() {
-                    Some(tab) => {
+                    Some(Tab::Editor(tab)) => {
                         let mut editor = tab.editor.lock().unwrap();
 
                         // Set cursor to lowest possible value
@@ -1032,7 +1107,7 @@ impl Application for App {
                         let last_index = buffer.lines[last_line].text().len();
                         editor.set_selection(Selection::Normal(Cursor::new(last_line, last_index)));
                     }
-                    None => {}
+                    _ => {}
                 }
             }
             Message::SystemThemeModeChange(_theme_mode) => {
@@ -1056,13 +1131,13 @@ impl Application for App {
                 return self.update_tab();
             }
             Message::TabChanged(entity) => match self.tab_model.data::<Tab>(entity) {
-                Some(tab) => {
+                Some(Tab::Editor(tab)) => {
                     let mut title = tab.title();
                     //TODO: better way of adding change indicator
                     title.push_str(" \u{2022}");
                     self.tab_model.text_set(entity, title);
                 }
-                None => {}
+                _ => {}
             },
             Message::TabClose(entity) => {
                 // Activate closest item
@@ -1086,30 +1161,30 @@ impl Application for App {
             }
             Message::TabContextAction(entity, action) => {
                 match self.tab_model.data_mut::<Tab>(entity) {
-                    Some(tab) => {
+                    Some(Tab::Editor(tab)) => {
                         // Close context menu
                         tab.context_menu = None;
                         // Run action's message
                         return self.update(action.message());
                     }
-                    None => {}
+                    _ => {}
                 }
             }
             Message::TabContextMenu(entity, position_opt) => {
                 match self.tab_model.data_mut::<Tab>(entity) {
-                    Some(tab) => {
+                    Some(Tab::Editor(tab)) => {
                         // Update context menu
                         tab.context_menu = position_opt;
                     }
-                    None => {}
+                    _ => {}
                 }
             }
             Message::TabSetCursor(entity, cursor) => match self.tab_model.data::<Tab>(entity) {
-                Some(tab) => {
+                Some(Tab::Editor(tab)) => {
                     let mut editor = tab.editor.lock().unwrap();
                     editor.set_cursor(cursor);
                 }
-                None => {}
+                _ => {}
             },
             Message::TabWidth(tab_width) => {
                 self.config.tab_width = tab_width;
@@ -1131,10 +1206,52 @@ impl Application for App {
                 }
                 self.set_context_title(context_page.title());
 
-                // Ensure focus of correct input
+                // Execute commands for specific pages
                 if self.core.window.show_context {
                     match self.context_page {
+                        ContextPage::GitManagement => {
+                            self.git_project_status = None;
+                            let projects = self.projects.clone();
+                            return Command::perform(
+                                async move {
+                                    let mut project_status = Vec::new();
+                                    for (project_name, project_path) in projects.iter() {
+                                        //TODO: send errors to UI
+                                        match GitRepository::new(&project_path) {
+                                            Ok(repo) => match repo.status().await {
+                                                Ok(status) => {
+                                                    if !status.is_empty() {
+                                                        project_status.push((
+                                                            project_name.clone(),
+                                                            project_path.clone(),
+                                                            status,
+                                                        ));
+                                                    }
+                                                }
+                                                Err(err) => {
+                                                    log::error!(
+                                                        "failed to get status of {:?}: {}",
+                                                        project_path,
+                                                        err
+                                                    );
+                                                }
+                                            },
+                                            Err(err) => {
+                                                log::error!(
+                                                    "failed to open repository {:?}: {}",
+                                                    project_path,
+                                                    err
+                                                );
+                                            }
+                                        }
+                                    }
+                                    message::app(Message::GitProjectStatus(project_status))
+                                },
+                                |x| x,
+                            );
+                        }
                         ContextPage::ProjectSearch => {
+                            // Ensure focus of correct input
                             return widget::text_input::focus(self.project_search_id.clone());
                         }
                         _ => {}
@@ -1147,7 +1264,7 @@ impl Application for App {
                 // This forces a redraw of all buffers
                 let entities: Vec<_> = self.tab_model.iter().collect();
                 for entity in entities {
-                    if let Some(tab) = self.tab_model.data_mut::<Tab>(entity) {
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
                         let mut editor = tab.editor.lock().unwrap();
                         editor.buffer_mut().set_redraw(true);
                     }
@@ -1160,11 +1277,11 @@ impl Application for App {
                 return self.save_config();
             }
             Message::Undo => match self.active_tab() {
-                Some(tab) => {
+                Some(Tab::Editor(tab)) => {
                     let mut editor = tab.editor.lock().unwrap();
                     editor.undo();
                 }
-                None => {}
+                _ => {}
             },
             Message::VimBindings(vim_bindings) => {
                 self.config.vim_bindings = vim_bindings;
@@ -1195,7 +1312,7 @@ impl Application for App {
                 let mut character_count_no_spaces = 0;
                 let line_count;
                 match self.active_tab() {
-                    Some(tab) => {
+                    Some(Tab::Editor(tab)) => {
                         let editor = tab.editor.lock().unwrap();
                         let buffer = editor.buffer();
 
@@ -1210,7 +1327,7 @@ impl Application for App {
                             }
                         }
                     }
-                    None => {
+                    _ => {
                         return None;
                     }
                 }
@@ -1231,6 +1348,160 @@ impl Application for App {
                     )
                     .into()])
                 .into()
+            }
+            ContextPage::GitManagement => {
+                if let Some(project_status) = &self.git_project_status {
+                    let (success_color, destructive_color, warning_color) = {
+                        let cosmic_theme = self.core().system_theme().cosmic();
+                        (
+                            cosmic_theme.success_color(),
+                            cosmic_theme.destructive_color(),
+                            cosmic_theme.warning_color(),
+                        )
+                    };
+                    let added =
+                        || widget::text("[+]").style(theme::Text::Color(success_color.into()));
+                    let deleted =
+                        || widget::text("[-]").style(theme::Text::Color(destructive_color.into()));
+                    let modified =
+                        || widget::text("[*]").style(theme::Text::Color(warning_color.into()));
+
+                    let mut items = Vec::with_capacity(project_status.len().saturating_mul(3));
+                    for (project_name, project_path, status) in project_status.iter() {
+                        let mut unstaged_items = Vec::with_capacity(status.len());
+                        let mut staged_items = Vec::with_capacity(status.len());
+                        for item in status.iter() {
+                            let relative_path = match item.path.strip_prefix(project_path) {
+                                Ok(ok) => ok,
+                                Err(err) => {
+                                    log::warn!(
+                                        "failed to find relative path of {:?} in project {:?}: {}",
+                                        item.path,
+                                        project_path,
+                                        err
+                                    );
+                                    &item.path
+                                }
+                            };
+
+                            let text = match &item.old_path {
+                                Some(old_path) => {
+                                    let old_relative_path = match old_path
+                                        .strip_prefix(project_path)
+                                    {
+                                        Ok(ok) => ok,
+                                        Err(err) => {
+                                            log::warn!(
+                                                "failed to find relative path of {:?} in project {:?}: {}",
+                                                old_path,
+                                                project_path,
+                                                err
+                                            );
+                                            &old_path
+                                        }
+                                    };
+                                    format!(
+                                        "{} -> {}",
+                                        old_relative_path.display(),
+                                        relative_path.display()
+                                    )
+                                }
+                                None => format!("{}", relative_path.display()),
+                            };
+
+                            let unstaged_opt = match item.unstaged {
+                                GitStatusKind::Unmodified => None,
+                                GitStatusKind::Modified => Some(modified()),
+                                GitStatusKind::FileTypeChanged => Some(modified()),
+                                GitStatusKind::Added => Some(added()),
+                                GitStatusKind::Deleted => Some(deleted()),
+                                GitStatusKind::Renamed => Some(modified()), //TODO
+                                GitStatusKind::Copied => Some(modified()),  // TODO
+                                GitStatusKind::Updated => Some(modified()),
+                                GitStatusKind::Untracked => Some(added()),
+                                GitStatusKind::SubmoduleModified => Some(modified()),
+                            };
+
+                            if let Some(icon) = unstaged_opt {
+                                unstaged_items.push(
+                                    widget::button(
+                                        widget::row::with_children(vec![
+                                            icon.into(),
+                                            widget::text(text.clone()).into(),
+                                        ])
+                                        .spacing(space_xs),
+                                    )
+                                    .on_press(Message::PrepareGitDiff(
+                                        project_path.clone(),
+                                        item.path.clone(),
+                                        false,
+                                    ))
+                                    .style(theme::Button::AppletMenu)
+                                    .width(Length::Fill)
+                                    .into(),
+                                );
+                            }
+
+                            let staged_opt = match item.staged {
+                                GitStatusKind::Unmodified => None,
+                                GitStatusKind::Modified => Some(modified()),
+                                GitStatusKind::FileTypeChanged => Some(modified()),
+                                GitStatusKind::Added => Some(added()),
+                                GitStatusKind::Deleted => Some(deleted()),
+                                GitStatusKind::Renamed => Some(modified()), //TODO
+                                GitStatusKind::Copied => Some(modified()),  // TODO
+                                GitStatusKind::Updated => Some(modified()),
+                                GitStatusKind::Untracked => None,
+                                GitStatusKind::SubmoduleModified => Some(modified()),
+                            };
+
+                            if let Some(icon) = staged_opt {
+                                staged_items.push(
+                                    widget::button(
+                                        widget::row::with_children(vec![
+                                            icon.into(),
+                                            widget::text(text.clone()).into(),
+                                        ])
+                                        .spacing(space_xs),
+                                    )
+                                    .on_press(Message::PrepareGitDiff(
+                                        project_path.clone(),
+                                        item.path.clone(),
+                                        true,
+                                    ))
+                                    .style(theme::Button::AppletMenu)
+                                    .width(Length::Fill)
+                                    .into(),
+                                );
+                            }
+                        }
+
+                        items.push(widget::text::heading(project_name.clone()).into());
+
+                        if !unstaged_items.is_empty() {
+                            items.push(
+                                widget::settings::view_section(fl!("unstaged-changes"))
+                                    .add(widget::column::with_children(unstaged_items))
+                                    .into(),
+                            );
+                        }
+
+                        if !staged_items.is_empty() {
+                            items.push(
+                                widget::settings::view_section(fl!("staged-changes"))
+                                    .add(widget::column::with_children(staged_items))
+                                    .into(),
+                            );
+                        }
+                    }
+
+                    widget::column::with_children(items)
+                        .spacing(space_s)
+                        .padding([space_xxs, space_none])
+                        .into()
+                } else {
+                    widget::text("TODO (TRANSLATE): Loading git status...").into()
+                }
             }
             ContextPage::ProjectSearch => {
                 let search_input = widget::text_input::search_input(
@@ -1431,7 +1702,7 @@ impl Application for App {
 
         let tab_id = self.tab_model.active();
         match self.tab_model.data::<Tab>(tab_id) {
-            Some(tab) => {
+            Some(Tab::Editor(tab)) => {
                 let status = {
                     let editor = tab.editor.lock().unwrap();
                     let parser = editor.parser();
@@ -1486,10 +1757,62 @@ impl Application for App {
                 tab_column = tab_column.push(tab_element);
                 tab_column = tab_column.push(text(status).font(Font::MONOSPACE));
             }
-            None => {
-                log::warn!("TODO: No tab open");
+            Some(Tab::GitDiff(tab)) => {
+                let mut diff_widget = widget::column::with_capacity(tab.diff.hunks.len());
+                for hunk in tab.diff.hunks.iter() {
+                    let mut hunk_widget = widget::column::with_capacity(hunk.lines.len());
+                    for line in hunk.lines.iter() {
+                        let line_widget = match line {
+                            GitDiffLine::Context {
+                                old_line,
+                                new_line,
+                                text,
+                            } => widget::container(widget::text::monotext(format!(
+                                "{:4} {:4}   {}",
+                                old_line, new_line, text
+                            ))),
+                            GitDiffLine::Added { new_line, text } => widget::container(
+                                widget::text::monotext(format!(
+                                    "{:4} {:4} + {}",
+                                    "", new_line, text
+                                )),
+                            )
+                            .style(theme::Container::Custom(Box::new(|_theme| {
+                                //TODO: theme this color
+                                widget::container::Appearance {
+                                    background: Some(Background::Color(Color::from_rgb8(
+                                        0x00, 0x40, 0x00,
+                                    ))),
+                                    ..Default::default()
+                                }
+                            }))),
+                            GitDiffLine::Deleted { old_line, text } => widget::container(
+                                widget::text::monotext(format!(
+                                    "{:4} {:4} - {}",
+                                    old_line, "", text
+                                )),
+                            )
+                            .style(theme::Container::Custom(Box::new(|_theme| {
+                                //TODO: theme this color
+                                widget::container::Appearance {
+                                    background: Some(Background::Color(Color::from_rgb8(
+                                        0x40, 0x00, 0x00,
+                                    ))),
+                                    ..Default::default()
+                                }
+                            }))),
+                        };
+                        hunk_widget = hunk_widget.push(line_widget.width(Length::Fill));
+                    }
+                    diff_widget = diff_widget.push(hunk_widget);
+                }
+                tab_column = tab_column.push(widget::scrollable(
+                    widget::cosmic_container::container(diff_widget)
+                        .layer(cosmic_theme::Layer::Primary),
+                ));
             }
-        };
+            None => {}
+        }
 
         let content: Element<_> = tab_column.into();
 
@@ -1517,6 +1840,7 @@ impl Application for App {
                 |mut output| async move {
                     let watcher_res = {
                         let mut output = output.clone();
+                        //TODO: debounce
                         notify::recommended_watcher(
                             move |event_res: Result<notify::Event, notify::Error>| match event_res {
                                 Ok(event) => {
