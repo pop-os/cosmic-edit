@@ -1,5 +1,6 @@
 new-document = Új dokumentum
 open-project = Projekt megnyitása
+todo = Teendők
 
 # Context Pages
 
@@ -10,12 +11,25 @@ character-count = Karakterszám
 character-count-no-spaces = Karakterszám (szóközök nélkül)
 line-count = Sorok száma
 
+## Git management
+git-management = Git menedzselése
+unstaged-changes = Visszavont változtatások
+staged-changes = Jóváhagyott változtatások
+
+## Project search
+project-search = Projekt kereső
+
 ## Settings
 settings = Beállítások
 
 ## Appearance
 appearance = Megjelenés
 theme = Téma
+match-desktop = Asztal témájának használata
+dark = Sötét
+light = Világos
+syntax-dark = Sötét szintaxis
+syntax-light = Világos szintaxis
 default-font = Alapértelmezett betűtípus
 default-font-size = Alapértelmezett betűméret
 
@@ -30,14 +44,18 @@ file = Fájl
 new-file = Új fájl
 new-window = Új ablak
 open-file = Fájl megnyitása...
-open-recent = Legutóbbi megnyitása
-todo = Teendők
+open-recent-file = Legutóbbi fájl megnyitása
+close-file = Fájl bezárása
+menu-open-project = Projekt megnyitása...
+open-recent-project = Legutóbbi projekt megnyitása
+close-project = Projekt bezárása
 save = Mentés
 save-as = Mentés másként...
 revert-all-changes = Összes változtatás visszavonása
 menu-document-statistics = Dokumentum statisztika...
 document-type = Dokumentum típus...
 encoding = Karakterkódolás...
+menu-git-management = Git menedzselése...
 print = Nyomtatás
 quit = Kilépés
 
@@ -51,6 +69,7 @@ paste = Beillesztés
 select-all = Összes kijelölése
 find = Keresés
 replace = Lecserélés
+find-in-project = Keresés a projekten belül...
 spell-check = Helyesírás ellenőrzés...
 
 ## View
