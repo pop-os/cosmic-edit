@@ -494,6 +494,363 @@ impl App {
         self.set_header_title(title.clone());
         self.set_window_title(window_title)
     }
+
+    fn document_statistics(&self) -> Element<Message> {
+        //TODO: calculate in the background
+        let mut character_count = 0;
+        let mut character_count_no_spaces = 0;
+        let mut line_count = 0;
+        match self.active_tab() {
+            Some(Tab::Editor(tab)) => {
+                let editor = tab.editor.lock().unwrap();
+                let buffer = editor.buffer();
+
+                line_count = buffer.lines.len();
+                for line in buffer.lines.iter() {
+                    //TODO: do graphemes?
+                    for c in line.text().chars() {
+                        character_count += 1;
+                        if !c.is_whitespace() {
+                            character_count_no_spaces += 1;
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        widget::settings::view_column(vec![widget::settings::view_section("")
+            .add(widget::settings::item::builder(fl!("word-count")).control("TODO"))
+            .add(
+                widget::settings::item::builder(fl!("character-count"))
+                    .control(widget::text(character_count.to_string())),
+            )
+            .add(
+                widget::settings::item::builder(fl!("character-count-no-spaces"))
+                    .control(widget::text(character_count_no_spaces.to_string())),
+            )
+            .add(
+                widget::settings::item::builder(fl!("line-count"))
+                    .control(widget::text(line_count.to_string())),
+            )
+            .into()])
+        .into()
+    }
+
+    fn git_management(&self) -> Element<Message> {
+        let spacing = self.core().system_theme().cosmic().spacing;
+
+        if let Some(project_status) = &self.git_project_status {
+            let (success_color, destructive_color, warning_color) = {
+                let cosmic_theme = self.core().system_theme().cosmic();
+                (
+                    cosmic_theme.success_color(),
+                    cosmic_theme.destructive_color(),
+                    cosmic_theme.warning_color(),
+                )
+            };
+            let added = || widget::text("[+]").style(theme::Text::Color(success_color.into()));
+            let deleted =
+                || widget::text("[-]").style(theme::Text::Color(destructive_color.into()));
+            let modified = || widget::text("[*]").style(theme::Text::Color(warning_color.into()));
+
+            let mut items = Vec::with_capacity(project_status.len().saturating_mul(3));
+            for (project_name, project_path, status) in project_status.iter() {
+                let mut unstaged_items = Vec::with_capacity(status.len());
+                let mut staged_items = Vec::with_capacity(status.len());
+                for item in status.iter() {
+                    let relative_path = match item.path.strip_prefix(project_path) {
+                        Ok(ok) => ok,
+                        Err(err) => {
+                            log::warn!(
+                                "failed to find relative path of {:?} in project {:?}: {}",
+                                item.path,
+                                project_path,
+                                err
+                            );
+                            &item.path
+                        }
+                    };
+
+                    let text = match &item.old_path {
+                        Some(old_path) => {
+                            let old_relative_path = match old_path.strip_prefix(project_path) {
+                                Ok(ok) => ok,
+                                Err(err) => {
+                                    log::warn!(
+                                        "failed to find relative path of {:?} in project {:?}: {}",
+                                        old_path,
+                                        project_path,
+                                        err
+                                    );
+                                    &old_path
+                                }
+                            };
+                            format!(
+                                "{} -> {}",
+                                old_relative_path.display(),
+                                relative_path.display()
+                            )
+                        }
+                        None => format!("{}", relative_path.display()),
+                    };
+
+                    let unstaged_opt = match item.unstaged {
+                        GitStatusKind::Unmodified => None,
+                        GitStatusKind::Modified => Some(modified()),
+                        GitStatusKind::FileTypeChanged => Some(modified()),
+                        GitStatusKind::Added => Some(added()),
+                        GitStatusKind::Deleted => Some(deleted()),
+                        GitStatusKind::Renamed => Some(modified()), //TODO
+                        GitStatusKind::Copied => Some(modified()),  // TODO
+                        GitStatusKind::Updated => Some(modified()),
+                        GitStatusKind::Untracked => Some(added()),
+                        GitStatusKind::SubmoduleModified => Some(modified()),
+                    };
+
+                    if let Some(icon) = unstaged_opt {
+                        unstaged_items.push(
+                            widget::button(
+                                widget::row::with_children(vec![
+                                    icon.into(),
+                                    widget::text(text.clone()).into(),
+                                ])
+                                .spacing(spacing.space_xs),
+                            )
+                            .on_press(Message::PrepareGitDiff(
+                                project_path.clone(),
+                                item.path.clone(),
+                                false,
+                            ))
+                            .style(theme::Button::AppletMenu)
+                            .width(Length::Fill)
+                            .into(),
+                        );
+                    }
+
+                    let staged_opt = match item.staged {
+                        GitStatusKind::Unmodified => None,
+                        GitStatusKind::Modified => Some(modified()),
+                        GitStatusKind::FileTypeChanged => Some(modified()),
+                        GitStatusKind::Added => Some(added()),
+                        GitStatusKind::Deleted => Some(deleted()),
+                        GitStatusKind::Renamed => Some(modified()), //TODO
+                        GitStatusKind::Copied => Some(modified()),  // TODO
+                        GitStatusKind::Updated => Some(modified()),
+                        GitStatusKind::Untracked => None,
+                        GitStatusKind::SubmoduleModified => Some(modified()),
+                    };
+
+                    if let Some(icon) = staged_opt {
+                        staged_items.push(
+                            widget::button(
+                                widget::row::with_children(vec![
+                                    icon.into(),
+                                    widget::text(text.clone()).into(),
+                                ])
+                                .spacing(spacing.space_xs),
+                            )
+                            .on_press(Message::PrepareGitDiff(
+                                project_path.clone(),
+                                item.path.clone(),
+                                true,
+                            ))
+                            .style(theme::Button::AppletMenu)
+                            .width(Length::Fill)
+                            .into(),
+                        );
+                    }
+                }
+
+                items.push(widget::text::heading(project_name.clone()).into());
+
+                if !unstaged_items.is_empty() {
+                    items.push(
+                        widget::settings::view_section(fl!("unstaged-changes"))
+                            .add(widget::column::with_children(unstaged_items))
+                            .into(),
+                    );
+                }
+
+                if !staged_items.is_empty() {
+                    items.push(
+                        widget::settings::view_section(fl!("staged-changes"))
+                            .add(widget::column::with_children(staged_items))
+                            .into(),
+                    );
+                }
+            }
+
+            widget::column::with_children(items)
+                .spacing(spacing.space_s)
+                .padding([spacing.space_xxs, spacing.space_none])
+                .into()
+        } else {
+            widget::text("TODO (TRANSLATE): Loading git status...").into()
+        }
+    }
+
+    fn project_search(&self) -> Element<Message> {
+        let spacing = self.core().system_theme().cosmic().spacing;
+
+        let search_input =
+            widget::text_input::search_input(&fl!("project-search"), &self.project_search_value)
+                .id(self.project_search_id.clone());
+
+        let items = match &self.project_search_result {
+            Some(project_search_result) => {
+                let mut items =
+                    Vec::with_capacity(project_search_result.files.len().saturating_add(1));
+
+                if project_search_result.in_progress {
+                    items.push(search_input.into());
+                } else {
+                    items.push(
+                        search_input
+                            .on_input(Message::ProjectSearchValue)
+                            .on_submit(Message::ProjectSearchSubmit)
+                            .into(),
+                    );
+                }
+
+                for (file_i, file_search_result) in project_search_result.files.iter().enumerate() {
+                    let mut column = widget::column::with_capacity(file_search_result.lines.len());
+                    let mut line_number_width = 1;
+                    if let Some(line_search_result) = file_search_result.lines.last() {
+                        let mut number = line_search_result.number;
+                        while number >= 10 {
+                            number /= 10;
+                            line_number_width += 1;
+                        }
+                    }
+                    for (line_i, line_search_result) in file_search_result.lines.iter().enumerate()
+                    {
+                        column = column.push(
+                            widget::button(
+                                widget::row::with_children(vec![
+                                    widget::text(format!(
+                                        "{:width$}",
+                                        line_search_result.number,
+                                        width = line_number_width,
+                                    ))
+                                    .font(Font::MONOSPACE)
+                                    .into(),
+                                    widget::text(format!("{}", line_search_result.text))
+                                        .font(Font::MONOSPACE)
+                                        .into(),
+                                ])
+                                .spacing(spacing.space_xs),
+                            )
+                            .on_press(Message::OpenSearchResult(file_i, line_i))
+                            .width(Length::Fill)
+                            .style(theme::Button::AppletMenu),
+                        );
+                    }
+
+                    items.push(
+                        widget::settings::view_section(format!(
+                            "{}",
+                            file_search_result.path.display(),
+                        ))
+                        .add(column)
+                        .into(),
+                    );
+                }
+
+                items
+            }
+            None => {
+                vec![search_input
+                    .on_input(Message::ProjectSearchValue)
+                    .on_submit(Message::ProjectSearchSubmit)
+                    .into()]
+            }
+        };
+
+        widget::column::with_children(items)
+            .spacing(spacing.space_s)
+            .padding([spacing.space_xxs, spacing.space_none])
+            .into()
+    }
+
+    fn settings(&self) -> Element<Message> {
+        let app_theme_selected = match self.config.app_theme {
+            AppTheme::Dark => 1,
+            AppTheme::Light => 2,
+            AppTheme::System => 0,
+        };
+        let dark_selected = self
+            .theme_names
+            .iter()
+            .position(|theme_name| theme_name == &self.config.syntax_theme_dark);
+        let light_selected = self
+            .theme_names
+            .iter()
+            .position(|theme_name| theme_name == &self.config.syntax_theme_light);
+        let font_selected = {
+            let font_system = FONT_SYSTEM.lock().unwrap();
+            let current_font_name = font_system.db().family_name(&Family::Monospace);
+            self.font_names
+                .iter()
+                .position(|font_name| font_name == current_font_name)
+        };
+        let font_size_selected = self
+            .font_sizes
+            .iter()
+            .position(|font_size| font_size == &self.config.font_size);
+        widget::settings::view_column(vec![
+            widget::settings::view_section(fl!("appearance"))
+                .add(
+                    widget::settings::item::builder(fl!("theme")).control(widget::dropdown(
+                        &self.app_themes,
+                        Some(app_theme_selected),
+                        move |index| {
+                            Message::AppTheme(match index {
+                                1 => AppTheme::Dark,
+                                2 => AppTheme::Light,
+                                _ => AppTheme::System,
+                            })
+                        },
+                    )),
+                )
+                .add(
+                    widget::settings::item::builder(fl!("syntax-dark")).control(widget::dropdown(
+                        &self.theme_names,
+                        dark_selected,
+                        move |index| Message::SyntaxTheme(index, true),
+                    )),
+                )
+                .add(
+                    widget::settings::item::builder(fl!("syntax-light")).control(widget::dropdown(
+                        &self.theme_names,
+                        light_selected,
+                        move |index| Message::SyntaxTheme(index, false),
+                    )),
+                )
+                .add(
+                    widget::settings::item::builder(fl!("default-font")).control(widget::dropdown(
+                        &self.font_names,
+                        font_selected,
+                        |index| Message::DefaultFont(index),
+                    )),
+                )
+                .add(
+                    widget::settings::item::builder(fl!("default-font-size")).control(
+                        widget::dropdown(&self.font_size_names, font_size_selected, |index| {
+                            Message::DefaultFontSize(index)
+                        }),
+                    ),
+                )
+                .into(),
+            widget::settings::view_section(fl!("keyboard-shortcuts"))
+                .add(
+                    widget::settings::item::builder(fl!("enable-vim-bindings"))
+                        .toggler(self.config.vim_bindings, Message::VimBindings),
+                )
+                .into(),
+        ])
+        .into()
+    }
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -1297,376 +1654,11 @@ impl Application for App {
             return None;
         }
 
-        let cosmic_theme::Spacing {
-            space_none,
-            space_s,
-            space_xs,
-            space_xxs,
-            ..
-        } = self.core().system_theme().cosmic().spacing;
-
         Some(match self.context_page {
-            ContextPage::DocumentStatistics => {
-                //TODO: calculate in the background
-                let mut character_count = 0;
-                let mut character_count_no_spaces = 0;
-                let line_count;
-                match self.active_tab() {
-                    Some(Tab::Editor(tab)) => {
-                        let editor = tab.editor.lock().unwrap();
-                        let buffer = editor.buffer();
-
-                        line_count = buffer.lines.len();
-                        for line in buffer.lines.iter() {
-                            //TODO: do graphemes?
-                            for c in line.text().chars() {
-                                character_count += 1;
-                                if !c.is_whitespace() {
-                                    character_count_no_spaces += 1;
-                                }
-                            }
-                        }
-                    }
-                    _ => {
-                        return None;
-                    }
-                }
-
-                widget::settings::view_column(vec![widget::settings::view_section("")
-                    .add(widget::settings::item::builder(fl!("word-count")).control("TODO"))
-                    .add(
-                        widget::settings::item::builder(fl!("character-count"))
-                            .control(widget::text(character_count.to_string())),
-                    )
-                    .add(
-                        widget::settings::item::builder(fl!("character-count-no-spaces"))
-                            .control(widget::text(character_count_no_spaces.to_string())),
-                    )
-                    .add(
-                        widget::settings::item::builder(fl!("line-count"))
-                            .control(widget::text(line_count.to_string())),
-                    )
-                    .into()])
-                .into()
-            }
-            ContextPage::GitManagement => {
-                if let Some(project_status) = &self.git_project_status {
-                    let (success_color, destructive_color, warning_color) = {
-                        let cosmic_theme = self.core().system_theme().cosmic();
-                        (
-                            cosmic_theme.success_color(),
-                            cosmic_theme.destructive_color(),
-                            cosmic_theme.warning_color(),
-                        )
-                    };
-                    let added =
-                        || widget::text("[+]").style(theme::Text::Color(success_color.into()));
-                    let deleted =
-                        || widget::text("[-]").style(theme::Text::Color(destructive_color.into()));
-                    let modified =
-                        || widget::text("[*]").style(theme::Text::Color(warning_color.into()));
-
-                    let mut items = Vec::with_capacity(project_status.len().saturating_mul(3));
-                    for (project_name, project_path, status) in project_status.iter() {
-                        let mut unstaged_items = Vec::with_capacity(status.len());
-                        let mut staged_items = Vec::with_capacity(status.len());
-                        for item in status.iter() {
-                            let relative_path = match item.path.strip_prefix(project_path) {
-                                Ok(ok) => ok,
-                                Err(err) => {
-                                    log::warn!(
-                                        "failed to find relative path of {:?} in project {:?}: {}",
-                                        item.path,
-                                        project_path,
-                                        err
-                                    );
-                                    &item.path
-                                }
-                            };
-
-                            let text = match &item.old_path {
-                                Some(old_path) => {
-                                    let old_relative_path = match old_path
-                                        .strip_prefix(project_path)
-                                    {
-                                        Ok(ok) => ok,
-                                        Err(err) => {
-                                            log::warn!(
-                                                "failed to find relative path of {:?} in project {:?}: {}",
-                                                old_path,
-                                                project_path,
-                                                err
-                                            );
-                                            &old_path
-                                        }
-                                    };
-                                    format!(
-                                        "{} -> {}",
-                                        old_relative_path.display(),
-                                        relative_path.display()
-                                    )
-                                }
-                                None => format!("{}", relative_path.display()),
-                            };
-
-                            let unstaged_opt = match item.unstaged {
-                                GitStatusKind::Unmodified => None,
-                                GitStatusKind::Modified => Some(modified()),
-                                GitStatusKind::FileTypeChanged => Some(modified()),
-                                GitStatusKind::Added => Some(added()),
-                                GitStatusKind::Deleted => Some(deleted()),
-                                GitStatusKind::Renamed => Some(modified()), //TODO
-                                GitStatusKind::Copied => Some(modified()),  // TODO
-                                GitStatusKind::Updated => Some(modified()),
-                                GitStatusKind::Untracked => Some(added()),
-                                GitStatusKind::SubmoduleModified => Some(modified()),
-                            };
-
-                            if let Some(icon) = unstaged_opt {
-                                unstaged_items.push(
-                                    widget::button(
-                                        widget::row::with_children(vec![
-                                            icon.into(),
-                                            widget::text(text.clone()).into(),
-                                        ])
-                                        .spacing(space_xs),
-                                    )
-                                    .on_press(Message::PrepareGitDiff(
-                                        project_path.clone(),
-                                        item.path.clone(),
-                                        false,
-                                    ))
-                                    .style(theme::Button::AppletMenu)
-                                    .width(Length::Fill)
-                                    .into(),
-                                );
-                            }
-
-                            let staged_opt = match item.staged {
-                                GitStatusKind::Unmodified => None,
-                                GitStatusKind::Modified => Some(modified()),
-                                GitStatusKind::FileTypeChanged => Some(modified()),
-                                GitStatusKind::Added => Some(added()),
-                                GitStatusKind::Deleted => Some(deleted()),
-                                GitStatusKind::Renamed => Some(modified()), //TODO
-                                GitStatusKind::Copied => Some(modified()),  // TODO
-                                GitStatusKind::Updated => Some(modified()),
-                                GitStatusKind::Untracked => None,
-                                GitStatusKind::SubmoduleModified => Some(modified()),
-                            };
-
-                            if let Some(icon) = staged_opt {
-                                staged_items.push(
-                                    widget::button(
-                                        widget::row::with_children(vec![
-                                            icon.into(),
-                                            widget::text(text.clone()).into(),
-                                        ])
-                                        .spacing(space_xs),
-                                    )
-                                    .on_press(Message::PrepareGitDiff(
-                                        project_path.clone(),
-                                        item.path.clone(),
-                                        true,
-                                    ))
-                                    .style(theme::Button::AppletMenu)
-                                    .width(Length::Fill)
-                                    .into(),
-                                );
-                            }
-                        }
-
-                        items.push(widget::text::heading(project_name.clone()).into());
-
-                        if !unstaged_items.is_empty() {
-                            items.push(
-                                widget::settings::view_section(fl!("unstaged-changes"))
-                                    .add(widget::column::with_children(unstaged_items))
-                                    .into(),
-                            );
-                        }
-
-                        if !staged_items.is_empty() {
-                            items.push(
-                                widget::settings::view_section(fl!("staged-changes"))
-                                    .add(widget::column::with_children(staged_items))
-                                    .into(),
-                            );
-                        }
-                    }
-
-                    widget::column::with_children(items)
-                        .spacing(space_s)
-                        .padding([space_xxs, space_none])
-                        .into()
-                } else {
-                    widget::text("TODO (TRANSLATE): Loading git status...").into()
-                }
-            }
-            ContextPage::ProjectSearch => {
-                let search_input = widget::text_input::search_input(
-                    &fl!("project-search"),
-                    &self.project_search_value,
-                )
-                .id(self.project_search_id.clone());
-
-                let items = match &self.project_search_result {
-                    Some(project_search_result) => {
-                        let mut items =
-                            Vec::with_capacity(project_search_result.files.len().saturating_add(1));
-
-                        if project_search_result.in_progress {
-                            items.push(search_input.into());
-                        } else {
-                            items.push(
-                                search_input
-                                    .on_input(Message::ProjectSearchValue)
-                                    .on_submit(Message::ProjectSearchSubmit)
-                                    .into(),
-                            );
-                        }
-
-                        for (file_i, file_search_result) in
-                            project_search_result.files.iter().enumerate()
-                        {
-                            let mut column =
-                                widget::column::with_capacity(file_search_result.lines.len());
-                            let mut line_number_width = 1;
-                            if let Some(line_search_result) = file_search_result.lines.last() {
-                                let mut number = line_search_result.number;
-                                while number >= 10 {
-                                    number /= 10;
-                                    line_number_width += 1;
-                                }
-                            }
-                            for (line_i, line_search_result) in
-                                file_search_result.lines.iter().enumerate()
-                            {
-                                column = column.push(
-                                    widget::button(
-                                        widget::row::with_children(vec![
-                                            widget::text(format!(
-                                                "{:width$}",
-                                                line_search_result.number,
-                                                width = line_number_width,
-                                            ))
-                                            .font(Font::MONOSPACE)
-                                            .into(),
-                                            widget::text(format!("{}", line_search_result.text))
-                                                .font(Font::MONOSPACE)
-                                                .into(),
-                                        ])
-                                        .spacing(space_xs),
-                                    )
-                                    .on_press(Message::OpenSearchResult(file_i, line_i))
-                                    .width(Length::Fill)
-                                    .style(theme::Button::AppletMenu),
-                                );
-                            }
-
-                            items.push(
-                                widget::settings::view_section(format!(
-                                    "{}",
-                                    file_search_result.path.display(),
-                                ))
-                                .add(column)
-                                .into(),
-                            );
-                        }
-
-                        items
-                    }
-                    None => {
-                        vec![search_input
-                            .on_input(Message::ProjectSearchValue)
-                            .on_submit(Message::ProjectSearchSubmit)
-                            .into()]
-                    }
-                };
-
-                widget::column::with_children(items)
-                    .spacing(space_s)
-                    .padding([space_xxs, space_none])
-                    .into()
-            }
-            ContextPage::Settings => {
-                let app_theme_selected = match self.config.app_theme {
-                    AppTheme::Dark => 1,
-                    AppTheme::Light => 2,
-                    AppTheme::System => 0,
-                };
-                let dark_selected = self
-                    .theme_names
-                    .iter()
-                    .position(|theme_name| theme_name == &self.config.syntax_theme_dark);
-                let light_selected = self
-                    .theme_names
-                    .iter()
-                    .position(|theme_name| theme_name == &self.config.syntax_theme_light);
-                let font_selected = {
-                    let font_system = FONT_SYSTEM.lock().unwrap();
-                    let current_font_name = font_system.db().family_name(&Family::Monospace);
-                    self.font_names
-                        .iter()
-                        .position(|font_name| font_name == current_font_name)
-                };
-                let font_size_selected = self
-                    .font_sizes
-                    .iter()
-                    .position(|font_size| font_size == &self.config.font_size);
-                widget::settings::view_column(vec![
-                    widget::settings::view_section(fl!("appearance"))
-                        .add(widget::settings::item::builder(fl!("theme")).control(
-                            widget::dropdown(
-                                &self.app_themes,
-                                Some(app_theme_selected),
-                                move |index| {
-                                    Message::AppTheme(match index {
-                                        1 => AppTheme::Dark,
-                                        2 => AppTheme::Light,
-                                        _ => AppTheme::System,
-                                    })
-                                },
-                            ),
-                        ))
-                        .add(widget::settings::item::builder(fl!("syntax-dark")).control(
-                            widget::dropdown(&self.theme_names, dark_selected, move |index| {
-                                Message::SyntaxTheme(index, true)
-                            }),
-                        ))
-                        .add(
-                            widget::settings::item::builder(fl!("syntax-light")).control(
-                                widget::dropdown(&self.theme_names, light_selected, move |index| {
-                                    Message::SyntaxTheme(index, false)
-                                }),
-                            ),
-                        )
-                        .add(
-                            widget::settings::item::builder(fl!("default-font")).control(
-                                widget::dropdown(&self.font_names, font_selected, |index| {
-                                    Message::DefaultFont(index)
-                                }),
-                            ),
-                        )
-                        .add(
-                            widget::settings::item::builder(fl!("default-font-size")).control(
-                                widget::dropdown(
-                                    &self.font_size_names,
-                                    font_size_selected,
-                                    |index| Message::DefaultFontSize(index),
-                                ),
-                            ),
-                        )
-                        .into(),
-                    widget::settings::view_section(fl!("keyboard-shortcuts"))
-                        .add(
-                            widget::settings::item::builder(fl!("enable-vim-bindings"))
-                                .toggler(self.config.vim_bindings, Message::VimBindings),
-                        )
-                        .into(),
-                ])
-                .into()
-            }
+            ContextPage::DocumentStatistics => self.document_statistics(),
+            ContextPage::GitManagement => self.git_management(),
+            ContextPage::ProjectSearch => self.project_search(),
+            ContextPage::Settings => self.settings(),
         })
     }
 
