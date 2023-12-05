@@ -693,9 +693,11 @@ impl App {
     fn project_search(&self) -> Element<Message> {
         let spacing = self.core().system_theme().cosmic().spacing;
 
-        let search_input =
-            widget::text_input::search_input(&fl!("project-search"), &self.project_search_value)
-                .id(self.project_search_id.clone());
+        let search_input = widget::text_input::search_input(
+            fl!("project-search"),
+            self.project_search_value.clone(),
+        )
+        .id(self.project_search_id.clone());
 
         let items = match &self.project_search_result {
             Some(project_search_result) => {
@@ -1421,7 +1423,7 @@ impl Application for App {
             }
             Message::Quit => {
                 //TODO: prompt for save?
-                return window::close();
+                return window::close(window::Id::MAIN);
             }
             Message::Redo => match self.active_tab() {
                 Some(Tab::Editor(tab)) => {
@@ -1819,7 +1821,7 @@ impl Application for App {
         struct ThemeSubscription;
 
         subscription::Subscription::batch([
-            subscription::events_with(|event, _status| match event {
+            event::listen_with(|event, _status| match event {
                 event::Event::Keyboard(keyboard::Event::KeyPressed {
                     modifiers,
                     key_code,
