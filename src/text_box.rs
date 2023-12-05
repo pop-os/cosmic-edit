@@ -215,7 +215,12 @@ where
         Length::Fill
     }
 
-    fn layout(&self, _renderer: &Renderer, limits: &layout::Limits) -> layout::Node {
+    fn layout(
+        &self,
+        _tree: &mut widget::Tree,
+        _renderer: &Renderer,
+        limits: &layout::Limits,
+    ) -> layout::Node {
         let limits = limits.width(Length::Fill).height(Length::Fill);
 
         let mut editor = self.editor.lock().unwrap();
@@ -447,8 +452,7 @@ where
 
                                 // This code comes from cosmic_text::LayoutRunIter
                                 let glyph_height = max_ascent + max_descent;
-                                let centering_offset =
-                                    (metrics.line_height - glyph_height) / 2.0;
+                                let centering_offset = (metrics.line_height - glyph_height) / 2.0;
                                 let line_y = run.line_top + centering_offset + max_ascent;
 
                                 for layout_glyph in layout_line.glyphs.iter() {
@@ -542,6 +546,7 @@ where
             image::Renderer::draw(
                 renderer,
                 handle.clone(),
+                image::FilterMethod::Nearest,
                 Rectangle::new(
                     image_position,
                     Size::new(
