@@ -12,7 +12,7 @@ character-count-no-spaces = Karakterszám (szóközök nélkül)
 line-count = Sorok száma
 
 ## Git management
-git-management = Git menedzselése
+git-management = Git kezelés
 unstaged-changes = Visszavont változtatások
 staged-changes = Jóváhagyott változtatások
 
@@ -55,7 +55,7 @@ revert-all-changes = Összes változtatás visszavonása
 menu-document-statistics = Dokumentum statisztika...
 document-type = Dokumentum típus...
 encoding = Karakterkódolás...
-menu-git-management = Git menedzselése...
+menu-git-management = Git kezelés...
 print = Nyomtatás
 quit = Kilépés
 
