@@ -11,6 +11,11 @@ character-count = Символов
 character-count-no-spaces = Символов (без пробелов)
 line-count = Строк
 
+## Git management
+git-management = Управление Git
+unstaged-changes = Не проиндексированные изменения
+staged-changes = Проиндексированные изменения
+
 ## Project search
 project-search = Поиск проекта
 
@@ -50,6 +55,7 @@ revert-all-changes = Отменить все изменения
 menu-document-statistics = Статистика документа...
 document-type = Тип документа...
 encoding = Кодировка...
+menu-git-management = Управление Git...
 print = Печать
 quit = Завершить
 
