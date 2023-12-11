@@ -11,6 +11,14 @@ character-count = Znakov
 character-count-no-spaces = Znakov (bez medzier)
 line-count = Riadkov
 
+## Git management
+git-management = Git správa
+unstaged-changes = Nepripravené zmeny
+staged-changes = Pripravené zmeny
+
+## Project search
+project-search = Project search
+
 ## Settings
 settings = Nastavenia
 
@@ -47,6 +55,7 @@ revert-all-changes = Vrátiť všetky zmeny
 menu-document-statistics = Štatistiky dokumentu...
 document-type = Typ dokumentu...
 encoding = Kódovanie...
+menu-git-management = Git správa...
 print = Tlač
 quit = Ukončiť
 
@@ -60,6 +69,7 @@ paste = Vložiť
 select-all = Vybrať všetko
 find = Nájsť
 replace = Nahradiť
+find-in-project = Nájsť v projekte...
 spell-check = Kontrola pravopisu...
 
 ## View
