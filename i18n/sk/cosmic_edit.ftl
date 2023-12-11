@@ -17,7 +17,7 @@ unstaged-changes = Nepripravené zmeny
 staged-changes = Pripravené zmeny
 
 ## Project search
-project-search = Project search
+project-search = Nájsť projekt
 
 ## Settings
 settings = Nastavenia
