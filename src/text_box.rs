@@ -18,7 +18,12 @@ use cosmic::{
     theme::Theme,
 };
 use cosmic_text::{Action, Edit, Metrics, ViEditor};
-use std::{cell::Cell, cmp, sync::Mutex, time::Instant};
+use std::{
+    cell::Cell,
+    cmp,
+    sync::Mutex,
+    time::{Duration, Instant},
+};
 
 use crate::{line_number::LineNumberKey, FONT_SYSTEM, LINE_NUMBER_CACHE, SWASH_CACHE};
 
@@ -59,6 +64,7 @@ pub struct TextBox<'a, Message> {
     metrics: Metrics,
     padding: Padding,
     on_changed: Option<Message>,
+    click_timing: Duration,
     context_menu: Option<Point>,
     on_context_menu: Option<Box<dyn Fn(Option<Point>) -> Message + 'a>>,
     line_numbers: bool,
@@ -74,6 +80,7 @@ where
             metrics,
             padding: Padding::new(0.0),
             on_changed: None,
+            click_timing: Duration::from_millis(500),
             context_menu: None,
             on_context_menu: None,
             line_numbers: false,
@@ -87,6 +94,11 @@ where
 
     pub fn on_changed(mut self, on_changed: Message) -> Self {
         self.on_changed = Some(on_changed);
+        self
+    }
+
+    pub fn click_timing(mut self, click_timing: Duration) -> Self {
+        self.click_timing = click_timing;
         self
     }
 
@@ -684,10 +696,35 @@ where
                         let x = x_logical * scale_factor - editor_offset_x as f32;
                         let y = y_logical * scale_factor;
                         if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
-                            editor.action(Action::Click {
-                                x: x as i32,
-                                y: y as i32,
-                            });
+                            let click_kind =
+                                if let Some((click_kind, click_time)) = state.click.take() {
+                                    if click_time.elapsed() < self.click_timing {
+                                        match click_kind {
+                                            ClickKind::Single => ClickKind::Double,
+                                            ClickKind::Double => ClickKind::Triple,
+                                            ClickKind::Triple => ClickKind::Single,
+                                        }
+                                    } else {
+                                        ClickKind::Single
+                                    }
+                                } else {
+                                    ClickKind::Single
+                                };
+                            match click_kind {
+                                ClickKind::Single => editor.action(Action::Click {
+                                    x: x as i32,
+                                    y: y as i32,
+                                }),
+                                ClickKind::Double => editor.action(Action::DoubleClick {
+                                    x: x as i32,
+                                    y: y as i32,
+                                }),
+                                ClickKind::Triple => editor.action(Action::TripleClick {
+                                    x: x as i32,
+                                    y: y as i32,
+                                }),
+                            }
+                            state.click = Some((click_kind, Instant::now()));
                             state.dragging = Some(Dragging::Buffer);
                         } else if scrollbar_rect.contains(Point::new(x_logical, y_logical)) {
                             state.dragging = Some(Dragging::Scrollbar {
@@ -812,6 +849,12 @@ where
     }
 }
 
+enum ClickKind {
+    Single,
+    Double,
+    Triple,
+}
+
 enum Dragging {
     Buffer,
     Scrollbar { start_y: f32, start_scroll: i32 },
@@ -819,6 +862,7 @@ enum Dragging {
 
 pub struct State {
     modifiers: Modifiers,
+    click: Option<(ClickKind, Instant)>,
     dragging: Option<Dragging>,
     editor_offset_x: Cell<i32>,
     scale_factor: Cell<f32>,
@@ -832,6 +876,7 @@ impl State {
     pub fn new() -> State {
         State {
             modifiers: Modifiers::empty(),
+            click: None,
             dragging: None,
             editor_offset_x: Cell::new(0),
             scale_factor: Cell::new(1.0),
