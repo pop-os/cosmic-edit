@@ -1347,7 +1347,9 @@ impl Application for App {
             Message::PasteValue(value) => match self.active_tab() {
                 Some(Tab::Editor(tab)) => {
                     let mut editor = tab.editor.lock().unwrap();
+                    editor.start_change();
                     editor.insert_string(&value, None);
+                    editor.finish_change();
                 }
                 _ => {}
             },
