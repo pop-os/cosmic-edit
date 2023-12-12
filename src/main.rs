@@ -1102,7 +1102,9 @@ impl Application for App {
                 Some(Tab::Editor(tab)) => {
                     let mut editor = tab.editor.lock().unwrap();
                     let selection_opt = editor.copy_selection();
+                    editor.start_change();
                     editor.delete_selection();
+                    editor.finish_change();
                     if let Some(selection) = selection_opt {
                         return clipboard::write(selection);
                     }
