@@ -190,7 +190,10 @@ impl EditorTab {
         if let Some(path) = &self.path_opt {
             match path.file_name() {
                 Some(file_name_os) => match file_name_os.to_str() {
-                    Some(file_name) => file_name.to_string(),
+                    Some(file_name) => match file_name {
+                        "mod.rs" => title_with_parent(&path, file_name),
+                        _ => file_name.to_string(),
+                    },
                     None => format!("{}", path.display()),
                 },
                 None => format!("{}", path.display()),
@@ -288,5 +291,20 @@ impl EditorTab {
             }
         }
         false
+    }
+}
+
+/// Includes parent name in tab title
+///
+/// Useful for distinguishing between Rust modules named `mod.rs`
+fn title_with_parent(path: &std::path::Path, file_name: &str) -> String {
+    let parent_name = path
+        .parent()
+        .and_then(|path| path.file_name())
+        .and_then(|os_str| os_str.to_str());
+
+    match parent_name {
+        Some(parent) => [parent, "/", file_name].concat(),
+        None => file_name.to_string(),
     }
 }
