@@ -45,7 +45,8 @@ git = "https://github.com/jackpot51/systemicons"
 fork = "0.1"
 
 [features]
-default = ["rfd"]
+default = ["rfd", "wgpu"]
+wgpu = ["libcosmic/wgpu"]
 
 [patch.crates-io]
 smithay-client-toolkit = { git = "https://github.com/pop-os/client-toolkit", branch = "wayland-resize" }
