@@ -27,6 +27,7 @@ rust-embed = "6.3.0"
 
 [dependencies.cosmic-text]
 git = "https://github.com/pop-os/cosmic-text"
+branch = "refactor"
 features = ["syntect", "vi"]
 #path = "../cosmic-text"
 

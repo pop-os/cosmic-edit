@@ -33,7 +33,6 @@ impl LineNumberCache {
             let attrs = Attrs::new().family(Family::Monospace);
             let text = format!("{:width$}", key.number, width = key.width);
             let mut buffer_line = BufferLine::new(text, AttrsList::new(attrs), Shaping::Advanced);
-            buffer_line.set_wrap(Wrap::None);
             buffer_line.set_align(Some(Align::Left));
             buffer_line
                 .layout_in_buffer(

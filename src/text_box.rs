@@ -15,9 +15,8 @@ use cosmic::{
         widget::{self, tree, Widget},
         Shell,
     },
-    theme::Theme,
 };
-use cosmic_text::{Action, Edit, Metrics, ViEditor};
+use cosmic_text::{Action, Edit, Metrics, Motion, Scroll, ViEditor};
 use std::{
     cell::Cell,
     cmp,
@@ -26,38 +25,6 @@ use std::{
 };
 
 use crate::{line_number::LineNumberKey, FONT_SYSTEM, LINE_NUMBER_CACHE, SWASH_CACHE};
-
-pub struct Appearance {
-    pub text_color: Color,
-}
-
-impl Appearance {
-    pub fn dark() -> Self {
-        Self {
-            text_color: Color::from_rgb8(0xFF, 0xFF, 0xFF),
-        }
-    }
-
-    pub fn light() -> Self {
-        Self {
-            text_color: Color::from_rgb8(0x00, 0x00, 0x00),
-        }
-    }
-}
-
-pub trait StyleSheet {
-    fn appearance(&self) -> Appearance;
-}
-
-impl StyleSheet for Theme {
-    fn appearance(&self) -> Appearance {
-        if self.theme_type.is_dark() {
-            Appearance::dark()
-        } else {
-            Appearance::light()
-        }
-    }
-}
 
 pub struct TextBox<'a, Message> {
     editor: &'a Mutex<ViEditor<'static>>,
@@ -209,7 +176,6 @@ impl<'a, 'editor, Message, Renderer> Widget<Message, Renderer> for TextBox<'a, M
 where
     Message: Clone,
     Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
-    Renderer::Theme: StyleSheet,
 {
     fn tag(&self) -> tree::Tag {
         tree::Tag::of::<State>()
@@ -239,7 +205,7 @@ where
         //TODO: set size?
         editor
             .borrow_with(&mut FONT_SYSTEM.lock().unwrap())
-            .shape_as_needed();
+            .shape_as_needed(true);
 
         let mut layout_lines = 0;
         for line in editor.buffer().lines.iter() {
@@ -292,7 +258,7 @@ where
         &self,
         tree: &widget::Tree,
         renderer: &mut Renderer,
-        theme: &Renderer::Theme,
+        _theme: &Renderer::Theme,
         style: &renderer::Style,
         layout: Layout<'_>,
         _cursor_position: mouse::Cursor,
@@ -301,15 +267,6 @@ where
         let instant = Instant::now();
 
         let state = tree.state.downcast_ref::<State>();
-
-        let appearance = theme.appearance();
-
-        let text_color = cosmic_text::Color::rgba(
-            cmp::max(0, cmp::min(255, (appearance.text_color.r * 255.0) as i32)) as u8,
-            cmp::max(0, cmp::min(255, (appearance.text_color.g * 255.0) as i32)) as u8,
-            cmp::max(0, cmp::min(255, (appearance.text_color.b * 255.0) as i32)) as u8,
-            cmp::max(0, cmp::min(255, (appearance.text_color.a * 255.0) as i32)) as u8,
-        );
 
         let mut editor = self.editor.lock().unwrap();
 
@@ -389,7 +346,7 @@ where
         );
 
         // Shape and layout as needed
-        editor.shape_as_needed(&mut font_system);
+        editor.shape_as_needed(&mut font_system, true);
 
         let mut handle_opt = state.handle_opt.lock().unwrap();
         if editor.buffer().redraw() || handle_opt.is_none() {
@@ -495,23 +452,18 @@ where
                 }
 
                 // Draw editor
-                editor.draw(
-                    &mut font_system,
-                    &mut swash_cache,
-                    text_color,
-                    |x, y, w, h, color| {
-                        draw_rect(
-                            buffer,
-                            image_w,
-                            image_h,
-                            editor_offset_x + x,
-                            y,
-                            w as i32,
-                            h as i32,
-                            color,
-                        );
-                    },
-                );
+                editor.draw(&mut font_system, &mut swash_cache, |x, y, w, h, color| {
+                    draw_rect(
+                        buffer,
+                        image_w,
+                        image_h,
+                        editor_offset_x + x,
+                        y,
+                        w as i32,
+                        h as i32,
+                        color,
+                    );
+                });
 
                 // Calculate scrollbar
                 {
@@ -618,35 +570,35 @@ where
                 modifiers,
             }) => match key_code {
                 KeyCode::Left => {
-                    editor.action(Action::Left);
+                    editor.action(Action::Motion(Motion::Left));
                     status = Status::Captured;
                 }
                 KeyCode::Right => {
-                    editor.action(Action::Right);
+                    editor.action(Action::Motion(Motion::Right));
                     status = Status::Captured;
                 }
                 KeyCode::Up => {
-                    editor.action(Action::Up);
+                    editor.action(Action::Motion(Motion::Up));
                     status = Status::Captured;
                 }
                 KeyCode::Down => {
-                    editor.action(Action::Down);
+                    editor.action(Action::Motion(Motion::Down));
                     status = Status::Captured;
                 }
                 KeyCode::Home => {
-                    editor.action(Action::Home);
+                    editor.action(Action::Motion(Motion::Home));
                     status = Status::Captured;
                 }
                 KeyCode::End => {
-                    editor.action(Action::End);
+                    editor.action(Action::Motion(Motion::End));
                     status = Status::Captured;
                 }
                 KeyCode::PageUp => {
-                    editor.action(Action::PageUp);
+                    editor.action(Action::Motion(Motion::PageUp));
                     status = Status::Captured;
                 }
                 KeyCode::PageDown => {
-                    editor.action(Action::PageDown);
+                    editor.action(Action::Motion(Motion::PageDown));
                     status = Status::Captured;
                 }
                 KeyCode::Escape => {
@@ -735,9 +687,12 @@ where
                             && x_logical < (scrollbar_rect.x + scrollbar_rect.width)
                         {
                             let mut buffer = editor.buffer_mut();
-                            let scroll_offset =
+                            let scroll_line =
                                 ((y / buffer.size().1) * buffer.lines.len() as f32) as i32;
-                            buffer.set_scroll(scroll_offset);
+                            buffer.set_scroll(Scroll::new(
+                                scroll_line.try_into().unwrap_or_default(),
+                                0,
+                            ));
                             state.dragging = Some(Dragging::Scrollbar {
                                 start_y: y,
                                 start_scroll: editor.buffer().scroll(),
@@ -785,7 +740,12 @@ where
                                 let scroll_offset = (((y - start_y) / buffer.size().1)
                                     * buffer.lines.len() as f32)
                                     as i32;
-                                buffer.set_scroll(start_scroll + scroll_offset);
+                                buffer.set_scroll(Scroll::new(
+                                    (start_scroll.line as i32 + scroll_offset)
+                                        .try_into()
+                                        .unwrap_or_default(),
+                                    0,
+                                ));
                             }
                         }
                     }
@@ -842,7 +802,6 @@ impl<'a, 'editor, Message, Renderer> From<TextBox<'a, Message>> for Element<'a, 
 where
     Message: Clone + 'a,
     Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
-    Renderer::Theme: StyleSheet,
 {
     fn from(text_box: TextBox<'a, Message>) -> Self {
         Self::new(text_box)
@@ -857,7 +816,7 @@ enum ClickKind {
 
 enum Dragging {
     Buffer,
-    Scrollbar { start_y: f32, start_scroll: i32 },
+    Scrollbar { start_y: f32, start_scroll: Scroll },
 }
 
 pub struct State {
