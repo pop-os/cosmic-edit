@@ -27,7 +27,7 @@ use std::{
 use crate::{line_number::LineNumberKey, FONT_SYSTEM, LINE_NUMBER_CACHE, SWASH_CACHE};
 
 pub struct TextBox<'a, Message> {
-    editor: &'a Mutex<ViEditor<'static>>,
+    editor: &'a Mutex<ViEditor<'static, 'static>>,
     metrics: Metrics,
     padding: Padding,
     on_changed: Option<Message>,
@@ -41,7 +41,7 @@ impl<'a, Message> TextBox<'a, Message>
 where
     Message: Clone,
 {
-    pub fn new(editor: &'a Mutex<ViEditor<'static>>, metrics: Metrics) -> Self {
+    pub fn new(editor: &'a Mutex<ViEditor<'static, 'static>>, metrics: Metrics) -> Self {
         Self {
             editor,
             metrics,
@@ -89,7 +89,7 @@ where
 }
 
 pub fn text_box<'a, Message>(
-    editor: &'a Mutex<ViEditor<'static>>,
+    editor: &'a Mutex<ViEditor<'static, 'static>>,
     metrics: Metrics,
 ) -> TextBox<'a, Message>
 where
@@ -207,18 +207,20 @@ where
             .borrow_with(&mut FONT_SYSTEM.lock().unwrap())
             .shape_as_needed(true);
 
-        let mut layout_lines = 0;
-        for line in editor.buffer().lines.iter() {
-            match line.layout_opt() {
-                Some(layout) => layout_lines += layout.len(),
-                None => (),
+        editor.with_buffer(|buffer| {
+            let mut layout_lines = 0;
+            for line in buffer.lines.iter() {
+                match line.layout_opt() {
+                    Some(layout) => layout_lines += layout.len(),
+                    None => (),
+                }
             }
-        }
 
-        let height = layout_lines as f32 * editor.buffer().metrics().line_height;
-        let size = Size::new(limits.max().width, height);
+            let height = layout_lines as f32 * buffer.metrics().line_height;
+            let size = Size::new(limits.max().width, height);
 
-        layout::Node::new(limits.resolve(size))
+            layout::Node::new(limits.resolve(size))
+        })
     }
 
     fn mouse_interaction(
@@ -240,7 +242,7 @@ where
             let editor_offset_x = state.editor_offset_x.get();
             let scale_factor = state.scale_factor.get();
             let editor = self.editor.lock().unwrap();
-            let buffer_size = editor.buffer().size();
+            let buffer_size = editor.with_buffer(|buffer| buffer.size());
 
             let x_logical = p.x - self.padding.left;
             let y_logical = p.y - self.padding.top;
@@ -299,7 +301,7 @@ where
         let (line_number_chars, editor_offset_x) = if self.line_numbers {
             // Calculate number of characters needed in line number
             let mut line_number_chars = 1;
-            let mut line_count = editor.buffer().lines.len();
+            let mut line_count = editor.with_buffer(|buffer| buffer.lines.len());
             while line_count >= 10 {
                 line_count /= 10;
                 line_number_chars += 1;
@@ -334,31 +336,33 @@ where
         // Save editor offset in state
         if state.editor_offset_x.replace(editor_offset_x) != editor_offset_x {
             // Mark buffer as needing redraw if editor offset has changed
-            editor.buffer_mut().set_redraw(true);
+            editor.set_redraw(true);
         }
 
         // Set metrics and size
-        editor.buffer_mut().set_metrics_and_size(
-            &mut font_system,
-            metrics,
-            (image_w - editor_offset_x) as f32,
-            image_h as f32,
-        );
+        editor.with_buffer_mut(|buffer| {
+            buffer.set_metrics_and_size(
+                &mut font_system,
+                metrics,
+                (image_w - editor_offset_x) as f32,
+                image_h as f32,
+            )
+        });
 
         // Shape and layout as needed
         editor.shape_as_needed(&mut font_system, true);
 
         let mut handle_opt = state.handle_opt.lock().unwrap();
-        if editor.buffer().redraw() || handle_opt.is_none() {
+        if editor.redraw() || handle_opt.is_none() {
             // Draw to pixel buffer
-            let mut pixels = vec![0; image_w as usize * image_h as usize * 4];
+            let mut pixels_u8 = vec![0; image_w as usize * image_h as usize * 4];
             {
                 let mut swash_cache = SWASH_CACHE.lock().unwrap();
 
-                let buffer = unsafe {
+                let pixels = unsafe {
                     std::slice::from_raw_parts_mut(
-                        pixels.as_mut_ptr() as *mut u32,
-                        pixels.len() / 4,
+                        pixels_u8.as_mut_ptr() as *mut u32,
+                        pixels_u8.len() / 4,
                     )
                 };
 
@@ -381,7 +385,7 @@ where
 
                     // Ensure fill with gutter color
                     draw_rect(
-                        buffer,
+                        pixels,
                         image_w,
                         image_h,
                         0,
@@ -393,10 +397,10 @@ where
 
                     // Draw line numbers
                     //TODO: move to cosmic-text?
-                    {
+                    editor.with_buffer(|buffer| {
                         let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
                         let mut last_line_number = 0;
-                        for run in editor.buffer().layout_runs() {
+                        for run in buffer.layout_runs() {
                             let line_number = run.line_i.saturating_add(1);
                             if line_number == last_line_number {
                                 // Skip duplicate lines
@@ -434,7 +438,7 @@ where
                                         gutter_foreground,
                                         |x, y, color| {
                                             draw_rect(
-                                                buffer,
+                                                pixels,
                                                 image_w,
                                                 image_h,
                                                 physical_glyph.x + x,
@@ -448,13 +452,13 @@ where
                                 }
                             }
                         }
-                    }
+                    });
                 }
 
                 // Draw editor
                 editor.draw(&mut font_system, &mut swash_cache, |x, y, w, h, color| {
                     draw_rect(
-                        buffer,
+                        pixels,
                         image_w,
                         image_h,
                         editor_offset_x + x,
@@ -466,10 +470,10 @@ where
                 });
 
                 // Calculate scrollbar
-                {
+                editor.with_buffer(|buffer| {
                     let mut start_line_opt = None;
                     let mut end_line = 0;
-                    for run in editor.buffer().layout_runs() {
+                    for run in buffer.layout_runs() {
                         end_line = run.line_i;
                         if start_line_opt.is_none() {
                             start_line_opt = Some(end_line);
@@ -477,7 +481,7 @@ where
                     }
 
                     let start_line = start_line_opt.unwrap_or(end_line);
-                    let lines = editor.buffer().lines.len();
+                    let lines = buffer.lines.len();
                     let start_y = (start_line * image_h as usize) / lines;
                     let end_y = ((end_line + 1) * image_h as usize) / lines;
 
@@ -489,17 +493,17 @@ where
                         ),
                     );
                     state.scrollbar_rect.set(rect);
-                }
+                });
             }
 
             // Clear redraw flag
-            editor.buffer_mut().set_redraw(false);
+            editor.set_redraw(false);
 
             state.scale_factor.set(scale_factor);
             *handle_opt = Some(image::Handle::from_pixels(
                 image_w as u32,
                 image_h as u32,
-                pixels,
+                pixels_u8,
             ));
         }
 
@@ -558,7 +562,7 @@ where
         let scale_factor = state.scale_factor.get();
         let scrollbar_rect = state.scrollbar_rect.get();
         let mut editor = self.editor.lock().unwrap();
-        let buffer_size = editor.buffer().size();
+        let buffer_size = editor.with_buffer(|buffer| buffer.size());
         let last_changed = editor.changed();
         let mut font_system = FONT_SYSTEM.lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
@@ -681,21 +685,22 @@ where
                         } else if scrollbar_rect.contains(Point::new(x_logical, y_logical)) {
                             state.dragging = Some(Dragging::Scrollbar {
                                 start_y: y,
-                                start_scroll: editor.buffer().scroll(),
+                                start_scroll: editor.with_buffer(|buffer| buffer.scroll()),
                             });
                         } else if x_logical >= scrollbar_rect.x
                             && x_logical < (scrollbar_rect.x + scrollbar_rect.width)
                         {
-                            let mut buffer = editor.buffer_mut();
-                            let scroll_line =
-                                ((y / buffer.size().1) * buffer.lines.len() as f32) as i32;
-                            buffer.set_scroll(Scroll::new(
-                                scroll_line.try_into().unwrap_or_default(),
-                                0,
-                            ));
-                            state.dragging = Some(Dragging::Scrollbar {
-                                start_y: y,
-                                start_scroll: editor.buffer().scroll(),
+                            editor.with_buffer_mut(|buffer| {
+                                let scroll_line =
+                                    ((y / buffer.size().1) * buffer.lines.len() as f32) as i32;
+                                buffer.set_scroll(Scroll::new(
+                                    scroll_line.try_into().unwrap_or_default(),
+                                    0,
+                                ));
+                                state.dragging = Some(Dragging::Scrollbar {
+                                    start_y: y,
+                                    start_scroll: buffer.scroll(),
+                                });
                             });
                         }
                     }
@@ -736,16 +741,17 @@ where
                                 start_y,
                                 start_scroll,
                             } => {
-                                let mut buffer = editor.buffer_mut();
-                                let scroll_offset = (((y - start_y) / buffer.size().1)
-                                    * buffer.lines.len() as f32)
-                                    as i32;
-                                buffer.set_scroll(Scroll::new(
-                                    (start_scroll.line as i32 + scroll_offset)
-                                        .try_into()
-                                        .unwrap_or_default(),
-                                    0,
-                                ));
+                                editor.with_buffer_mut(|buffer| {
+                                    let scroll_offset = (((y - start_y) / buffer.size().1)
+                                        * buffer.lines.len() as f32)
+                                        as i32;
+                                    buffer.set_scroll(Scroll::new(
+                                        (start_scroll.line as i32 + scroll_offset)
+                                            .try_into()
+                                            .unwrap_or_default(),
+                                        0,
+                                    ));
+                                });
                             }
                         }
                     }
@@ -768,7 +774,7 @@ where
                             //TODO: this adjustment is just a guess!
                             state.scroll_pixels -= y * 6.0;
                             let mut lines = 0;
-                            let metrics = editor.buffer().metrics();
+                            let metrics = editor.with_buffer(|buffer| buffer.metrics());
                             while state.scroll_pixels <= -metrics.line_height {
                                 lines -= 1;
                                 state.scroll_pixels += metrics.line_height;

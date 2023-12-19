@@ -483,7 +483,7 @@ impl App {
             Some(tab) => {
                 if let Tab::Editor(inner) = tab {
                     // Force redraw on tab switches
-                    inner.editor.lock().unwrap().buffer_mut().set_redraw(true);
+                    inner.editor.lock().unwrap().set_redraw(true);
                 }
                 tab.title()
             }
@@ -503,18 +503,18 @@ impl App {
         match self.active_tab() {
             Some(Tab::Editor(tab)) => {
                 let editor = tab.editor.lock().unwrap();
-                let buffer = editor.buffer();
-
-                line_count = buffer.lines.len();
-                for line in buffer.lines.iter() {
-                    //TODO: do graphemes?
-                    for c in line.text().chars() {
-                        character_count += 1;
-                        if !c.is_whitespace() {
-                            character_count_no_spaces += 1;
+                editor.with_buffer(|buffer| {
+                    line_count = buffer.lines.len();
+                    for line in buffer.lines.iter() {
+                        //TODO: do graphemes?
+                        for c in line.text().chars() {
+                            character_count += 1;
+                            if !c.is_whitespace() {
+                                character_count_no_spaces += 1;
+                            }
                         }
                     }
-                }
+                });
             }
             _ => {}
         }
@@ -1134,9 +1134,11 @@ impl Application for App {
                                     self.tab_model.data_mut::<Tab>(entity)
                                 {
                                     let mut editor = tab.editor.lock().unwrap();
-                                    for line in editor.buffer_mut().lines.iter_mut() {
-                                        line.reset();
-                                    }
+                                    editor.with_buffer_mut(|buffer| {
+                                        for line in buffer.lines.iter_mut() {
+                                            line.reset();
+                                        }
+                                    });
                                 }
                             }
 
@@ -1465,10 +1467,12 @@ impl Application for App {
                         editor.set_cursor(Cursor::new(0, 0));
 
                         // Set selection end to highest possible value
-                        let buffer = editor.buffer();
-                        let last_line = buffer.lines.len().saturating_sub(1);
-                        let last_index = buffer.lines[last_line].text().len();
-                        editor.set_selection(Selection::Normal(Cursor::new(last_line, last_index)));
+                        let selection = editor.with_buffer(|buffer| {
+                            let last_line = buffer.lines.len().saturating_sub(1);
+                            let last_index = buffer.lines[last_line].text().len();
+                            Selection::Normal(Cursor::new(last_line, last_index))
+                        });
+                        editor.set_selection(selection);
                     }
                     _ => {}
                 }
@@ -1629,7 +1633,7 @@ impl Application for App {
                 for entity in entities {
                     if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
                         let mut editor = tab.editor.lock().unwrap();
-                        editor.buffer_mut().set_redraw(true);
+                        editor.set_redraw(true);
                     }
                 }
 

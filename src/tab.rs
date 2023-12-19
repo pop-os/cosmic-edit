@@ -6,7 +6,11 @@ use cosmic::{
 };
 use cosmic_text::{Attrs, Buffer, Edit, Shaping, SyntaxEditor, ViEditor, Wrap};
 use notify::Watcher;
-use std::{fs, path::PathBuf, sync::Mutex};
+use std::{
+    fs,
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
 use crate::{fl, git::GitDiff, mime_icon, Config, FALLBACK_MIME_ICON, FONT_SYSTEM, SYNTAX_SYSTEM};
 
@@ -32,7 +36,7 @@ pub struct GitDiffTab {
 pub struct EditorTab {
     pub path_opt: Option<PathBuf>,
     attrs: Attrs<'static>,
-    pub editor: Mutex<ViEditor<'static>>,
+    pub editor: Mutex<ViEditor<'static, 'static>>,
     pub context_menu: Option<Point>,
 }
 
@@ -49,7 +53,8 @@ impl EditorTab {
             Shaping::Advanced,
         );
 
-        let editor = SyntaxEditor::new(buffer, &SYNTAX_SYSTEM, config.syntax_theme()).unwrap();
+        let editor =
+            SyntaxEditor::new(Arc::new(buffer), &SYNTAX_SYSTEM, config.syntax_theme()).unwrap();
 
         let mut tab = Self {
             path_opt: None,
@@ -71,10 +76,12 @@ impl EditorTab {
         editor.set_auto_indent(config.auto_indent);
         editor.set_passthrough(!config.vim_bindings);
         editor.set_tab_width(config.tab_width);
-        editor.buffer_mut().set_wrap(if config.word_wrap {
-            Wrap::Word
-        } else {
-            Wrap::None
+        editor.with_buffer_mut(|buffer| {
+            buffer.set_wrap(if config.word_wrap {
+                Wrap::Word
+            } else {
+                Wrap::None
+            })
         });
         //TODO: dynamically discover light/dark changes
         editor.update_theme(config.syntax_theme());
@@ -108,7 +115,7 @@ impl EditorTab {
         let mut editor = editor.borrow_with(&mut font_system);
         if let Some(path) = &self.path_opt {
             // Save scroll
-            let scroll = editor.buffer().scroll();
+            let scroll = editor.with_buffer(|buffer| buffer.scroll());
             //TODO: save/restore more?
 
             match editor.load_text(path, self.attrs) {
@@ -121,7 +128,7 @@ impl EditorTab {
             }
 
             // Restore scroll
-            editor.buffer_mut().set_scroll(scroll);
+            editor.with_buffer_mut(|buffer| buffer.set_scroll(scroll));
         } else {
             log::warn!("tried to reload with no path");
         }
@@ -131,10 +138,12 @@ impl EditorTab {
         if let Some(path) = &self.path_opt {
             let mut editor = self.editor.lock().unwrap();
             let mut text = String::new();
-            for line in editor.buffer().lines.iter() {
-                text.push_str(line.text());
-                text.push('\n');
-            }
+            editor.with_buffer(|buffer| {
+                for line in buffer.lines.iter() {
+                    text.push_str(line.text());
+                    text.push('\n');
+                }
+            });
             match fs::write(path, text) {
                 Ok(()) => {
                     editor.set_changed(false);
