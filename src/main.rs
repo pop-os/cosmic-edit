@@ -19,7 +19,7 @@ use cosmic::{
 use cosmic_text::{Cursor, Edit, Family, FontSystem, Selection, SwashCache, SyntaxSystem, ViMode};
 use std::{
     any::TypeId,
-    env, fs,
+    env, fs, io,
     path::{Path, PathBuf},
     process,
     sync::Mutex,
@@ -66,10 +66,25 @@ lazy_static::lazy_static! {
     static ref SWASH_CACHE: Mutex<SwashCache> = Mutex::new(SwashCache::new());
     static ref SYNTAX_SYSTEM: SyntaxSystem = {
         let lazy_theme_set = two_face::theme::LazyThemeSet::from(two_face::theme::extra());
+        let mut theme_set = syntect::highlighting::ThemeSet::from(&lazy_theme_set);
+        for (theme_name, theme_data) in &[
+            ("COSMIC Dark", cosmic_syntax_theme::COSMIC_DARK_TM_THEME),
+            ("COSMIC Light", cosmic_syntax_theme::COSMIC_LIGHT_TM_THEME)
+        ] {
+            let mut cursor = io::Cursor::new(theme_data);
+            match syntect::highlighting::ThemeSet::load_from_reader(&mut cursor) {
+                Ok(theme) => {
+                    theme_set.themes.insert(theme_name.to_string(), theme);
+                }
+                Err(err) => {
+                    eprintln!("failed to load {:?} syntax theme: {}", theme_name, err);
+                }
+            }
+        }
         SyntaxSystem {
             //TODO: store newlines in buffer
             syntax_set: two_face::syntax::extra_no_newlines(),
-            theme_set: syntect::highlighting::ThemeSet::from(&lazy_theme_set),
+            theme_set,
         }
     };
 }

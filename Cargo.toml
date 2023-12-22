@@ -25,6 +25,9 @@ i18n-embed = { version = "0.13.4", features = ["fluent-system", "desktop-request
 i18n-embed-fl = "0.6.4"
 rust-embed = "6.3.0"
 
+[dependencies.cosmic-syntax-theme]
+git = "https://github.com/pop-os/cosmic-syntax-theme"
+
 [dependencies.cosmic-text]
 git = "https://github.com/pop-os/cosmic-text"
 branch = "refactor"
