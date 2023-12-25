@@ -364,7 +364,7 @@ impl App {
 
         let position = self.nav_model.position(id).unwrap_or(0);
 
-        self.open_folder(&path, position + 1, 1);
+        self.open_folder(path, position + 1, 1);
     }
 
     pub fn open_tab(&mut self, path_opt: Option<PathBuf>) -> Option<segmented_button::Entity> {
@@ -381,14 +381,11 @@ impl App {
                 //TODO: allow files to be open multiple times
                 let mut activate_opt = None;
                 for entity in self.tab_model.iter() {
-                    match self.tab_model.data::<Tab>(entity) {
-                        Some(Tab::Editor(tab)) => {
-                            if tab.path_opt.as_ref() == Some(&canonical) {
-                                activate_opt = Some(entity);
-                                break;
-                            }
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                        if tab.path_opt.as_ref() == Some(&canonical) {
+                            activate_opt = Some(entity);
+                            break;
                         }
-                        _ => {}
                     }
                 }
                 if let Some(entity) = activate_opt {
@@ -428,15 +425,18 @@ impl App {
     }
 
     fn save_config(&mut self) -> Command<Message> {
-        match self.config_handler {
-            Some(ref config_handler) => match self.config.write_entry(&config_handler) {
-                Ok(()) => {}
-                Err(err) => {
-                    log::error!("failed to save config: {}", err);
-                }
-            },
-            None => {}
+        if let Some(ref config_handler) = self.config_handler {
+            if let Err(err) = self.config.write_entry(config_handler) {
+                log::error!("failed to save config: {}", err);
+            }
         }
+
+        if let Some(ref config_handler) = self.config_handler {
+            if let Err(err) = self.config.write_entry(config_handler) {
+                log::error!("failed to save config: {}", err);
+            }
+        }
+
         self.update_config()
     }
 
@@ -449,43 +449,40 @@ impl App {
 
         // Locate tree node to activate
         let mut active_id = segmented_button::Entity::default();
-        match tab_path_opt {
-            Some(tab_path) => {
-                // Automatically expand tree to find and select active file
-                loop {
-                    let mut expand_opt = None;
-                    for id in self.nav_model.iter() {
-                        match self.nav_model.data(id) {
-                            Some(node) => match node {
-                                ProjectNode::Folder { path, open, .. } => {
-                                    if tab_path.starts_with(path) && !*open {
-                                        expand_opt = Some(id);
-                                        break;
-                                    }
+
+        if let Some(tab_path) = tab_path_opt {
+            // Automatically expand tree to find and select active file
+            loop {
+                let mut expand_opt = None;
+                for id in self.nav_model.iter() {
+                    if let Some(node) = self.nav_model.data(id) {
+                        match node {
+                            ProjectNode::Folder { path, open, .. } => {
+                                if tab_path.starts_with(path) && !*open {
+                                    expand_opt = Some(id);
+                                    break;
                                 }
-                                ProjectNode::File { path, .. } => {
-                                    if path == &tab_path {
-                                        active_id = id;
-                                        break;
-                                    }
+                            }
+                            ProjectNode::File { path, .. } => {
+                                if path == &tab_path {
+                                    active_id = id;
+                                    break;
                                 }
-                            },
-                            None => {}
-                        }
-                    }
-                    match expand_opt {
-                        Some(id) => {
-                            //TODO: can this be optimized?
-                            // Command not used becuase opening a folder just returns Command::none
-                            let _ = self.on_nav_select(id);
-                        }
-                        None => {
-                            break;
+                            }
                         }
                     }
                 }
+                match expand_opt {
+                    Some(id) => {
+                        //TODO: can this be optimized?
+                        // Command not used becuase opening a folder just returns Command::none
+                        let _ = self.on_nav_select(id);
+                    }
+                    None => {
+                        break;
+                    }
+                }
             }
-            None => {}
         }
         self.nav_model.activate(active_id);
     }
@@ -502,7 +499,7 @@ impl App {
                 }
                 tab.title()
             }
-            None => format!("No Open File"),
+            None => "No Open File".to_string(),
         };
 
         let window_title = format!("{title} - COSMIC Text Editor");
@@ -515,23 +512,21 @@ impl App {
         let mut character_count = 0;
         let mut character_count_no_spaces = 0;
         let mut line_count = 0;
-        match self.active_tab() {
-            Some(Tab::Editor(tab)) => {
-                let editor = tab.editor.lock().unwrap();
-                editor.with_buffer(|buffer| {
-                    line_count = buffer.lines.len();
-                    for line in buffer.lines.iter() {
-                        //TODO: do graphemes?
-                        for c in line.text().chars() {
-                            character_count += 1;
-                            if !c.is_whitespace() {
-                                character_count_no_spaces += 1;
-                            }
+
+        if let Some(Tab::Editor(tab)) = self.active_tab() {
+            let editor = tab.editor.lock().unwrap();
+            editor.with_buffer(|buffer| {
+                line_count = buffer.lines.len();
+                for line in buffer.lines.iter() {
+                    //TODO: do graphemes?
+                    for c in line.text().chars() {
+                        character_count += 1;
+                        if !c.is_whitespace() {
+                            character_count_no_spaces += 1;
                         }
                     }
-                });
-            }
-            _ => {}
+                }
+            });
         }
 
         widget::settings::view_column(vec![widget::settings::view_section("")
@@ -598,7 +593,7 @@ impl App {
                                         project_path,
                                         err
                                     );
-                                    &old_path
+                                    old_path
                                 }
                             };
                             format!(
@@ -752,7 +747,7 @@ impl App {
                                     ))
                                     .font(Font::MONOSPACE)
                                     .into(),
-                                    widget::text(format!("{}", line_search_result.text))
+                                    widget::text(line_search_result.text.to_string())
                                         .font(Font::MONOSPACE)
                                         .into(),
                                 ])
@@ -848,7 +843,7 @@ impl App {
                     widget::settings::item::builder(fl!("default-font")).control(widget::dropdown(
                         &self.font_names,
                         font_selected,
-                        |index| Message::DefaultFont(index),
+                        Message::DefaultFont,
                     )),
                 )
                 .add(
@@ -914,7 +909,7 @@ impl Application for App {
                     //TODO: get localized name if possible
                     let font_name = face
                         .families
-                        .get(0)
+                        .first()
                         .map_or_else(|| face.post_script_name.to_string(), |x| x.0.to_string());
                     font_names.push(font_name);
                 }
@@ -1030,11 +1025,8 @@ impl Application for App {
         // Toggle open state and get clone of node data
         let node_opt = match self.nav_model.data_mut::<ProjectNode>(id) {
             Some(node) => {
-                match node {
-                    ProjectNode::Folder { open, .. } => {
-                        *open = !*open;
-                    }
-                    _ => {}
+                if let ProjectNode::Folder { open, .. } = node {
+                    *open = !*open;
                 }
                 Some(node.clone())
             }
@@ -1055,12 +1047,7 @@ impl Application for App {
                             self.open_folder(path, position + 1, indent + 1);
                         } else {
                             // Close folder
-                            loop {
-                                let child_id = match self.nav_model.entity_at(position + 1) {
-                                    Some(some) => some,
-                                    None => break,
-                                };
-
+                            while let Some(child_id) = self.nav_model.entity_at(position + 1) {
                                 if self.nav_model.indent(child_id).unwrap_or(0) > indent {
                                     self.nav_model.remove(child_id);
                                 } else {
@@ -1103,18 +1090,17 @@ impl Application for App {
             Message::CloseProject => {
                 log::info!("TODO");
             }
-            Message::Copy => match self.active_tab() {
-                Some(Tab::Editor(tab)) => {
+            Message::Copy => {
+                if let Some(Tab::Editor(tab)) = self.active_tab() {
                     let editor = tab.editor.lock().unwrap();
                     let selection_opt = editor.copy_selection();
                     if let Some(selection) = selection_opt {
                         return clipboard::write(selection);
                     }
                 }
-                _ => {}
-            },
-            Message::Cut => match self.active_tab() {
-                Some(Tab::Editor(tab)) => {
+            }
+            Message::Cut => {
+                if let Some(Tab::Editor(tab)) = self.active_tab() {
                     let mut editor = tab.editor.lock().unwrap();
                     let selection_opt = editor.copy_selection();
                     editor.start_change();
@@ -1124,8 +1110,7 @@ impl Application for App {
                         return clipboard::write(selection);
                     }
                 }
-                _ => {}
-            },
+            }
             Message::DefaultFont(index) => {
                 match self.font_names.get(index) {
                     Some(font_name) => {
@@ -1206,22 +1191,19 @@ impl Application for App {
             Message::NotifyEvent(event) => {
                 let mut needs_reload = Vec::new();
                 for entity in self.tab_model.iter() {
-                    match self.tab_model.data::<Tab>(entity) {
-                        Some(Tab::Editor(tab)) => {
-                            if let Some(path) = &tab.path_opt {
-                                if event.paths.contains(&path) {
-                                    if tab.changed() {
-                                        log::warn!(
-                                            "file changed externally before being saved: {:?}",
-                                            path
-                                        );
-                                    } else {
-                                        needs_reload.push(entity);
-                                    }
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                        if let Some(path) = &tab.path_opt {
+                            if event.paths.contains(path) {
+                                if tab.changed() {
+                                    log::warn!(
+                                        "file changed externally before being saved: {:?}",
+                                        path
+                                    );
+                                } else {
+                                    needs_reload.push(entity);
                                 }
                             }
                         }
-                        _ => {}
                     }
                 }
 
@@ -1242,11 +1224,8 @@ impl Application for App {
                     self.watcher_opt = Some(watcher);
 
                     for entity in self.tab_model.iter() {
-                        match self.tab_model.data::<Tab>(entity) {
-                            Some(Tab::Editor(tab)) => {
-                                tab.watch(&mut self.watcher_opt);
-                            }
-                            _ => {}
+                        if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                            tab.watch(&mut self.watcher_opt);
                         }
                     }
                 }
@@ -1363,15 +1342,14 @@ impl Application for App {
                     None => message::none(),
                 });
             }
-            Message::PasteValue(value) => match self.active_tab() {
-                Some(Tab::Editor(tab)) => {
+            Message::PasteValue(value) => {
+                if let Some(Tab::Editor(tab)) = self.active_tab() {
                     let mut editor = tab.editor.lock().unwrap();
                     editor.start_change();
                     editor.insert_string(&value, None);
                     editor.finish_change();
                 }
-                _ => {}
-            },
+            }
             Message::PrepareGitDiff(project_path, path, staged) => {
                 return Command::perform(
                     async move {
@@ -1446,27 +1424,23 @@ impl Application for App {
                 //TODO: prompt for save?
                 return window::close(window::Id::MAIN);
             }
-            Message::Redo => match self.active_tab() {
-                Some(Tab::Editor(tab)) => {
+            Message::Redo => {
+                if let Some(Tab::Editor(tab)) = self.active_tab() {
                     let mut editor = tab.editor.lock().unwrap();
                     editor.redo();
                 }
-                _ => {}
-            },
+            }
             Message::Save => {
                 let mut title_opt = None;
 
-                match self.active_tab_mut() {
-                    Some(Tab::Editor(tab)) => {
-                        #[cfg(feature = "rfd")]
-                        if tab.path_opt.is_none() {
-                            //TODO: use async file dialog
-                            tab.path_opt = rfd::FileDialog::new().save_file();
-                        }
-                        title_opt = Some(tab.title());
-                        tab.save();
+                if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
+                    #[cfg(feature = "rfd")]
+                    if tab.path_opt.is_none() {
+                        //TODO: use async file dialog
+                        tab.path_opt = rfd::FileDialog::new().save_file();
                     }
-                    _ => {}
+                    title_opt = Some(tab.title());
+                    tab.save();
                 }
 
                 if let Some(title) = title_opt {
@@ -1474,22 +1448,19 @@ impl Application for App {
                 }
             }
             Message::SelectAll => {
-                match self.active_tab_mut() {
-                    Some(Tab::Editor(tab)) => {
-                        let mut editor = tab.editor.lock().unwrap();
+                if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
+                    let mut editor = tab.editor.lock().unwrap();
 
-                        // Set cursor to lowest possible value
-                        editor.set_cursor(Cursor::new(0, 0));
+                    // Set cursor to lowest possible value
+                    editor.set_cursor(Cursor::new(0, 0));
 
-                        // Set selection end to highest possible value
-                        let selection = editor.with_buffer(|buffer| {
-                            let last_line = buffer.lines.len().saturating_sub(1);
-                            let last_index = buffer.lines[last_line].text().len();
-                            Selection::Normal(Cursor::new(last_line, last_index))
-                        });
-                        editor.set_selection(selection);
-                    }
-                    _ => {}
+                    // Set selection end to highest possible value
+                    let selection = editor.with_buffer(|buffer| {
+                        let last_line = buffer.lines.len().saturating_sub(1);
+                        let last_index = buffer.lines[last_line].text().len();
+                        Selection::Normal(Cursor::new(last_line, last_index))
+                    });
+                    editor.set_selection(selection);
                 }
             }
             Message::SystemThemeModeChange(_theme_mode) => {
@@ -1512,15 +1483,14 @@ impl Application for App {
                 self.tab_model.activate(entity);
                 return self.update_tab();
             }
-            Message::TabChanged(entity) => match self.tab_model.data::<Tab>(entity) {
-                Some(Tab::Editor(tab)) => {
+            Message::TabChanged(entity) => {
+                if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
                     let mut title = tab.title();
                     //TODO: better way of adding change indicator
                     title.push_str(" \u{2022}");
                     self.tab_model.text_set(entity, title);
                 }
-                _ => {}
-            },
+            }
             Message::TabClose(entity) => {
                 // Activate closest item
                 if let Some(position) = self.tab_model.position(entity) {
@@ -1542,32 +1512,25 @@ impl Application for App {
                 return self.update_tab();
             }
             Message::TabContextAction(entity, action) => {
-                match self.tab_model.data_mut::<Tab>(entity) {
-                    Some(Tab::Editor(tab)) => {
-                        // Close context menu
-                        tab.context_menu = None;
-                        // Run action's message
-                        return self.update(action.message());
-                    }
-                    _ => {}
+                if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                    // Close context menu
+                    tab.context_menu = None;
+                    // Run action's message
+                    return self.update(action.message());
                 }
             }
             Message::TabContextMenu(entity, position_opt) => {
-                match self.tab_model.data_mut::<Tab>(entity) {
-                    Some(Tab::Editor(tab)) => {
-                        // Update context menu
-                        tab.context_menu = position_opt;
-                    }
-                    _ => {}
+                if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                    // Update context menu
+                    tab.context_menu = position_opt;
                 }
             }
-            Message::TabSetCursor(entity, cursor) => match self.tab_model.data::<Tab>(entity) {
-                Some(Tab::Editor(tab)) => {
+            Message::TabSetCursor(entity, cursor) => {
+                if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
                     let mut editor = tab.editor.lock().unwrap();
                     editor.set_cursor(cursor);
                 }
-                _ => {}
-            },
+            }
             Message::TabWidth(tab_width) => {
                 self.config.tab_width = tab_width;
                 return self.save_config();
@@ -1599,7 +1562,7 @@ impl Application for App {
                                     let mut project_status = Vec::new();
                                     for (project_name, project_path) in projects.iter() {
                                         //TODO: send errors to UI
-                                        match GitRepository::new(&project_path) {
+                                        match GitRepository::new(project_path) {
                                             Ok(repo) => match repo.status().await {
                                                 Ok(status) => {
                                                     if !status.is_empty() {
@@ -1658,13 +1621,12 @@ impl Application for App {
                 self.config.word_wrap = !self.config.word_wrap;
                 return self.save_config();
             }
-            Message::Undo => match self.active_tab() {
-                Some(Tab::Editor(tab)) => {
+            Message::Undo => {
+                if let Some(Tab::Editor(tab)) = self.active_tab() {
                     let mut editor = tab.editor.lock().unwrap();
                     editor.undo();
                 }
-                _ => {}
-            },
+            }
             Message::VimBindings(vim_bindings) => {
                 self.config.vim_bindings = vim_bindings;
                 return self.save_config();
@@ -1727,15 +1689,11 @@ impl Application for App {
                         ViMode::Normal => {
                             format!("{}", parser.cmd)
                         }
-                        ViMode::Insert => {
-                            format!("-- INSERT --")
-                        }
+                        ViMode::Insert => "-- INSERT --".to_string(),
                         ViMode::Extra(extra) => {
                             format!("{}{}", parser.cmd, extra)
                         }
-                        ViMode::Replace => {
-                            format!("-- REPLACE --")
-                        }
+                        ViMode::Replace => "-- REPLACE --".to_string(),
                         ViMode::Visual => {
                             format!("-- VISUAL -- {}", parser.cmd)
                         }
