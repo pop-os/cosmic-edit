@@ -119,7 +119,6 @@ fn draw_rect(
     let alpha = (color >> 24) & 0xFF;
     if alpha == 0 {
         // Do not draw if alpha is zero
-        return;
     } else if alpha >= 255 {
         // Handle overwrite
         for y in start_y..start_y + h {
@@ -172,7 +171,7 @@ fn draw_rect(
     }
 }
 
-impl<'a, 'editor, Message, Renderer> Widget<Message, Renderer> for TextBox<'a, Message>
+impl<'a, Message, Renderer> Widget<Message, Renderer> for TextBox<'a, Message>
 where
     Message: Clone,
     Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
@@ -233,9 +232,8 @@ where
     ) -> mouse::Interaction {
         let state = tree.state.downcast_ref::<State>();
 
-        match &state.dragging {
-            Some(Dragging::Scrollbar { .. }) => return mouse::Interaction::Idle,
-            _ => {}
+        if let Some(Dragging::Scrollbar { .. }) = &state.dragging {
+            return mouse::Interaction::Idle;
         }
 
         if let Some(p) = cursor_position.position_in(layout.bounds()) {
@@ -507,10 +505,9 @@ where
             ));
         }
 
-        let image_position =
-            layout.position() + [self.padding.left as f32, self.padding.top as f32].into();
+        let image_position = layout.position() + [self.padding.left, self.padding.top].into();
         if let Some(ref handle) = *handle_opt {
-            let image_size = image::Renderer::dimensions(renderer, &handle);
+            let image_size = image::Renderer::dimensions(renderer, handle);
             image::Renderer::draw(
                 renderer,
                 handle.clone(),
@@ -761,7 +758,7 @@ where
             Event::Mouse(MouseEvent::WheelScrolled { delta }) => {
                 if let Some(_p) = cursor_position.position_in(layout.bounds()) {
                     match delta {
-                        ScrollDelta::Lines { x, y } => {
+                        ScrollDelta::Lines { x: _, y } => {
                             //TODO: this adjustment is just a guess!
                             state.scroll_pixels = 0.0;
                             let lines = (-y * 6.0) as i32;
@@ -770,7 +767,7 @@ where
                             }
                             status = Status::Captured;
                         }
-                        ScrollDelta::Pixels { x, y } => {
+                        ScrollDelta::Pixels { x: _, y } => {
                             //TODO: this adjustment is just a guess!
                             state.scroll_pixels -= y * 6.0;
                             let mut lines = 0;
@@ -804,7 +801,7 @@ where
     }
 }
 
-impl<'a, 'editor, Message, Renderer> From<TextBox<'a, Message>> for Element<'a, Message, Renderer>
+impl<'a, Message, Renderer> From<TextBox<'a, Message>> for Element<'a, Message, Renderer>
 where
     Message: Clone + 'a,
     Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,

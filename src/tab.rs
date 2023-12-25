@@ -161,7 +161,7 @@ impl EditorTab {
     pub fn watch(&self, watcher_opt: &mut Option<notify::RecommendedWatcher>) {
         if let Some(path) = &self.path_opt {
             if let Some(watcher) = watcher_opt {
-                match watcher.watch(&path, notify::RecursiveMode::NonRecursive) {
+                match watcher.watch(path, notify::RecursiveMode::NonRecursive) {
                     Ok(()) => {
                         log::info!("watching {:?} for changes", path);
                     }

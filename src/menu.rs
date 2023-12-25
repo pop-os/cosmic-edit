@@ -33,20 +33,20 @@ macro_rules! menu_button {
 }
 
 pub fn context_menu<'a>(config: &Config, entity: segmented_button::Entity) -> Element<'a, Message> {
-    let menu_item = |label, action| {
+    let menu_item = |menu_label, menu_action| {
         let mut key = String::new();
-        for (key_bind, action) in config.keybinds.iter() {
-            if action == action {
+        for (key_bind, key_action) in config.keybinds.iter() {
+            if key_action == &menu_action {
                 key = key_bind.to_string();
                 break;
             }
         }
         menu_button!(
-            widget::text(label),
+            widget::text(menu_label),
             horizontal_space(Length::Fill),
             widget::text(key)
         )
-        .on_press(Message::TabContextAction(entity, action))
+        .on_press(Message::TabContextAction(entity, menu_action))
     };
 
     widget::container(column!(

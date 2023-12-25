@@ -76,15 +76,17 @@ impl Ord for ProjectNode {
     fn cmp(&self, other: &Self) -> Ordering {
         match self {
             // Folders are always before files
-            Self::Folder { .. } => match other {
-                Self::File { .. } => return Ordering::Less,
-                _ => {}
-            },
+            Self::Folder { .. } => {
+                if let Self::File { .. } = other {
+                    return Ordering::Less;
+                }
+            }
             // Files are always after folders
-            Self::File { .. } => match other {
-                Self::Folder { .. } => return Ordering::Greater,
-                _ => {}
-            },
+            Self::File { .. } => {
+                if let Self::Folder { .. } = other {
+                    return Ordering::Greater;
+                }
+            }
         }
         self.name().cmp(other.name())
     }
