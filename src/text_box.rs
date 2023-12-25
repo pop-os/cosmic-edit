@@ -98,15 +98,22 @@ where
     TextBox::new(editor, metrics)
 }
 
+struct Canvas {
+    w: i32,
+    h: i32,
+}
+
+struct Offset {
+    x: i32,
+    y: i32,
+}
+
 //TODO: improve performance
 fn draw_rect(
     buffer: &mut [u32],
-    image_w: i32,
-    image_h: i32,
-    start_x: i32,
-    start_y: i32,
-    w: i32,
-    h: i32,
+    canvas: Canvas,
+    offset: Canvas,
+    start: Offset,
     cosmic_color: cosmic_text::Color,
 ) {
     // Grab alpha channel and green channel
@@ -121,15 +128,15 @@ fn draw_rect(
         // Do not draw if alpha is zero
     } else if alpha >= 255 {
         // Handle overwrite
-        for y in start_y..start_y + h {
-            if y < 0 || y >= image_h {
+        for y in start.y..start.y + offset.h {
+            if y < 0 || y >= canvas.h {
                 // Skip if y out of bounds
                 continue;
             }
 
-            let line_offset = y as usize * image_w as usize;
-            for x in start_x..start_x + w {
-                if x < 0 || x >= image_w {
+            let line_offset = y as usize * canvas.w as usize;
+            for x in start.x..start.x + offset.w {
+                if x < 0 || x >= canvas.w {
                     // Skip if x out of bounds
                     continue;
                 }
@@ -140,15 +147,15 @@ fn draw_rect(
         }
     } else {
         let n_alpha = 255 - alpha;
-        for y in start_y..start_y + h {
-            if y < 0 || y >= image_h {
+        for y in start.y..start.y + offset.h {
+            if y < 0 || y >= canvas.h {
                 // Skip if y out of bounds
                 continue;
             }
 
-            let line_offset = y as usize * image_w as usize;
-            for x in start_x..start_x + w {
-                if x < 0 || x >= image_w {
+            let line_offset = y as usize * canvas.w as usize;
+            for x in start.x..start.x + offset.w {
+                if x < 0 || x >= canvas.w {
                     // Skip if x out of bounds
                     continue;
                 }
@@ -384,12 +391,15 @@ where
                     // Ensure fill with gutter color
                     draw_rect(
                         pixels,
-                        image_w,
-                        image_h,
-                        0,
-                        0,
-                        editor_offset_x,
-                        image_h,
+                        Canvas {
+                            w: image_w,
+                            h: image_h,
+                        },
+                        Canvas {
+                            w: editor_offset_x,
+                            h: image_h,
+                        },
+                        Offset { x: 0, y: 0 },
                         gutter,
                     );
 
@@ -437,12 +447,15 @@ where
                                         |x, y, color| {
                                             draw_rect(
                                                 pixels,
-                                                image_w,
-                                                image_h,
-                                                physical_glyph.x + x,
-                                                physical_glyph.y + y,
-                                                1,
-                                                1,
+                                                Canvas {
+                                                    w: image_w,
+                                                    h: image_h,
+                                                },
+                                                Canvas { w: 1, h: 1 },
+                                                Offset {
+                                                    x: physical_glyph.x + x,
+                                                    y: physical_glyph.y + y,
+                                                },
                                                 color,
                                             );
                                         },
@@ -457,12 +470,18 @@ where
                 editor.draw(&mut font_system, &mut swash_cache, |x, y, w, h, color| {
                     draw_rect(
                         pixels,
-                        image_w,
-                        image_h,
-                        editor_offset_x + x,
-                        y,
-                        w as i32,
-                        h as i32,
+                        Canvas {
+                            w: image_w,
+                            h: image_h,
+                        },
+                        Canvas {
+                            w: w as i32,
+                            h: h as i32,
+                        },
+                        Offset {
+                            x: editor_offset_x + x,
+                            y,
+                        },
                         color,
                     );
                 });
