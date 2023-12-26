@@ -108,12 +108,18 @@ struct Offset {
     y: i32,
 }
 
-//TODO: improve performance
+/// This function is called Window.x * Window.y number of times
+/// each time the text is scrolled or the window is resized.
+/// If the window is moved, it's not called as the pixel buffer
+/// is the same, it's just translated for the screen's x, y.
+/// Window is the location of the pixel in the window.
+/// Screen is the location of the pixel on the screen itself.
+// TODO: improve performance
 fn draw_rect(
     buffer: &mut [u32],
-    canvas: Canvas,
+    window: Canvas,
     offset: Canvas,
-    start: Offset,
+    screen: Offset,
     cosmic_color: cosmic_text::Color,
 ) {
     // Grab alpha channel and green channel
@@ -124,54 +130,71 @@ fn draw_rect(
     color |= (cosmic_color.0 & 0x000000FF) << 16;
 
     let alpha = (color >> 24) & 0xFF;
-    if alpha == 0 {
-        // Do not draw if alpha is zero
-    } else if alpha >= 255 {
-        // Handle overwrite
-        for y in start.y..start.y + offset.h {
-            if y < 0 || y >= canvas.h {
-                // Skip if y out of bounds
-                continue;
-            }
 
-            let line_offset = y as usize * canvas.w as usize;
-            for x in start.x..start.x + offset.w {
-                if x < 0 || x >= canvas.w {
-                    // Skip if x out of bounds
+    log::debug!(
+        "Window: {{w: {}, h: {}}}; Offset: {{w: {}, h: {}}}; Screen: {{x: {}, y: {}}}; Alpha {:#}",
+        window.w,
+        window.h,
+        offset.w,
+        offset.h,
+        screen.x,
+        screen.y,
+        alpha
+    );
+
+    match alpha {
+        0 => {
+            // Do not draw if alpha is zero.
+        }
+        255 => {
+            // Handle overwrite
+            for x in screen.x..screen.x + offset.w {
+                if x < 0 || x >= window.w {
+                    // Skip if y out of bounds
                     continue;
                 }
 
-                let offset = line_offset + x as usize;
-                buffer[offset] = color;
+                for y in screen.y..screen.y + offset.h {
+                    if y < 0 || y >= window.h {
+                        // Skip if x out of bounds
+                        continue;
+                    }
+
+                    let line_offset = y as usize * window.w as usize;
+                    let offset = line_offset + x as usize;
+                    buffer[offset] = color;
+                }
             }
         }
-    } else {
-        let n_alpha = 255 - alpha;
-        for y in start.y..start.y + offset.h {
-            if y < 0 || y >= canvas.h {
-                // Skip if y out of bounds
-                continue;
-            }
-
-            let line_offset = y as usize * canvas.w as usize;
-            for x in start.x..start.x + offset.w {
-                if x < 0 || x >= canvas.w {
-                    // Skip if x out of bounds
+        _ => {
+            let n_alpha = 255 - alpha;
+            for y in screen.y..screen.y + offset.h {
+                if y < 0 || y >= window.h {
+                    // Skip if y out of bounds
                     continue;
                 }
 
-                // Alpha blend with current value
-                let offset = line_offset + x as usize;
-                let current = buffer[offset];
-                if current & 0xFF000000 == 0 {
-                    // Overwrite if buffer empty
-                    buffer[offset] = color;
-                } else {
-                    let rb =
-                        ((n_alpha * (current & 0x00FF00FF)) + (alpha * (color & 0x00FF00FF))) >> 8;
-                    let ag = (n_alpha * ((current & 0xFF00FF00) >> 8))
-                        + (alpha * (0x01000000 | ((color & 0x0000FF00) >> 8)));
-                    buffer[offset] = (rb & 0x00FF00FF) | (ag & 0xFF00FF00);
+                let line_offset = y as usize * window.w as usize;
+                for x in screen.x..screen.x + offset.w {
+                    if x < 0 || x >= window.w {
+                        // Skip if x out of bounds
+                        continue;
+                    }
+
+                    // Alpha blend with current value
+                    let offset = line_offset + x as usize;
+                    let current = buffer[offset];
+                    if current & 0xFF000000 == 0 {
+                        // Overwrite if buffer empty
+                        buffer[offset] = color;
+                    } else {
+                        let rb = ((n_alpha * (current & 0x00FF00FF))
+                            + (alpha * (color & 0x00FF00FF)))
+                            >> 8;
+                        let ag = (n_alpha * ((current & 0xFF00FF00) >> 8))
+                            + (alpha * (0x01000000 | ((color & 0x0000FF00) >> 8)));
+                        buffer[offset] = (rb & 0x00FF00FF) | (ag & 0xFF00FF00);
+                    }
                 }
             }
         }
