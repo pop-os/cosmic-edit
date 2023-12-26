@@ -108,16 +108,16 @@ struct Offset {
     y: i32,
 }
 
-/// This function is called Window.x * Window.y number of times
-/// each time the text is scrolled or the window is resized.
-/// If the window is moved, it's not called as the pixel buffer
+/// This function is called canvas.x * canvas.y number of times
+/// each time the text is scrolled or the canvas is resized.
+/// If the canvas is moved, it's not called as the pixel buffer
 /// is the same, it's just translated for the screen's x, y.
-/// Window is the location of the pixel in the window.
-/// Screen is the location of the pixel on the screen itself.
+/// canvas is the location of the pixel in the canvas.
+/// Screen is the location of the pixel on the screen.
 // TODO: improve performance
 fn draw_rect(
     buffer: &mut [u32],
-    window: Canvas,
+    canvas: Canvas,
     offset: Canvas,
     screen: Offset,
     cosmic_color: cosmic_text::Color,
@@ -132,9 +132,9 @@ fn draw_rect(
     let alpha = (color >> 24) & 0xFF;
 
     log::debug!(
-        "Window: {{w: {}, h: {}}}; Offset: {{w: {}, h: {}}}; Screen: {{x: {}, y: {}}}; Alpha {:#}",
-        window.w,
-        window.h,
+        "Canvas: {{w: {}, h: {}}}; Offset: {{w: {}, h: {}}}; Screen: {{x: {}, y: {}}}; Alpha {:#}",
+        canvas.w,
+        canvas.h,
         offset.w,
         offset.h,
         screen.x,
@@ -149,18 +149,18 @@ fn draw_rect(
         255 => {
             // Handle overwrite
             for x in screen.x..screen.x + offset.w {
-                if x < 0 || x >= window.w {
+                if x < 0 || x >= canvas.w {
                     // Skip if y out of bounds
                     continue;
                 }
 
                 for y in screen.y..screen.y + offset.h {
-                    if y < 0 || y >= window.h {
+                    if y < 0 || y >= canvas.h {
                         // Skip if x out of bounds
                         continue;
                     }
 
-                    let line_offset = y as usize * window.w as usize;
+                    let line_offset = y as usize * canvas.w as usize;
                     let offset = line_offset + x as usize;
                     buffer[offset] = color;
                 }
@@ -169,14 +169,14 @@ fn draw_rect(
         _ => {
             let n_alpha = 255 - alpha;
             for y in screen.y..screen.y + offset.h {
-                if y < 0 || y >= window.h {
+                if y < 0 || y >= canvas.h {
                     // Skip if y out of bounds
                     continue;
                 }
 
-                let line_offset = y as usize * window.w as usize;
+                let line_offset = y as usize * canvas.w as usize;
                 for x in screen.x..screen.x + offset.w {
-                    if x < 0 || x >= window.w {
+                    if x < 0 || x >= canvas.w {
                         // Skip if x out of bounds
                         continue;
                     }
