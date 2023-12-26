@@ -21,9 +21,9 @@ tokio = { version = "1", features = ["process", "time"] }
 syntect = "5.1.0"
 two-face = "0.3.0"
 # Internationalization
-i18n-embed = { version = "0.13.4", features = ["fluent-system", "desktop-requester"] }
-i18n-embed-fl = "0.6.4"
-rust-embed = "6.3.0"
+i18n-embed = { version = "0.14", features = ["fluent-system", "desktop-requester"] }
+i18n-embed-fl = "0.7"
+rust-embed = "8"
 
 [dependencies.cosmic-syntax-theme]
 git = "https://github.com/pop-os/cosmic-syntax-theme"
