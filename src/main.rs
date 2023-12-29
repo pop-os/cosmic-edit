@@ -1423,15 +1423,23 @@ impl Application for App {
                 self.project_search_value = value;
             }
             Message::Quit => {
-                //TODO: Save contents of modified tabs.
-                log::warn!("Need to check if ANY tab has unsaved changes here.");
+                // Compile a list (VECtor) of modified tabs.
+                let mut modified = Vec::new();
                 for entity in self.tab_model.iter() {
                     if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
                         if tab.modified {
-                            log::warn!("Quit: Ask about saving this {} modified tab.", tab.title())
+                            log::warn!("Quit: Ask about saving this {} modified tab.", tab.title());
+                            modified.push(entity);
                         }
                     }
                 }
+
+                // Activate each tab, and ask if the user wants to save the changes.
+                for entity in modified {
+                    self.tab_model.activate(entity);
+                    let _ = self.update(Message::TabClose(self.tab_model.active()));
+                }
+
                 return window::close(window::Id::MAIN);
             }
             Message::Redo => {
@@ -1503,18 +1511,18 @@ impl Application for App {
                 }
             }
             Message::TabClose(entity) => {
+                //TODO: Save contents of modified tab.
+                if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                    if tab.modified {
+                        log::warn!("Tab Close: Should ask about saving modified tab.");
+                    }
+                }
+
                 if let Some(position) = self.tab_model.position(entity) {
                     if position > 0 {
                         self.tab_model.activate_position(position - 1);
                     } else {
                         self.tab_model.activate_position(position + 1);
-                    }
-                }
-
-                //TODO: Save contents of modified tab.
-                if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
-                    if tab.modified {
-                        log::warn!("Tab Close: Should ask about saving modified tab.");
                     }
                 }
 
