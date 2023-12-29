@@ -38,6 +38,7 @@ pub struct EditorTab {
     attrs: Attrs<'static>,
     pub editor: Mutex<ViEditor<'static, 'static>>,
     pub context_menu: Option<Point>,
+    pub modified: bool,
 }
 
 impl EditorTab {
@@ -61,6 +62,7 @@ impl EditorTab {
             attrs,
             editor: Mutex::new(ViEditor::new(editor)),
             context_menu: None,
+            modified: false,
         };
 
         // Update any other config settings
@@ -175,6 +177,7 @@ impl EditorTab {
 
     pub fn changed(&self) -> bool {
         let editor = self.editor.lock().unwrap();
+        log::warn!("changed");
         editor.changed()
     }
 

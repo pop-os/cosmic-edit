@@ -206,7 +206,7 @@ pub enum Message {
     SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
     TabActivate(segmented_button::Entity),
-    TabChanged(segmented_button::Entity),
+    TabModified(segmented_button::Entity),
     TabClose(segmented_button::Entity),
     TabContextAction(segmented_button::Entity, Action),
     TabContextMenu(segmented_button::Entity, Option<Point>),
@@ -1085,6 +1085,8 @@ impl Application for App {
                 }
             }
             Message::CloseFile => {
+                // As CloseFile hands off to TabClose we only need
+                // to handle modified file saves in that function.
                 return self.update(Message::TabClose(self.tab_model.active()));
             }
             Message::CloseProject => {
@@ -1421,7 +1423,15 @@ impl Application for App {
                 self.project_search_value = value;
             }
             Message::Quit => {
-                //TODO: prompt for save?
+                //TODO: Save contents of modified tabs.
+                log::warn!("Need to check if ANY tab has unsaved changes here.");
+                for entity in self.tab_model.iter() {
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                        if tab.modified {
+                            log::warn!("Quit: Ask about saving this {} modified tab.", tab.title())
+                        }
+                    }
+                }
                 return window::close(window::Id::MAIN);
             }
             Message::Redo => {
@@ -1483,21 +1493,28 @@ impl Application for App {
                 self.tab_model.activate(entity);
                 return self.update_tab();
             }
-            Message::TabChanged(entity) => {
-                if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+            Message::TabModified(entity) => {
+                if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                    tab.modified = true;
+                    //TODO: better way of adding modifiy indicator
                     let mut title = tab.title();
-                    //TODO: better way of adding change indicator
                     title.push_str(" \u{2022}");
                     self.tab_model.text_set(entity, title);
                 }
             }
             Message::TabClose(entity) => {
-                // Activate closest item
                 if let Some(position) = self.tab_model.position(entity) {
                     if position > 0 {
                         self.tab_model.activate_position(position - 1);
                     } else {
                         self.tab_model.activate_position(position + 1);
+                    }
+                }
+
+                //TODO: Save contents of modified tab.
+                if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                    if tab.modified {
+                        log::warn!("Tab Close: Should ask about saving modified tab.");
                     }
                 }
 
@@ -1713,7 +1730,7 @@ impl Application for App {
                     }
                 };
                 let mut text_box = text_box(&tab.editor, self.config.metrics())
-                    .on_changed(Message::TabChanged(tab_id))
+                    .on_changed(Message::TabModified(tab_id))
                     .on_context_menu(move |position_opt| {
                         Message::TabContextMenu(tab_id, position_opt)
                     });
