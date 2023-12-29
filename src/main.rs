@@ -1423,6 +1423,7 @@ impl Application for App {
                 self.project_search_value = value;
             }
             Message::Quit => {
+                // Only runs when called from the File->Quit menu item.
                 // Compile a list (VECtor) of modified tabs.
                 let mut modified = Vec::new();
                 for entity in self.tab_model.iter() {
@@ -1438,6 +1439,7 @@ impl Application for App {
                 for entity in modified {
                     self.tab_model.activate(entity);
                     let _ = self.update(Message::TabClose(self.tab_model.active()));
+                    let _ = self.update(Message::Save);
                 }
 
                 return window::close(window::Id::MAIN);
