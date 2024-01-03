@@ -22,7 +22,7 @@ project-search = Project search
 ## Settings
 settings = Settings
 
-## Appearance
+### Appearance
 appearance = Appearance
 theme = Theme
 match-desktop = Match desktop
