@@ -1,5 +1,6 @@
 new-document = Nowy dokument
 open-project = Otwórz projekt
+todo = TODO
 
 # Context Pages
 
@@ -10,12 +11,25 @@ character-count = Znaki
 character-count-no-spaces = Znaki (bez spacji)
 line-count = Linie
 
+## Git management
+git-management = Zarządzanie Git
+unstaged-changes = Nieprzemieszczone zmiany
+staged-changes = Przemieszczone zmiany
+
+## Project search
+project-search = Wyszukiwanie w Projekcie
+
 ## Settings
 settings = Ustawienia
 
 ## Appearance
 appearance = Wygląd
-theme = Styl
+theme = Motyw
+match-desktop = Dopasuj do Pulpitu
+dark = Ciemny
+light = Jasny
+syntax-dark = Ciemna składnia
+syntax-light = Jasna składnia
 default-font = Domyślna czcionka
 default-font-size = Domyślny rozmiar czcionki
 
@@ -30,14 +44,18 @@ file = Plik
 new-file = Nowy plik
 new-window = Nowe okno
 open-file = Otwórz plik...
-open-recent = Otwórz ostatnie
-todo = TODO
+open-recent-file = Otwórz ubiegły plik
+close-file = Zamknij plik
+menu-open-project = Otwórz projekt...
+open-recent-project = Otwórz ubiegły projekt
+close-project = Zamknij projekt
 save = Zapisz
 save-as = Zapisz jako...
 revert-all-changes = Usuń zmiany
 menu-document-statistics = Statystyki dokumentu...
 document-type = Typ dokumentu...
 encoding = Kodowanie...
+menu-git-management = Zarządzanie Git...
 print = Drukuj
 quit = Wyjdź
 
@@ -48,8 +66,10 @@ redo = Przywróć
 cut = Wytnij
 copy = Kopiuj
 paste = Wklej
+select-all = Zaznacz wszystko
 find = Szukaj
 replace = Zamień
+find-in-project = Szukaj w projekcie...
 spell-check = Sprawdź ortografię...
 
 ## View
