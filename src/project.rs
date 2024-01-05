@@ -88,7 +88,7 @@ impl Ord for ProjectNode {
                 }
             }
         }
-        self.name().cmp(other.name())
+        lexical_sort::natural_lexical_cmp(self.name(), other.name())
     }
 }
 
