@@ -1257,7 +1257,15 @@ impl Application for App {
                 return self.update_focus();
             }
             Message::FindReplaceAll => {
-                log::warn!("FIND REPLACE ALL");
+                if !self.find_search_value.is_empty() {
+                    if let Some(Tab::Editor(tab)) = self.active_tab() {
+                        {
+                            let mut editor = tab.editor.lock().unwrap();
+                            editor.set_cursor(cosmic_text::Cursor::new(0, 0));
+                        }
+                        while tab.replace(&self.find_search_value, &self.find_replace_value) {}
+                    }
+                }
 
                 // Focus correct input
                 return self.update_focus();
