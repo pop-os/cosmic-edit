@@ -37,6 +37,9 @@ default-font-size = Default font size
 keyboard-shortcuts = Keyboard shortcuts
 enable-vim-bindings = Enable Vim bindings
 
+# Find
+find-placeholder = Find...
+
 # Menu
 
 ## File

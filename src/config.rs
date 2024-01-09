@@ -19,6 +19,8 @@ pub enum Action {
     CloseProject,
     Copy,
     Cut,
+    Find,
+    FindAndReplace,
     NewFile,
     NewWindow,
     OpenFileDialog,
@@ -42,6 +44,8 @@ impl Action {
             Self::CloseProject => Message::CloseProject,
             Self::Copy => Message::Copy,
             Self::Cut => Message::Cut,
+            Self::Find => Message::Find(Some(false)),
+            Self::FindAndReplace => Message::Find(Some(true)),
             Self::NewFile => Message::NewFile,
             Self::NewWindow => Message::NewWindow,
             Self::OpenFileDialog => Message::OpenFileDialog,
@@ -111,6 +115,8 @@ impl KeyBind {
         bind!([Ctrl], W, CloseFile);
         bind!([Ctrl], X, Cut);
         bind!([Ctrl], C, Copy);
+        bind!([Ctrl], F, Find);
+        bind!([Ctrl], H, FindAndReplace);
         bind!([Ctrl], V, Paste);
         bind!([Ctrl], T, NewFile);
         bind!([Ctrl], N, NewWindow);

@@ -199,4 +199,58 @@ impl EditorTab {
             fl!("new-document")
         }
     }
+
+    // Code adapted from cosmic-text ViEditor search
+    pub fn search(&self, value: &str, forwards: bool) -> bool {
+        let mut editor = self.editor.lock().unwrap();
+        let mut cursor = editor.cursor();
+        let start_line = cursor.line;
+        if forwards {
+            while cursor.line < editor.with_buffer(|buffer| buffer.lines.len()) {
+                if let Some(index) = editor.with_buffer(|buffer| {
+                    buffer.lines[cursor.line]
+                        .text()
+                        .match_indices(value)
+                        .filter_map(|(i, _)| {
+                            if cursor.line != start_line || i > cursor.index {
+                                Some(i)
+                            } else {
+                                None
+                            }
+                        })
+                        .next()
+                }) {
+                    cursor.index = index;
+                    editor.set_cursor(cursor);
+                    return true;
+                }
+
+                cursor.line += 1;
+            }
+        } else {
+            cursor.line += 1;
+            while cursor.line > 0 {
+                cursor.line -= 1;
+
+                if let Some(index) = editor.with_buffer(|buffer| {
+                    buffer.lines[cursor.line]
+                        .text()
+                        .rmatch_indices(value)
+                        .filter_map(|(i, _)| {
+                            if cursor.line != start_line || i < cursor.index {
+                                Some(i)
+                            } else {
+                                None
+                            }
+                        })
+                        .next()
+                }) {
+                    cursor.index = index;
+                    editor.set_cursor(cursor);
+                    return true;
+                }
+            }
+        }
+        false
+    }
 }

@@ -12,7 +12,11 @@ use cosmic::{
         image,
         layout::{self, Layout},
         renderer::{self, Quad},
-        widget::{self, tree, Widget},
+        widget::{
+            self,
+            operation::{self, Operation, OperationOutputWrapper},
+            tree, Id, Widget,
+        },
         Shell,
     },
 };
@@ -29,10 +33,11 @@ use crate::{line_number::LineNumberKey, FONT_SYSTEM, LINE_NUMBER_CACHE, SWASH_CA
 pub struct TextBox<'a, Message> {
     editor: &'a Mutex<ViEditor<'static, 'static>>,
     metrics: Metrics,
+    id: Option<Id>,
     padding: Padding,
     on_changed: Option<Message>,
     click_timing: Duration,
-    context_menu: Option<Point>,
+    has_context_menu: bool,
     on_context_menu: Option<Box<dyn Fn(Option<Point>) -> Message + 'a>>,
     line_numbers: bool,
 }
@@ -45,13 +50,19 @@ where
         Self {
             editor,
             metrics,
+            id: None,
             padding: Padding::new(0.0),
             on_changed: None,
             click_timing: Duration::from_millis(500),
-            context_menu: None,
+            has_context_menu: false,
             on_context_menu: None,
             line_numbers: false,
         }
+    }
+
+    pub fn id(mut self, id: Id) -> Self {
+        self.id = Some(id);
+        self
     }
 
     pub fn padding<P: Into<Padding>>(mut self, padding: P) -> Self {
@@ -69,8 +80,8 @@ where
         self
     }
 
-    pub fn context_menu(mut self, position: Point) -> Self {
-        self.context_menu = Some(position);
+    pub fn has_context_menu(mut self, has_context_menu: bool) -> Self {
+        self.has_context_menu = has_context_menu;
         self
     }
 
@@ -250,6 +261,18 @@ where
 
             layout::Node::new(limits.resolve(size))
         })
+    }
+
+    fn operate(
+        &self,
+        tree: &mut widget::Tree,
+        _layout: Layout<'_>,
+        _renderer: &Renderer,
+        operation: &mut dyn Operation<OperationOutputWrapper<Message>>,
+    ) {
+        let state = tree.state.downcast_mut::<State>();
+
+        operation.focusable(state, self.id.as_ref());
     }
 
     fn mouse_interaction(
@@ -611,79 +634,92 @@ where
             Event::Keyboard(KeyEvent::KeyPressed {
                 key_code,
                 modifiers,
-            }) => match key_code {
-                KeyCode::Left => {
-                    editor.action(Action::Motion(Motion::Left));
-                    status = Status::Captured;
-                }
-                KeyCode::Right => {
-                    editor.action(Action::Motion(Motion::Right));
-                    status = Status::Captured;
-                }
-                KeyCode::Up => {
-                    editor.action(Action::Motion(Motion::Up));
-                    status = Status::Captured;
-                }
-                KeyCode::Down => {
-                    editor.action(Action::Motion(Motion::Down));
-                    status = Status::Captured;
-                }
-                KeyCode::Home => {
-                    editor.action(Action::Motion(Motion::Home));
-                    status = Status::Captured;
-                }
-                KeyCode::End => {
-                    editor.action(Action::Motion(Motion::End));
-                    status = Status::Captured;
-                }
-                KeyCode::PageUp => {
-                    editor.action(Action::Motion(Motion::PageUp));
-                    status = Status::Captured;
-                }
-                KeyCode::PageDown => {
-                    editor.action(Action::Motion(Motion::PageDown));
-                    status = Status::Captured;
-                }
-                KeyCode::Escape => {
-                    editor.action(Action::Escape);
-                    status = Status::Captured;
-                }
-                KeyCode::Enter => {
-                    editor.action(Action::Enter);
-                    status = Status::Captured;
-                }
-                KeyCode::Backspace => {
-                    editor.action(Action::Backspace);
-                    status = Status::Captured;
-                }
-                KeyCode::Delete => {
-                    editor.action(Action::Delete);
-                    status = Status::Captured;
-                }
-                KeyCode::Tab => {
-                    if modifiers.shift() {
-                        editor.action(Action::Unindent);
-                    } else {
-                        editor.action(Action::Indent);
+            }) => {
+                // Only parse keys when focused
+                if state.is_focused {
+                    match key_code {
+                        KeyCode::Left => {
+                            editor.action(Action::Motion(Motion::Left));
+                            status = Status::Captured;
+                        }
+                        KeyCode::Right => {
+                            editor.action(Action::Motion(Motion::Right));
+                            status = Status::Captured;
+                        }
+                        KeyCode::Up => {
+                            editor.action(Action::Motion(Motion::Up));
+                            status = Status::Captured;
+                        }
+                        KeyCode::Down => {
+                            editor.action(Action::Motion(Motion::Down));
+                            status = Status::Captured;
+                        }
+                        KeyCode::Home => {
+                            editor.action(Action::Motion(Motion::Home));
+                            status = Status::Captured;
+                        }
+                        KeyCode::End => {
+                            editor.action(Action::Motion(Motion::End));
+                            status = Status::Captured;
+                        }
+                        KeyCode::PageUp => {
+                            editor.action(Action::Motion(Motion::PageUp));
+                            status = Status::Captured;
+                        }
+                        KeyCode::PageDown => {
+                            editor.action(Action::Motion(Motion::PageDown));
+                            status = Status::Captured;
+                        }
+                        KeyCode::Escape => {
+                            editor.action(Action::Escape);
+                            status = Status::Captured;
+                        }
+                        KeyCode::Enter => {
+                            editor.action(Action::Enter);
+                            status = Status::Captured;
+                        }
+                        KeyCode::Backspace => {
+                            editor.action(Action::Backspace);
+                            status = Status::Captured;
+                        }
+                        KeyCode::Delete => {
+                            editor.action(Action::Delete);
+                            status = Status::Captured;
+                        }
+                        KeyCode::Tab => {
+                            if modifiers.shift() {
+                                editor.action(Action::Unindent);
+                            } else {
+                                editor.action(Action::Indent);
+                            }
+                            status = Status::Captured;
+                        }
+                        _ => (),
                     }
-                    status = Status::Captured;
                 }
-                _ => (),
-            },
+            }
             Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
                 state.modifiers = modifiers;
             }
             Event::Keyboard(KeyEvent::CharacterReceived(character)) => {
-                // Only parse keys when Super, Ctrl, and Alt are not pressed
-                if !state.modifiers.logo() && !state.modifiers.control() && !state.modifiers.alt() {
-                    if !character.is_control() {
-                        editor.action(Action::Insert(character));
+                // Only parse keys when focused
+                if state.is_focused {
+                    // Only parse keys when Super, Ctrl, and Alt are not pressed
+                    if !state.modifiers.logo()
+                        && !state.modifiers.control()
+                        && !state.modifiers.alt()
+                    {
+                        if !character.is_control() {
+                            editor.action(Action::Insert(character));
+                        }
+                        status = Status::Captured;
                     }
-                    status = Status::Captured;
                 }
             }
             Event::Mouse(MouseEvent::ButtonPressed(button)) => {
                 if let Some(p) = cursor_position.position_in(layout.bounds()) {
+                    state.is_focused = true;
+
                     // Handle left click drag
                     if let Button::Left = button {
                         let x_logical = p.x - self.padding.left;
@@ -746,12 +782,13 @@ where
 
                     // Update context menu state
                     if let Some(on_context_menu) = &self.on_context_menu {
-                        shell.publish((on_context_menu)(match self.context_menu {
-                            Some(_) => None,
-                            None => match button {
+                        shell.publish((on_context_menu)(if self.has_context_menu {
+                            None
+                        } else {
+                            match button {
                                 Button::Right => Some(p),
                                 _ => None,
-                            },
+                            }
                         }));
                     }
 
@@ -869,6 +906,7 @@ pub struct State {
     click: Option<(ClickKind, Instant)>,
     dragging: Option<Dragging>,
     editor_offset_x: Cell<i32>,
+    is_focused: bool,
     scale_factor: Cell<f32>,
     scroll_pixels: f32,
     scrollbar_rect: Cell<Rectangle<f32>>,
@@ -883,10 +921,25 @@ impl State {
             click: None,
             dragging: None,
             editor_offset_x: Cell::new(0),
+            is_focused: false,
             scale_factor: Cell::new(1.0),
             scroll_pixels: 0.0,
             scrollbar_rect: Cell::new(Rectangle::default()),
             handle_opt: Mutex::new(None),
         }
+    }
+}
+
+impl operation::Focusable for State {
+    fn is_focused(&self) -> bool {
+        self.is_focused
+    }
+
+    fn focus(&mut self) {
+        self.is_focused = true;
+    }
+
+    fn unfocus(&mut self) {
+        self.is_focused = false;
     }
 }

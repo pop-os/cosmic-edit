@@ -197,8 +197,8 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                 menu_item(fl!("paste"), Message::Paste),
                 menu_item(fl!("select-all"), Message::SelectAll),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key(fl!("find"), "Ctrl + F", Message::Todo),
-                menu_key(fl!("replace"), "Ctrl + H", Message::Todo),
+                menu_item(fl!("find"), Message::Find(Some(false))),
+                menu_item(fl!("replace"), Message::Find(Some(true))),
                 menu_item(
                     fl!("find-in-project"),
                     Message::ToggleContextPage(ContextPage::ProjectSearch),

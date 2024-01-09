@@ -181,6 +181,11 @@ pub enum Message {
     Cut,
     DefaultFont(usize),
     DefaultFontSize(usize),
+    Find(Option<bool>),
+    FindNext,
+    FindPrevious,
+    FindReplaceValueChanged(String),
+    FindSearchValueChanged(String),
     GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
     Key(keyboard::Modifiers, keyboard::KeyCode),
     NewFile,
@@ -241,6 +246,13 @@ impl ContextPage {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Find {
+    None,
+    Find,
+    FindAndReplace,
+}
+
 pub struct App {
     core: Core,
     nav_model: segmented_button::SingleSelectModel,
@@ -253,6 +265,11 @@ pub struct App {
     font_sizes: Vec<u16>,
     theme_names: Vec<String>,
     context_page: ContextPage,
+    text_box_id: widget::Id,
+    find_opt: Option<bool>,
+    find_replace_value: String,
+    find_search_id: widget::Id,
+    find_search_value: String,
     git_project_status: Option<Vec<(String, PathBuf, Vec<GitStatus>)>>,
     projects: Vec<(String, PathBuf)>,
     project_search_id: widget::Id,
@@ -440,6 +457,21 @@ impl App {
         self.update_config()
     }
 
+    fn update_focus(&self) -> Command<Message> {
+        if self.core.window.show_context {
+            match self.context_page {
+                ContextPage::ProjectSearch => {
+                    widget::text_input::focus(self.project_search_id.clone())
+                }
+                _ => Command::none(),
+            }
+        } else if self.find_opt.is_some() {
+            widget::text_input::focus(self.find_search_id.clone())
+        } else {
+            widget::text_input::focus(self.text_box_id.clone())
+        }
+    }
+
     fn update_nav_bar_active(&mut self) {
         let tab_path_opt = match self.active_tab() {
             Some(Tab::Editor(tab)) => tab.path_opt.clone(),
@@ -504,7 +536,7 @@ impl App {
 
         let window_title = format!("{title} - COSMIC Text Editor");
         self.set_header_title(title.clone());
-        self.set_window_title(window_title)
+        Command::batch([self.set_window_title(window_title), self.update_focus()])
     }
 
     fn document_statistics(&self) -> Element<Message> {
@@ -942,6 +974,11 @@ impl Application for App {
             font_sizes,
             theme_names,
             context_page: ContextPage::Settings,
+            text_box_id: widget::Id::unique(),
+            find_opt: None,
+            find_replace_value: String::new(),
+            find_search_id: widget::Id::unique(),
+            find_search_value: String::new(),
             git_project_status: None,
             projects: Vec::new(),
             project_search_id: widget::Id::unique(),
@@ -1019,6 +1056,25 @@ impl Application for App {
 
     fn nav_model(&self) -> Option<&nav_bar::Model> {
         Some(&self.nav_model)
+    }
+
+    fn on_context_drawer(&mut self) -> Command<Message> {
+        // Focus correct widget
+        self.update_focus()
+    }
+
+    //TODO: currently the first escape unfocuses, and the second calls this function
+    fn on_escape(&mut self) -> Command<Message> {
+        if self.core.window.show_context {
+            // Close context drawer if open
+            self.core.window.show_context = false;
+        } else if self.find_opt.is_some() {
+            // Close find if open
+            self.find_opt = None;
+        }
+
+        // Focus correct widget
+        self.update_focus()
     }
 
     fn on_nav_select(&mut self, id: nav_bar::Id) -> Command<Message> {
@@ -1160,6 +1216,38 @@ impl Application for App {
                     log::warn!("failed to find font with index {}", index);
                 }
             },
+            Message::Find(find_opt) => {
+                self.find_opt = find_opt;
+
+                // Focus correct input
+                return self.update_focus();
+            }
+            Message::FindNext => {
+                if !self.find_search_value.is_empty() {
+                    if let Some(Tab::Editor(tab)) = self.active_tab() {
+                        tab.search(&self.find_search_value, true);
+                    }
+                }
+
+                // Focus correct input
+                return self.update_focus();
+            }
+            Message::FindPrevious => {
+                if !self.find_search_value.is_empty() {
+                    if let Some(Tab::Editor(tab)) = self.active_tab() {
+                        tab.search(&self.find_search_value, false);
+                    }
+                }
+
+                // Focus correct input
+                return self.update_focus();
+            }
+            Message::FindReplaceValueChanged(value) => {
+                self.find_replace_value = value;
+            }
+            Message::FindSearchValueChanged(value) => {
+                self.find_search_value = value;
+            }
             Message::GitProjectStatus(project_status) => {
                 self.git_project_status = Some(project_status);
             }
@@ -1384,8 +1472,8 @@ impl Application for App {
             Message::ProjectSearchResult(project_search_result) => {
                 self.project_search_result = Some(project_search_result);
 
-                // Ensure input remains focused
-                return widget::text_input::focus(self.project_search_id.clone());
+                // Focus correct input
+                return self.update_focus();
             }
             Message::ProjectSearchSubmit => {
                 //TODO: Figure out length requirements?
@@ -1595,13 +1683,12 @@ impl Application for App {
                                 |x| x,
                             );
                         }
-                        ContextPage::ProjectSearch => {
-                            // Ensure focus of correct input
-                            return widget::text_input::focus(self.project_search_id.clone());
-                        }
                         _ => {}
                     }
                 }
+
+                // Ensure focus of correct input
+                return self.update_focus();
             }
             Message::ToggleLineNumbers => {
                 self.config.line_numbers = !self.config.line_numbers;
@@ -1713,23 +1800,22 @@ impl Application for App {
                     }
                 };
                 let mut text_box = text_box(&tab.editor, self.config.metrics())
+                    .id(self.text_box_id.clone())
                     .on_changed(Message::TabChanged(tab_id))
+                    .has_context_menu(tab.context_menu.is_some())
                     .on_context_menu(move |position_opt| {
                         Message::TabContextMenu(tab_id, position_opt)
                     });
                 if self.config.line_numbers {
                     text_box = text_box.line_numbers();
                 }
-                let tab_element: Element<'_, Message> = match tab.context_menu {
-                    Some(position) => widget::popover(
-                        text_box.context_menu(position),
-                        menu::context_menu(&self.config, tab_id),
-                    )
-                    .position(position)
-                    .into(),
-                    None => text_box.into(),
+                let mut popover =
+                    widget::popover(text_box, menu::context_menu(&self.config, tab_id));
+                popover = match tab.context_menu {
+                    Some(position) => popover.position(position),
+                    None => popover.show_popup(false),
                 };
-                tab_column = tab_column.push(tab_element);
+                tab_column = tab_column.push(popover);
                 tab_column = tab_column.push(text(status).font(Font::MONOSPACE));
             }
             Some(Tab::GitDiff(tab)) => {
@@ -1787,6 +1873,49 @@ impl Application for App {
                 ));
             }
             None => {}
+        }
+
+        if let Some(replace) = &self.find_opt {
+            let text_input =
+                widget::text_input::text_input(fl!("find-placeholder"), &self.find_search_value)
+                    .id(self.find_search_id.clone())
+                    .on_input(Message::FindSearchValueChanged)
+                    //TODO: shift+enter for FindPrevious
+                    .on_submit(Message::FindNext)
+                    .width(Length::Fixed(320.0))
+                    .trailing_icon(
+                        button(icon_cache_get("edit-clear-symbolic", 16))
+                            .on_press(Message::FindSearchValueChanged(String::new()))
+                            .style(style::Button::Icon)
+                            .into(),
+                    );
+            let find_widget = widget::row::with_children(vec![
+                text_input.into(),
+                button(icon_cache_get("go-up-symbolic", 16))
+                    .on_press(Message::FindPrevious)
+                    .padding(space_xxs)
+                    .style(style::Button::Icon)
+                    .into(),
+                button(icon_cache_get("go-down-symbolic", 16))
+                    .on_press(Message::FindNext)
+                    .padding(space_xxs)
+                    .style(style::Button::Icon)
+                    .into(),
+                widget::horizontal_space(Length::Fill).into(),
+                button(icon_cache_get("window-close-symbolic", 16))
+                    .on_press(Message::Find(None))
+                    .padding(space_xxs)
+                    .style(style::Button::Icon)
+                    .into(),
+            ])
+            .align_items(Alignment::Center)
+            .padding(space_xxs)
+            .spacing(space_xxs);
+
+            tab_column = tab_column.push(
+                widget::cosmic_container::container(find_widget)
+                    .layer(cosmic_theme::Layer::Primary),
+            );
         }
 
         let content: Element<_> = tab_column.into();
