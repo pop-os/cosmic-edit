@@ -1891,16 +1891,24 @@ impl Application for App {
                     );
             let find_widget = widget::row::with_children(vec![
                 text_input.into(),
-                button(icon_cache_get("go-up-symbolic", 16))
-                    .on_press(Message::FindPrevious)
-                    .padding(space_xxs)
-                    .style(style::Button::Icon)
-                    .into(),
-                button(icon_cache_get("go-down-symbolic", 16))
-                    .on_press(Message::FindNext)
-                    .padding(space_xxs)
-                    .style(style::Button::Icon)
-                    .into(),
+                widget::tooltip(
+                    button(icon_cache_get("go-up-symbolic", 16))
+                        .on_press(Message::FindPrevious)
+                        .padding(space_xxs)
+                        .style(style::Button::Icon),
+                    fl!("find-previous"),
+                    widget::tooltip::Position::Top,
+                )
+                .into(),
+                widget::tooltip(
+                    button(icon_cache_get("go-down-symbolic", 16))
+                        .on_press(Message::FindNext)
+                        .padding(space_xxs)
+                        .style(style::Button::Icon),
+                    fl!("find-next"),
+                    widget::tooltip::Position::Top,
+                )
+                .into(),
                 widget::horizontal_space(Length::Fill).into(),
                 button(icon_cache_get("window-close-symbolic", 16))
                     .on_press(Message::Find(None))

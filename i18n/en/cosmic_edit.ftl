@@ -39,6 +39,8 @@ enable-vim-bindings = Enable Vim bindings
 
 # Find
 find-placeholder = Find...
+find-previous = Find previous
+find-next = Find next
 
 # Menu
 
