@@ -200,6 +200,42 @@ impl EditorTab {
         }
     }
 
+    pub fn replace(&self, value: &str, replace: &str) -> bool {
+        let mut editor = self.editor.lock().unwrap();
+        let mut cursor = editor.cursor();
+        let start_line = cursor.line;
+        while cursor.line < editor.with_buffer(|buffer| buffer.lines.len()) {
+            if let Some(index) = editor.with_buffer(|buffer| {
+                buffer.lines[cursor.line]
+                    .text()
+                    .match_indices(value)
+                    .filter_map(|(i, _)| {
+                        if cursor.line != start_line || i >= cursor.index {
+                            Some(i)
+                        } else {
+                            None
+                        }
+                    })
+                    .next()
+            }) {
+                cursor.index = index;
+                let mut end = cursor;
+                end.index = index + value.len();
+
+                editor.start_change();
+                editor.delete_range(cursor, end);
+                cursor = editor.insert_at(cursor, replace, None);
+                editor.set_cursor(cursor);
+                editor.finish_change();
+
+                return true;
+            }
+
+            cursor.line += 1;
+        }
+        false
+    }
+
     // Code adapted from cosmic-text ViEditor search
     pub fn search(&self, value: &str, forwards: bool) -> bool {
         let mut editor = self.editor.lock().unwrap();

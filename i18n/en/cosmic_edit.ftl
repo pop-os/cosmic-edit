@@ -41,6 +41,9 @@ enable-vim-bindings = Enable Vim bindings
 find-placeholder = Find...
 find-previous = Find previous
 find-next = Find next
+replace-placeholder = Replace...
+replace = Replace
+replace-all = Replace all
 
 # Menu
 

@@ -37,6 +37,8 @@ impl IconCache {
         bundle!("go-up-symbolic", 16);
         bundle!("list-add-symbolic", 16);
         bundle!("object-select-symbolic", 16);
+        bundle!("replace-symbolic", 16);
+        bundle!("replace-all-symbolic", 16);
         bundle!("window-close-symbolic", 16);
 
         Self { cache }

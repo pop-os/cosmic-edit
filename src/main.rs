@@ -184,6 +184,8 @@ pub enum Message {
     Find(Option<bool>),
     FindNext,
     FindPrevious,
+    FindReplace,
+    FindReplaceAll,
     FindReplaceValueChanged(String),
     FindSearchValueChanged(String),
     GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
@@ -267,6 +269,7 @@ pub struct App {
     context_page: ContextPage,
     text_box_id: widget::Id,
     find_opt: Option<bool>,
+    find_replace_id: widget::Id,
     find_replace_value: String,
     find_search_id: widget::Id,
     find_search_value: String,
@@ -976,6 +979,7 @@ impl Application for App {
             context_page: ContextPage::Settings,
             text_box_id: widget::Id::unique(),
             find_opt: None,
+            find_replace_id: widget::Id::unique(),
             find_replace_value: String::new(),
             find_search_id: widget::Id::unique(),
             find_search_value: String::new(),
@@ -1238,6 +1242,22 @@ impl Application for App {
                         tab.search(&self.find_search_value, false);
                     }
                 }
+
+                // Focus correct input
+                return self.update_focus();
+            }
+            Message::FindReplace => {
+                if !self.find_search_value.is_empty() {
+                    if let Some(Tab::Editor(tab)) = self.active_tab() {
+                        tab.replace(&self.find_search_value, &self.find_replace_value);
+                    }
+                }
+
+                // Focus correct input
+                return self.update_focus();
+            }
+            Message::FindReplaceAll => {
+                log::warn!("FIND REPLACE ALL");
 
                 // Focus correct input
                 return self.update_focus();
@@ -1876,7 +1896,7 @@ impl Application for App {
         }
 
         if let Some(replace) = &self.find_opt {
-            let text_input =
+            let find_input =
                 widget::text_input::text_input(fl!("find-placeholder"), &self.find_search_value)
                     .id(self.find_search_id.clone())
                     .on_input(Message::FindSearchValueChanged)
@@ -1890,7 +1910,7 @@ impl Application for App {
                             .into(),
                     );
             let find_widget = widget::row::with_children(vec![
-                text_input.into(),
+                find_input.into(),
                 widget::tooltip(
                     button(icon_cache_get("go-up-symbolic", 16))
                         .on_press(Message::FindPrevious)
@@ -1920,9 +1940,52 @@ impl Application for App {
             .padding(space_xxs)
             .spacing(space_xxs);
 
+            let mut column = widget::column::with_capacity(2).push(find_widget);
+            if *replace {
+                let replace_input = widget::text_input::text_input(
+                    fl!("replace-placeholder"),
+                    &self.find_replace_value,
+                )
+                .id(self.find_replace_id.clone())
+                .on_input(Message::FindReplaceValueChanged)
+                .on_submit(Message::FindReplace)
+                .width(Length::Fixed(320.0))
+                .trailing_icon(
+                    button(icon_cache_get("edit-clear-symbolic", 16))
+                        .on_press(Message::FindReplaceValueChanged(String::new()))
+                        .style(style::Button::Icon)
+                        .into(),
+                );
+                let replace_widget = widget::row::with_children(vec![
+                    replace_input.into(),
+                    widget::tooltip(
+                        button(icon_cache_get("replace-symbolic", 16))
+                            .on_press(Message::FindReplace)
+                            .padding(space_xxs)
+                            .style(style::Button::Icon),
+                        fl!("replace"),
+                        widget::tooltip::Position::Top,
+                    )
+                    .into(),
+                    widget::tooltip(
+                        button(icon_cache_get("replace-all-symbolic", 16))
+                            .on_press(Message::FindReplaceAll)
+                            .padding(space_xxs)
+                            .style(style::Button::Icon),
+                        fl!("replace-all"),
+                        widget::tooltip::Position::Top,
+                    )
+                    .into(),
+                ])
+                .align_items(Alignment::Center)
+                .padding(space_xxs)
+                .spacing(space_xxs);
+
+                column = column.push(replace_widget);
+            }
+
             tab_column = tab_column.push(
-                widget::cosmic_container::container(find_widget)
-                    .layer(cosmic_theme::Layer::Primary),
+                widget::cosmic_container::container(column).layer(cosmic_theme::Layer::Primary),
             );
         }
 
