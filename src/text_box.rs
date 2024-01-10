@@ -597,7 +597,7 @@ where
             Quad {
                 bounds: state.scrollbar_rect.get()
                     + Vector::new(image_position.x, image_position.y),
-                border_radius: 0.0.into(),
+                border_radius: (scrollbar_w as f32 / 2.0).into(),
                 border_width: 0.0,
                 border_color: Color::TRANSPARENT,
             },
