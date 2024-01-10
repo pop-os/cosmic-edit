@@ -11,23 +11,40 @@ character-count = Karakterler
 character-count-no-spaces = Karakterler (boşluksuz)
 line-count = Satırlar
 
+## Git management
+git-management = Git yönetimi
+unstaged-changes = Hazırlanmış değişiklikler
+staged-changes = Hazırlanmamış değişiklikler
+
+## Project search
+project-search = Proje arama
+
 ## Settings
 settings = Ayarlar
 
 ## Appearance
 appearance = Görünüş
 theme = Tema
-match-desktop = Masaüstü eşle
+match-desktop = Masaüstüyle eşle
 dark = Karanlık
 light = Aydınlık
-syntax-dark = Sentaks karanlık
-syntax-light = Sentaks aydınlık
+syntax-dark = Karanlık sentaks
+syntax-light = Aydınlık sentaks
 default-font = Varsayılan yazıtipi
 default-font-size = Varsayılan yazıtipi boyutu
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Klavye kısayolları
 enable-vim-bindings = Vim bağlayıcılarını etkinleştir
+
+
+# Find
+find-placeholder = Bul...
+find-previous = Öncekini bul
+find-next = Sonrakini bul
+replace-placeholder = Değiştir...
+replace = Değiştir
+replace-all = Hepsini değiştir
 
 # Menu
 
@@ -60,6 +77,7 @@ paste = Yapıştır
 select-all = Hepsini Seç
 find = Bul
 replace = Değiştir
+find-in-project = Projede bul...
 spell-check = Yazım denetimi...
 
 ## View
