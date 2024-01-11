@@ -608,7 +608,7 @@ where
                         Point::new(image_position.x + scrollbar_rect.x, image_position.y),
                         Size::new(scrollbar_rect.width, layout.bounds().height),
                     ),
-                    border_radius: 0.0.into(),
+                    border_radius: (scrollbar_rect.width as f32 / 2.0).into(),
                     border_width: 0.0,
                     border_color: Color::TRANSPARENT,
                 },
