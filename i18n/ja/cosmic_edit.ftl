@@ -13,8 +13,8 @@ line-count = 行数
 
 ## Git management
 git-management = Gitの操作
-unstaged-changes = ステージされていない変更
-staged-changes = ステージされている変更
+unstaged-changes = コミットされない変更
+staged-changes = コミットされる変更
 
 ## Project search
 project-search = Project search
