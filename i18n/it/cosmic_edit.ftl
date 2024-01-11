@@ -13,8 +13,8 @@ line-count = Linee
 
 ## Git management
 git-management = Gestione Git
-unstaged-changes = Modifiche a non committare
-staged-changes = Modifiche a committare
+unstaged-changes = Modifiche non confirmate
+staged-changes = Modifiche confirmate
 
 ## Project search
 project-search = Project search
