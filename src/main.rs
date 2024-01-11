@@ -111,13 +111,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (config_handler, config) = match cosmic_config::Config::new(App::APP_ID, CONFIG_VERSION) {
         Ok(config_handler) => {
-            let config = match Config::get_entry(&config_handler) {
-                Ok(ok) => ok,
-                Err((errs, config)) => {
-                    log::info!("errors loading config: {:?}", errs);
-                    config
-                }
-            };
+            let config = Config::get_entry(&config_handler).unwrap_or_else(|(errs, config)| {
+                log::info!("errors loading config: {:?}", errs);
+                config
+            });
             (Some(config_handler), config)
         }
         Err(err) => {
@@ -445,11 +442,6 @@ impl App {
     }
 
     fn save_config(&mut self) -> Command<Message> {
-        if let Some(ref config_handler) = self.config_handler {
-            if let Err(err) = self.config.write_entry(config_handler) {
-                log::error!("failed to save config: {}", err);
-            }
-        }
 
         if let Some(ref config_handler) = self.config_handler {
             if let Err(err) = self.config.write_entry(config_handler) {
