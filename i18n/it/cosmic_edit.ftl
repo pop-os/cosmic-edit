@@ -11,6 +11,14 @@ character-count = Caratteri
 character-count-no-spaces = Caratteri (senza spazi)
 line-count = Linee
 
+## Git management
+git-management = Gestione Git
+unstaged-changes = Modifiche a non committare
+staged-changes = Modifiche a committare
+
+## Project search
+project-search = Project search
+
 ## Settings
 settings = Impostazioni
 
@@ -47,6 +55,7 @@ revert-all-changes = Annulla tutte le modifiche
 menu-document-statistics = Statistiche documento...
 document-type = Tipo documento...
 encoding = Codifica...
+menu-git-management = Gestione Git...
 print = Stampa
 quit = Esci
 
@@ -60,6 +69,7 @@ paste = Incolla
 select-all = Seleziona tutto
 find = Trova
 replace = Sostituisci
+find-in-project = Trova in proggetto...
 spell-check = Controllo ortografico...
 
 ## View
