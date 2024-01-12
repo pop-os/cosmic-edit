@@ -8,7 +8,8 @@ use cosmic::{
     iced::{
         clipboard, event,
         futures::{self, SinkExt},
-        keyboard, subscription,
+        keyboard::{self, Modifiers},
+        subscription,
         widget::{row, text},
         window, Alignment, Background, Color, Length, Point,
     },
@@ -186,7 +187,8 @@ pub enum Message {
     FindReplaceValueChanged(String),
     FindSearchValueChanged(String),
     GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
-    Key(keyboard::Modifiers, keyboard::KeyCode),
+    Key(Modifiers, keyboard::KeyCode),
+    Modifiers(Modifiers),
     NewFile,
     NewWindow,
     NotifyEvent(notify::Event),
@@ -276,6 +278,7 @@ pub struct App {
     project_search_value: String,
     project_search_result: Option<ProjectSearchResult>,
     watcher_opt: Option<notify::RecommendedWatcher>,
+    modifiers: Modifiers,
 }
 
 impl App {
@@ -981,6 +984,7 @@ impl Application for App {
             project_search_value: String::new(),
             project_search_result: None,
             watcher_opt: None,
+            modifiers: Modifiers::empty(),
         };
 
         for arg in env::args().skip(1) {
@@ -1277,6 +1281,9 @@ impl Application for App {
                         return self.update(action.message());
                     }
                 }
+            }
+            Message::Modifiers(modifiers) => {
+                self.modifiers = modifiers;
             }
             Message::NewFile => {
                 self.open_tab(None);
@@ -1900,8 +1907,11 @@ impl Application for App {
                 widget::text_input::text_input(fl!("find-placeholder"), &self.find_search_value)
                     .id(self.find_search_id.clone())
                     .on_input(Message::FindSearchValueChanged)
-                    //TODO: shift+enter for FindPrevious
-                    .on_submit(Message::FindNext)
+                    .on_submit(if self.modifiers.contains(Modifiers::SHIFT) {
+                        Message::FindPrevious
+                    } else {
+                        Message::FindNext
+                    })
                     .width(Length::Fixed(320.0))
                     .trailing_icon(
                         button(icon_cache_get("edit-clear-symbolic", 16))
@@ -2007,6 +2017,9 @@ impl Application for App {
                     modifiers,
                     key_code,
                 }) => Some(Message::Key(modifiers, key_code)),
+                event::Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
+                    Some(Message::Modifiers(modifiers))
+                }
                 _ => None,
             }),
             subscription::channel(

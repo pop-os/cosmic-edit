@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::{
+    cosmic_theme::palette::{blend::Compose, WithAlpha},
     iced::{
         event::{Event, Status},
         keyboard::{Event as KeyEvent, KeyCode, Modifiers},
@@ -11,7 +12,7 @@ use cosmic::{
         clipboard::Clipboard,
         image,
         layout::{self, Layout},
-        renderer::{self, Quad},
+        renderer::{self, Quad, Renderer as _},
         widget::{
             self,
             operation::{self, Operation, OperationOutputWrapper},
@@ -19,6 +20,8 @@ use cosmic::{
         },
         Shell,
     },
+    theme::Theme,
+    Renderer,
 };
 use cosmic_text::{Action, Edit, Metrics, Motion, Scroll, ViEditor};
 use std::{
@@ -212,10 +215,9 @@ fn draw_rect(
     }
 }
 
-impl<'a, Message, Renderer> Widget<Message, Renderer> for TextBox<'a, Message>
+impl<'a, Message> Widget<Message, Renderer> for TextBox<'a, Message>
 where
     Message: Clone,
-    Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
 {
     fn tag(&self) -> tree::Tag {
         tree::Tag::of::<State>()
@@ -311,10 +313,10 @@ where
         &self,
         tree: &widget::Tree,
         renderer: &mut Renderer,
-        _theme: &Renderer::Theme,
+        theme: &Theme,
         style: &renderer::Style,
         layout: Layout<'_>,
-        _cursor_position: mouse::Cursor,
+        cursor_position: mouse::Cursor,
         viewport: &Rectangle,
     ) {
         let instant = Instant::now();
@@ -334,8 +336,8 @@ where
         let image_w = (view_w as f32 * scale_factor) as i32;
         let image_h = (view_h as f32 * scale_factor) as i32;
 
-        //TODO: make this configurable and do not repeat
-        let scrollbar_w = (8.0 * scale_factor) as i32;
+        let cosmic_theme = theme.cosmic();
+        let scrollbar_w = (cosmic_theme.spacing.space_xxs as f32 * scale_factor) as i32;
 
         if image_w <= scrollbar_w || image_h <= 0 {
             // Zero sized image
@@ -589,20 +591,90 @@ where
         }
 
         // Draw scrollbar
-        let scrollbar_alpha = match &state.dragging {
-            Some(Dragging::Scrollbar { .. }) => 0.5,
-            _ => 0.25,
-        };
-        renderer.fill_quad(
-            Quad {
-                bounds: state.scrollbar_rect.get()
-                    + Vector::new(image_position.x, image_position.y),
-                border_radius: (scrollbar_w as f32 / 2.0).into(),
-                border_width: 0.0,
-                border_color: Color::TRANSPARENT,
-            },
-            Color::new(1.0, 1.0, 1.0, scrollbar_alpha),
-        );
+        {
+            let scrollbar_rect = state.scrollbar_rect.get();
+
+            // neutral_3, 0.7
+            let track_color = cosmic_theme
+                .palette
+                .neutral_3
+                .without_alpha()
+                .with_alpha(0.7);
+
+            // Draw track quad
+            renderer.fill_quad(
+                Quad {
+                    bounds: Rectangle::new(
+                        Point::new(image_position.x + scrollbar_rect.x, image_position.y),
+                        Size::new(scrollbar_rect.width, layout.bounds().height),
+                    ),
+                    border_radius: (scrollbar_rect.width as f32 / 2.0).into(),
+                    border_width: 0.0,
+                    border_color: Color::TRANSPARENT,
+                },
+                Color::from(track_color),
+            );
+
+            let pressed = match &state.dragging {
+                Some(Dragging::Scrollbar { .. }) => true,
+                _ => false,
+            };
+
+            let mut hover = false;
+            if let Some(p) = cursor_position.position_in(layout.bounds()) {
+                let x = p.x - self.padding.left;
+                if x >= scrollbar_rect.x && x < (scrollbar_rect.x + scrollbar_rect.width) {
+                    hover = true;
+                }
+            }
+
+            let mut scrollbar_draw =
+                scrollbar_rect + Vector::new(image_position.x, image_position.y);
+            if !hover && !pressed {
+                // Decrease draw width and keep centered when not hovered or pressed
+                scrollbar_draw.width /= 2.0;
+                scrollbar_draw.x += scrollbar_draw.width / 2.0;
+            }
+
+            // neutral_6, 0.7
+            let base_color = cosmic_theme
+                .palette
+                .neutral_6
+                .without_alpha()
+                .with_alpha(0.7);
+            let scrollbar_color = if pressed {
+                // pressed_state_color, 0.5
+                cosmic_theme
+                    .background
+                    .component
+                    .pressed
+                    .without_alpha()
+                    .with_alpha(0.5)
+                    .over(base_color)
+            } else if hover {
+                // hover_state_color, 0.2
+                cosmic_theme
+                    .background
+                    .component
+                    .hover
+                    .without_alpha()
+                    .with_alpha(0.2)
+                    .over(base_color)
+            } else {
+                base_color
+            };
+
+            // Draw scrollbar quad
+            renderer.fill_quad(
+                Quad {
+                    bounds: scrollbar_draw,
+                    border_radius: (scrollbar_draw.width as f32 / 2.0).into(),
+                    border_width: 0.0,
+                    border_color: Color::TRANSPARENT,
+                },
+                Color::from(scrollbar_color),
+            );
+        }
 
         let duration = instant.elapsed();
         log::debug!("redraw {}, {}: {:?}", view_w, view_h, duration);
@@ -880,10 +952,9 @@ where
     }
 }
 
-impl<'a, Message, Renderer> From<TextBox<'a, Message>> for Element<'a, Message, Renderer>
+impl<'a, Message> From<TextBox<'a, Message>> for Element<'a, Message, Renderer>
 where
     Message: Clone + 'a,
-    Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
 {
     fn from(text_box: TextBox<'a, Message>) -> Self {
         Self::new(text_box)

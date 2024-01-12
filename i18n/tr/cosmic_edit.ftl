@@ -76,7 +76,6 @@ copy = Kopyala
 paste = Yapıştır
 select-all = Hepsini Seç
 find = Bul
-replace = Değiştir
 find-in-project = Projede bul...
 spell-check = Yazım denetimi...
 
