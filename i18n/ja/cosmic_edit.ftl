@@ -5,7 +5,7 @@ todo = 未完
 # Context Pages
 
 ## Document statistics
-document-statistics = Document statistics
+document-statistics = ドキュメントの統計
 word-count = 単語数
 character-count = 文字数
 character-count-no-spaces = 文字数（スペース以外）
@@ -17,7 +17,7 @@ unstaged-changes = コミットされない変更
 staged-changes = コミットされる変更
 
 ## Project search
-project-search = Project search
+project-search = プロジェクトの検索
 
 ## Settings
 settings = 設定
@@ -60,7 +60,7 @@ print = 印刷
 quit = 終了
 
 ## Edit
-edit = Edit
+edit = 編集
 undo = 元に戻す
 redo = やり直す
 cut = 切り取り
@@ -73,8 +73,8 @@ find-in-project = プロジェクトで検索...
 spell-check = スペルチェック...
 
 ## View
-view = View
-indentation = Indentation
+view = 表示
+indentation = 字下げ
 
 ### Indentation
 automatic-indentation = 自動的な字下げ
