@@ -1015,6 +1015,23 @@ impl Application for App {
         (app, command)
     }
 
+    fn context_drawer(&self) -> Option<Element<Message>> {
+        if !self.core.window.show_context {
+            return None;
+        }
+
+        Some(match self.context_page {
+            ContextPage::DocumentStatistics => self.document_statistics(),
+            ContextPage::GitManagement => self.git_management(),
+            ContextPage::ProjectSearch => self.project_search(),
+            ContextPage::Settings => self.settings(),
+        })
+    }
+
+    fn header_start(&self) -> Vec<Element<Message>> {
+        vec![menu_bar(&self.config)]
+    }
+
     // The default nav_bar widget needs to be condensed for cosmic-edit
     fn nav_bar(&self) -> Option<Element<message::Message<Self::Message>>> {
         if !self.core().nav_bar_active() {
@@ -1126,6 +1143,111 @@ impl Application for App {
         }
     }
 
+    fn subscription(&self) -> subscription::Subscription<Message> {
+        struct WatcherSubscription;
+        struct ConfigSubscription;
+        struct ThemeSubscription;
+
+        subscription::Subscription::batch([
+            event::listen_with(|event, _status| match event {
+                event::Event::Keyboard(keyboard::Event::KeyPressed {
+                    modifiers,
+                    key_code,
+                }) => Some(Message::Key(modifiers, key_code)),
+                event::Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
+                    Some(Message::Modifiers(modifiers))
+                }
+                _ => None,
+            }),
+            subscription::channel(
+                TypeId::of::<WatcherSubscription>(),
+                100,
+                |mut output| async move {
+                    let watcher_res = {
+                        let mut output = output.clone();
+                        //TODO: debounce
+                        notify::recommended_watcher(
+                            move |event_res: Result<notify::Event, notify::Error>| match event_res {
+                                Ok(event) => {
+                                    match &event.kind {
+                                        notify::EventKind::Access(_)
+                                        | notify::EventKind::Modify(
+                                            notify::event::ModifyKind::Metadata(_),
+                                        ) => {
+                                            // Data not mutated
+                                            return;
+                                        }
+                                        _ => {}
+                                    }
+
+                                    match futures::executor::block_on(async {
+                                        output.send(Message::NotifyEvent(event)).await
+                                    }) {
+                                        Ok(()) => {}
+                                        Err(err) => {
+                                            log::warn!("failed to send notify event: {:?}", err);
+                                        }
+                                    }
+                                }
+                                Err(err) => {
+                                    log::warn!("failed to watch files: {:?}", err);
+                                }
+                            },
+                        )
+                    };
+
+                    match watcher_res {
+                        Ok(watcher) => {
+                            match output
+                                .send(Message::NotifyWatcher(WatcherWrapper {
+                                    watcher_opt: Some(watcher),
+                                }))
+                                .await
+                            {
+                                Ok(()) => {}
+                                Err(err) => {
+                                    log::warn!("failed to send notify watcher: {:?}", err);
+                                }
+                            }
+                        }
+                        Err(err) => {
+                            log::warn!("failed to create file watcher: {:?}", err);
+                        }
+                    }
+
+                    //TODO: how to properly kill this task?
+                    loop {
+                        time::sleep(time::Duration::new(1, 0)).await;
+                    }
+                },
+            ),
+            cosmic_config::config_subscription(
+                TypeId::of::<ConfigSubscription>(),
+                Self::APP_ID.into(),
+                CONFIG_VERSION,
+            )
+            .map(|(_, res)| match res {
+                Ok(config) => Message::Config(config),
+                Err((errs, config)) => {
+                    log::info!("errors loading config: {:?}", errs);
+                    Message::Config(config)
+                }
+            }),
+            cosmic_config::config_subscription::<_, cosmic_theme::ThemeMode>(
+                TypeId::of::<ThemeSubscription>(),
+                cosmic_theme::THEME_MODE_ID.into(),
+                cosmic_theme::ThemeMode::version(),
+            )
+            .map(|(_, u)| match u {
+                Ok(t) => Message::SystemThemeModeChange(t),
+                Err((errs, t)) => {
+                    log::info!("errors loading theme mode: {:?}", errs);
+                    Message::SystemThemeModeChange(t)
+                }
+            }),
+        ])
+    }
+
     fn update(&mut self, message: Message) -> Command<Message> {
         match message {
             Message::AppTheme(app_theme) => {
@@ -1219,6 +1341,11 @@ impl Application for App {
             Message::Find(find_opt) => {
                 self.find_opt = find_opt;
 
+                // clear textfields values  when search widget is closed
+                if self.find_opt.is_none(){
+                    self.find_search_value.clear();
+                    self.find_replace_value.clear();
+                }
                 // Focus correct input
                 return self.update_focus();
             }
@@ -1750,23 +1877,6 @@ impl Application for App {
         Command::none()
     }
 
-    fn context_drawer(&self) -> Option<Element<Message>> {
-        if !self.core.window.show_context {
-            return None;
-        }
-
-        Some(match self.context_page {
-            ContextPage::DocumentStatistics => self.document_statistics(),
-            ContextPage::GitManagement => self.git_management(),
-            ContextPage::ProjectSearch => self.project_search(),
-            ContextPage::Settings => self.settings(),
-        })
-    }
-
-    fn header_start(&self) -> Vec<Element<Message>> {
-        vec![menu_bar(&self.config)]
-    }
-
     fn view(&self) -> Element<Message> {
         let cosmic_theme::Spacing {
             space_none,
@@ -2004,110 +2114,5 @@ impl Application for App {
         // Uncomment to debug layout:
         //content.explain(cosmic::iced::Color::WHITE)
         content
-    }
-
-    fn subscription(&self) -> subscription::Subscription<Message> {
-        struct WatcherSubscription;
-        struct ConfigSubscription;
-        struct ThemeSubscription;
-
-        subscription::Subscription::batch([
-            event::listen_with(|event, _status| match event {
-                event::Event::Keyboard(keyboard::Event::KeyPressed {
-                    modifiers,
-                    key_code,
-                }) => Some(Message::Key(modifiers, key_code)),
-                event::Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
-                    Some(Message::Modifiers(modifiers))
-                }
-                _ => None,
-            }),
-            subscription::channel(
-                TypeId::of::<WatcherSubscription>(),
-                100,
-                |mut output| async move {
-                    let watcher_res = {
-                        let mut output = output.clone();
-                        //TODO: debounce
-                        notify::recommended_watcher(
-                            move |event_res: Result<notify::Event, notify::Error>| match event_res {
-                                Ok(event) => {
-                                    match &event.kind {
-                                        notify::EventKind::Access(_)
-                                        | notify::EventKind::Modify(
-                                            notify::event::ModifyKind::Metadata(_),
-                                        ) => {
-                                            // Data not mutated
-                                            return;
-                                        }
-                                        _ => {}
-                                    }
-
-                                    match futures::executor::block_on(async {
-                                        output.send(Message::NotifyEvent(event)).await
-                                    }) {
-                                        Ok(()) => {}
-                                        Err(err) => {
-                                            log::warn!("failed to send notify event: {:?}", err);
-                                        }
-                                    }
-                                }
-                                Err(err) => {
-                                    log::warn!("failed to watch files: {:?}", err);
-                                }
-                            },
-                        )
-                    };
-
-                    match watcher_res {
-                        Ok(watcher) => {
-                            match output
-                                .send(Message::NotifyWatcher(WatcherWrapper {
-                                    watcher_opt: Some(watcher),
-                                }))
-                                .await
-                            {
-                                Ok(()) => {}
-                                Err(err) => {
-                                    log::warn!("failed to send notify watcher: {:?}", err);
-                                }
-                            }
-                        }
-                        Err(err) => {
-                            log::warn!("failed to create file watcher: {:?}", err);
-                        }
-                    }
-
-                    //TODO: how to properly kill this task?
-                    loop {
-                        time::sleep(time::Duration::new(1, 0)).await;
-                    }
-                },
-            ),
-            cosmic_config::config_subscription(
-                TypeId::of::<ConfigSubscription>(),
-                Self::APP_ID.into(),
-                CONFIG_VERSION,
-            )
-            .map(|(_, res)| match res {
-                Ok(config) => Message::Config(config),
-                Err((errs, config)) => {
-                    log::info!("errors loading config: {:?}", errs);
-                    Message::Config(config)
-                }
-            }),
-            cosmic_config::config_subscription::<_, cosmic_theme::ThemeMode>(
-                TypeId::of::<ThemeSubscription>(),
-                cosmic_theme::THEME_MODE_ID.into(),
-                cosmic_theme::ThemeMode::version(),
-            )
-            .map(|(_, u)| match u {
-                Ok(t) => Message::SystemThemeModeChange(t),
-                Err((errs, t)) => {
-                    log::info!("errors loading theme mode: {:?}", errs);
-                    Message::SystemThemeModeChange(t)
-                }
-            }),
-        ])
     }
 }
