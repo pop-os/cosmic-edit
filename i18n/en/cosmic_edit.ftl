@@ -76,7 +76,6 @@ copy = Copy
 paste = Paste
 select-all = Select all
 find = Find
-replace = Replace
 find-in-project = Find in project...
 spell-check = Spell check...
 
