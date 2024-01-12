@@ -706,9 +706,7 @@ where
             Event::Keyboard(KeyEvent::KeyPressed {
                 key_code,
                 modifiers,
-            }) => {
-                // Only parse keys when focused
-                if state.is_focused {
+            }) if state.is_focused => {
                     match key_code {
                         KeyCode::Left => {
                             editor.action(Action::Motion(Motion::Left));
@@ -768,14 +766,11 @@ where
                         }
                         _ => (),
                     }
-                }
             }
             Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
                 state.modifiers = modifiers;
             }
-            Event::Keyboard(KeyEvent::CharacterReceived(character)) => {
-                // Only parse keys when focused
-                if state.is_focused {
+            Event::Keyboard(KeyEvent::CharacterReceived(character)) if state.is_focused => {
                     // Only parse keys when Super, Ctrl, and Alt are not pressed
                     if !state.modifiers.logo()
                         && !state.modifiers.control()
@@ -786,7 +781,6 @@ where
                         }
                         status = Status::Captured;
                     }
-                }
             }
             Event::Mouse(MouseEvent::ButtonPressed(button)) => {
                 if let Some(p) = cursor_position.position_in(layout.bounds()) {
