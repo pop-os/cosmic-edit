@@ -37,6 +37,14 @@ default-font-size = Размер шрифта по умолчанию
 keyboard-shortcuts = Сочетания клавиш
 enable-vim-bindings = Привязки клавиш Vim
 
+# Find
+find-placeholder = Найти...
+find-previous = Найти ранее
+find-next = Найти далее
+replace-placeholder = Заменить...
+replace = Заменить
+replace-all = Заменить все
+
 # Menu
 
 ## File
@@ -68,7 +76,6 @@ copy = Копировать
 paste = Вставить
 select-all = Выбрать все
 find = Найти
-replace = Заменить
 find-in-project = Найти в проекте...
 spell-check = Проверить правописание...
 
