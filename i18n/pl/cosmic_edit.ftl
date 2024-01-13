@@ -37,6 +37,14 @@ default-font-size = Domyślny rozmiar czcionki
 keyboard-shortcuts = Skróty klawiszowe
 enable-vim-bindings = Włącz tryb Vim
 
+# Find
+find-placeholder = Szukaj...
+find-previous = Szukaj poprzedni
+find-next = Szukaj następny
+replace-placeholder = Zastąp...
+replace = Zastąp
+replace-all = Zastąp wszystkie
+
 # Menu
 
 ## File
@@ -57,7 +65,7 @@ document-type = Typ dokumentu...
 encoding = Kodowanie...
 menu-git-management = Zarządzanie Git...
 print = Drukuj
-quit = Wyjdź
+quit = Zamknij
 
 ## Edit
 edit = Edytuj
@@ -68,7 +76,6 @@ copy = Kopiuj
 paste = Wklej
 select-all = Zaznacz wszystko
 find = Szukaj
-replace = Zamień
 find-in-project = Szukaj w projekcie...
 spell-check = Sprawdź ortografię...
 
