@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-3.0-only
-
 use cosmic::{
     app::{message, Command, Core, Settings},
     cosmic_config::{self, CosmicConfigEntry},
@@ -505,7 +504,7 @@ impl App {
                 match expand_opt {
                     Some(id) => {
                         //TODO: can this be optimized?
-                        // Command not used becuase opening a folder just returns Command::none
+                        // Command not used because opening a folder just returns Command::none
                         let _ = self.on_nav_select(id);
                     }
                     None => {
@@ -538,17 +537,41 @@ impl App {
     }
 
     fn document_statistics(&self) -> Element<Message> {
-        //TODO: calculate in the background
+        fn count_words(text: &str) -> usize {
+            let mut in_word = false;
+            let mut word_count = 0;
+
+            for c in text.chars() {
+                if !c.is_whitespace() {
+                    in_word = true;
+                } else if in_word {
+                    word_count += 1;
+                    in_word = false;
+                }
+            }
+
+            // Handle the final word if it doesn't end with whitespace
+            if in_word {
+                word_count += 1;
+            }
+
+            word_count
+        }
+
+        // TODO: calculate in the background
         let mut character_count = 0;
         let mut character_count_no_spaces = 0;
         let mut line_count = 0;
+        let mut words_count = 0;
 
         if let Some(Tab::Editor(tab)) = self.active_tab() {
             let editor = tab.editor.lock().unwrap();
             editor.with_buffer(|buffer| {
                 line_count = buffer.lines.len();
+
                 for line in buffer.lines.iter() {
                     //TODO: do graphemes?
+                    words_count += count_words(line.text());
                     for c in line.text().chars() {
                         character_count += 1;
                         if !c.is_whitespace() {
@@ -556,11 +579,12 @@ impl App {
                         }
                     }
                 }
+
             });
         }
 
         widget::settings::view_column(vec![widget::settings::view_section("")
-            .add(widget::settings::item::builder(fl!("word-count")).control("TODO"))
+            .add(widget::settings::item::builder(fl!("word-count")).control(widget::text(words_count.to_string())))
             .add(
                 widget::settings::item::builder(fl!("character-count"))
                     .control(widget::text(character_count.to_string())),
