@@ -608,17 +608,14 @@ where
                         Point::new(image_position.x + scrollbar_rect.x, image_position.y),
                         Size::new(scrollbar_rect.width, layout.bounds().height),
                     ),
-                    border_radius: (scrollbar_rect.width as f32 / 2.0).into(),
+                    border_radius: (scrollbar_rect.width / 2.0).into(),
                     border_width: 0.0,
                     border_color: Color::TRANSPARENT,
                 },
                 Color::from(track_color),
             );
 
-            let pressed = match &state.dragging {
-                Some(Dragging::Scrollbar { .. }) => true,
-                _ => false,
-            };
+            let pressed = matches!(&state.dragging, Some(Dragging::Scrollbar { .. }));
 
             let mut hover = false;
             if let Some(p) = cursor_position.position_in(layout.bounds()) {
@@ -668,7 +665,7 @@ where
             renderer.fill_quad(
                 Quad {
                     bounds: scrollbar_draw,
-                    border_radius: (scrollbar_draw.width as f32 / 2.0).into(),
+                    border_radius: (scrollbar_draw.width / 2.0).into(),
                     border_width: 0.0,
                     border_color: Color::TRANSPARENT,
                 },
@@ -706,81 +703,76 @@ where
             Event::Keyboard(KeyEvent::KeyPressed {
                 key_code,
                 modifiers,
-            }) if state.is_focused => {
-                    match key_code {
-                        KeyCode::Left => {
-                            editor.action(Action::Motion(Motion::Left));
-                            status = Status::Captured;
-                        }
-                        KeyCode::Right => {
-                            editor.action(Action::Motion(Motion::Right));
-                            status = Status::Captured;
-                        }
-                        KeyCode::Up => {
-                            editor.action(Action::Motion(Motion::Up));
-                            status = Status::Captured;
-                        }
-                        KeyCode::Down => {
-                            editor.action(Action::Motion(Motion::Down));
-                            status = Status::Captured;
-                        }
-                        KeyCode::Home => {
-                            editor.action(Action::Motion(Motion::Home));
-                            status = Status::Captured;
-                        }
-                        KeyCode::End => {
-                            editor.action(Action::Motion(Motion::End));
-                            status = Status::Captured;
-                        }
-                        KeyCode::PageUp => {
-                            editor.action(Action::Motion(Motion::PageUp));
-                            status = Status::Captured;
-                        }
-                        KeyCode::PageDown => {
-                            editor.action(Action::Motion(Motion::PageDown));
-                            status = Status::Captured;
-                        }
-                        KeyCode::Escape => {
-                            editor.action(Action::Escape);
-                            status = Status::Captured;
-                        }
-                        KeyCode::Enter => {
-                            editor.action(Action::Enter);
-                            status = Status::Captured;
-                        }
-                        KeyCode::Backspace => {
-                            editor.action(Action::Backspace);
-                            status = Status::Captured;
-                        }
-                        KeyCode::Delete => {
-                            editor.action(Action::Delete);
-                            status = Status::Captured;
-                        }
-                        KeyCode::Tab => {
-                            if modifiers.shift() {
-                                editor.action(Action::Unindent);
-                            } else {
-                                editor.action(Action::Indent);
-                            }
-                            status = Status::Captured;
-                        }
-                        _ => (),
+            }) if state.is_focused => match key_code {
+                KeyCode::Left => {
+                    editor.action(Action::Motion(Motion::Left));
+                    status = Status::Captured;
+                }
+                KeyCode::Right => {
+                    editor.action(Action::Motion(Motion::Right));
+                    status = Status::Captured;
+                }
+                KeyCode::Up => {
+                    editor.action(Action::Motion(Motion::Up));
+                    status = Status::Captured;
+                }
+                KeyCode::Down => {
+                    editor.action(Action::Motion(Motion::Down));
+                    status = Status::Captured;
+                }
+                KeyCode::Home => {
+                    editor.action(Action::Motion(Motion::Home));
+                    status = Status::Captured;
+                }
+                KeyCode::End => {
+                    editor.action(Action::Motion(Motion::End));
+                    status = Status::Captured;
+                }
+                KeyCode::PageUp => {
+                    editor.action(Action::Motion(Motion::PageUp));
+                    status = Status::Captured;
+                }
+                KeyCode::PageDown => {
+                    editor.action(Action::Motion(Motion::PageDown));
+                    status = Status::Captured;
+                }
+                KeyCode::Escape => {
+                    editor.action(Action::Escape);
+                    status = Status::Captured;
+                }
+                KeyCode::Enter => {
+                    editor.action(Action::Enter);
+                    status = Status::Captured;
+                }
+                KeyCode::Backspace => {
+                    editor.action(Action::Backspace);
+                    status = Status::Captured;
+                }
+                KeyCode::Delete => {
+                    editor.action(Action::Delete);
+                    status = Status::Captured;
+                }
+                KeyCode::Tab => {
+                    if modifiers.shift() {
+                        editor.action(Action::Unindent);
+                    } else {
+                        editor.action(Action::Indent);
                     }
-            }
+                    status = Status::Captured;
+                }
+                _ => (),
+            },
             Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
                 state.modifiers = modifiers;
             }
             Event::Keyboard(KeyEvent::CharacterReceived(character)) if state.is_focused => {
-                    // Only parse keys when Super, Ctrl, and Alt are not pressed
-                    if !state.modifiers.logo()
-                        && !state.modifiers.control()
-                        && !state.modifiers.alt()
-                    {
-                        if !character.is_control() {
-                            editor.action(Action::Insert(character));
-                        }
-                        status = Status::Captured;
+                // Only parse keys when Super, Ctrl, and Alt are not pressed
+                if !state.modifiers.logo() && !state.modifiers.control() && !state.modifiers.alt() {
+                    if !character.is_control() {
+                        editor.action(Action::Insert(character));
                     }
+                    status = Status::Captured;
+                }
             }
             Event::Mouse(MouseEvent::ButtonPressed(button)) => {
                 if let Some(p) = cursor_position.position_in(layout.bounds()) {
