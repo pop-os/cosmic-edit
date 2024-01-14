@@ -49,7 +49,7 @@ replace-all = Замінити все
 
 ## File
 file = Файл
-new-file = Створити новий файл
+new-file = Новий файл
 new-window = Нове вікно
 open-file = Відкрити файл...
 open-recent = Відкрити нещодавній файл
