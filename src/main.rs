@@ -445,7 +445,6 @@ impl App {
     }
 
     fn save_config(&mut self) -> Command<Message> {
-
         if let Some(ref config_handler) = self.config_handler {
             if let Err(err) = self.config.write_entry(config_handler) {
                 log::error!("failed to save config: {}", err);
@@ -1667,51 +1666,47 @@ impl Application for App {
                 self.set_context_title(context_page.title());
 
                 // Execute commands for specific pages
-                if self.core.window.show_context {
-                    match self.context_page {
-                        ContextPage::GitManagement => {
-                            self.git_project_status = None;
-                            let projects = self.projects.clone();
-                            return Command::perform(
-                                async move {
-                                    let mut project_status = Vec::new();
-                                    for (project_name, project_path) in projects.iter() {
-                                        //TODO: send errors to UI
-                                        match GitRepository::new(project_path) {
-                                            Ok(repo) => match repo.status().await {
-                                                Ok(status) => {
-                                                    if !status.is_empty() {
-                                                        project_status.push((
-                                                            project_name.clone(),
-                                                            project_path.clone(),
-                                                            status,
-                                                        ));
-                                                    }
-                                                }
-                                                Err(err) => {
-                                                    log::error!(
-                                                        "failed to get status of {:?}: {}",
-                                                        project_path,
-                                                        err
-                                                    );
-                                                }
-                                            },
-                                            Err(err) => {
-                                                log::error!(
-                                                    "failed to open repository {:?}: {}",
-                                                    project_path,
-                                                    err
-                                                );
+                if self.core.window.show_context && self.context_page == ContextPage::GitManagement
+                {
+                    self.git_project_status = None;
+                    let projects = self.projects.clone();
+                    return Command::perform(
+                        async move {
+                            let mut project_status = Vec::new();
+                            for (project_name, project_path) in projects.iter() {
+                                //TODO: send errors to UI
+                                match GitRepository::new(project_path) {
+                                    Ok(repo) => match repo.status().await {
+                                        Ok(status) => {
+                                            if !status.is_empty() {
+                                                project_status.push((
+                                                    project_name.clone(),
+                                                    project_path.clone(),
+                                                    status,
+                                                ));
                                             }
                                         }
+                                        Err(err) => {
+                                            log::error!(
+                                                "failed to get status of {:?}: {}",
+                                                project_path,
+                                                err
+                                            );
+                                        }
+                                    },
+                                    Err(err) => {
+                                        log::error!(
+                                            "failed to open repository {:?}: {}",
+                                            project_path,
+                                            err
+                                        );
                                     }
-                                    message::app(Message::GitProjectStatus(project_status))
-                                },
-                                |x| x,
-                            );
-                        }
-                        _ => {}
-                    }
+                                }
+                            }
+                            message::app(Message::GitProjectStatus(project_status))
+                        },
+                        |x| x,
+                    );
                 }
 
                 // Ensure focus of correct input
