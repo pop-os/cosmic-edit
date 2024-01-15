@@ -1025,6 +1025,7 @@ version = "0.1.0"
 dependencies = [
  "cosmic-syntax-theme",
  "cosmic-text",
+ "crossbeam",
  "env_logger",
  "fork",
  "grep",

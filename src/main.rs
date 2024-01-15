@@ -16,14 +16,9 @@ use cosmic::{
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
     Application, ApplicationExt, Apply, Element,
 };
-use cosmic_text::{Cursor, Edit, Family, FontSystem, Selection, SwashCache, SyntaxSystem, ViMode};
-use std::{
-    any::TypeId,
-    env, fs, io,
-    path::{Path, PathBuf},
-    process,
-    sync::Mutex,
-};
+use cosmic_text::{Buffer, BufferLine, Cursor, Edit, Family, FontSystem, Selection, SwashCache, SyntaxSystem, ViMode};
+use std::{any::TypeId, env, fs, io, path::{Path, PathBuf}, process, sync::Mutex, thread};
+use crossbeam::channel;
 use tokio::time;
 
 use config::{Action, AppTheme, Config, CONFIG_VERSION};
@@ -537,6 +532,10 @@ impl App {
     }
 
     fn document_statistics(&self) -> Element<Message> {
+        let (sender, receiver) = channel::unbounded();
+        let mut line_count = 0;
+        let mut  lines: Vec<BufferLine> = Vec::new();
+
         fn count_words(text: &str) -> usize {
             let mut in_word = false;
             let mut word_count = 0;
@@ -558,30 +557,41 @@ impl App {
             word_count
         }
 
-        // TODO: calculate in the background
-        let mut character_count = 0;
-        let mut character_count_no_spaces = 0;
-        let mut line_count = 0;
-        let mut words_count = 0;
+
+
+        fn count_characters_and_words(lines : &Vec<BufferLine>) -> (usize, usize, usize) {
+
+            let mut character_count = 0;
+            let mut character_count_no_spaces = 0;
+            let mut words_count = 0;
+
+            for line in  lines.iter() {
+                words_count += count_words(line.text());
+                for c in line.text().chars() {
+                    character_count += 1;
+                    if !c.is_whitespace() {
+                        character_count_no_spaces += 1;
+                    }
+                }
+            }
+
+            (character_count, character_count_no_spaces, words_count)
+        }
+
+
 
         if let Some(Tab::Editor(tab)) = self.active_tab() {
             let editor = tab.editor.lock().unwrap();
             editor.with_buffer(|buffer| {
                 line_count = buffer.lines.len();
+                lines = buffer.lines.clone();
+                thread::spawn(move || sender.send(count_characters_and_words(&lines)).unwrap());
 
-                for line in buffer.lines.iter() {
-                    //TODO: do graphemes?
-                    words_count += count_words(line.text());
-                    for c in line.text().chars() {
-                        character_count += 1;
-                        if !c.is_whitespace() {
-                            character_count_no_spaces += 1;
-                        }
-                    }
-                }
 
             });
         }
+
+        let  (character_count,character_count_no_spaces,words_count) = receiver.recv().unwrap();
 
         widget::settings::view_column(vec![widget::settings::view_section("")
             .add(widget::settings::item::builder(fl!("word-count")).control(widget::text(words_count.to_string())))

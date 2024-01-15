@@ -25,6 +25,7 @@ two-face = "0.3.0"
 i18n-embed = { version = "0.14", features = ["fluent-system", "desktop-requester"] }
 i18n-embed-fl = "0.7"
 rust-embed = "8"
+crossbeam = "0.8.4"
 
 [dependencies.cosmic-syntax-theme]
 git = "https://github.com/pop-os/cosmic-syntax-theme"
