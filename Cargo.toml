@@ -31,7 +31,6 @@ git = "https://github.com/pop-os/cosmic-syntax-theme"
 
 [dependencies.cosmic-text]
 git = "https://github.com/pop-os/cosmic-text"
-branch = "refactor"
 features = ["syntect", "vi"]
 #path = "../cosmic-text"
 

@@ -41,6 +41,7 @@ impl LineNumberCache {
                     1.0,    /* font size adjusted later */
                     1000.0, /* dummy width */
                     Wrap::None,
+                    None,
                 )
                 .to_vec()
         })
