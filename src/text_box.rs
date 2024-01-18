@@ -246,7 +246,7 @@ where
         let mut editor = self.editor.lock().unwrap();
         //TODO: set size?
         editor
-            .borrow_with(&mut FONT_SYSTEM.lock().unwrap())
+            .borrow_with(&mut FONT_SYSTEM.get().unwrap().lock().unwrap())
             .shape_as_needed(true);
 
         editor.with_buffer(|buffer| {
@@ -348,7 +348,7 @@ where
         let image_w = image_w - scrollbar_w;
 
         // Lock font system (used throughout)
-        let mut font_system = FONT_SYSTEM.lock().unwrap();
+        let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
 
         // Calculate line number information
         let (line_number_chars, editor_offset_x) = if self.line_numbers {
@@ -363,7 +363,7 @@ where
             // Calculate line number width
             let mut line_number_width = 0.0;
             {
-                let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
+                let mut line_number_cache = LINE_NUMBER_CACHE.get().unwrap().lock().unwrap();
                 if let Some(layout_line) = line_number_cache
                     .get(
                         &mut font_system,
@@ -410,7 +410,7 @@ where
             // Draw to pixel buffer
             let mut pixels_u8 = vec![0; image_w as usize * image_h as usize * 4];
             {
-                let mut swash_cache = SWASH_CACHE.lock().unwrap();
+                let mut swash_cache = SWASH_CACHE.get().unwrap().lock().unwrap();
 
                 let pixels = unsafe {
                     std::slice::from_raw_parts_mut(
@@ -454,7 +454,8 @@ where
                     // Draw line numbers
                     //TODO: move to cosmic-text?
                     editor.with_buffer(|buffer| {
-                        let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
+                        let mut line_number_cache =
+                            LINE_NUMBER_CACHE.get().unwrap().lock().unwrap();
                         let mut last_line_number = 0;
                         for run in buffer.layout_runs() {
                             let line_number = run.line_i.saturating_add(1);
@@ -695,7 +696,7 @@ where
         let mut editor = self.editor.lock().unwrap();
         let buffer_size = editor.with_buffer(|buffer| buffer.size());
         let last_changed = editor.changed();
-        let mut font_system = FONT_SYSTEM.lock().unwrap();
+        let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
 
         let mut status = Status::Ignored;

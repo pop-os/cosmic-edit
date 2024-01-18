@@ -1031,7 +1031,6 @@ dependencies = [
  "i18n-embed",
  "i18n-embed-fl",
  "ignore",
- "lazy_static",
  "lexical-sort",
  "libcosmic",
  "log",
