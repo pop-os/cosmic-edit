@@ -23,7 +23,7 @@ use std::{
     env, fs, io,
     path::{Path, PathBuf},
     process,
-    sync::Mutex,
+    sync::{Mutex, OnceLock},
 };
 use tokio::time;
 
@@ -60,17 +60,28 @@ use self::text_box::text_box;
 mod text_box;
 
 //TODO: re-use iced FONT_SYSTEM
-lazy_static::lazy_static! {
-    static ref FONT_SYSTEM: Mutex<FontSystem> = Mutex::new(FontSystem::new());
-    static ref ICON_CACHE: Mutex<IconCache> = Mutex::new(IconCache::new());
-    static ref LINE_NUMBER_CACHE: Mutex<LineNumberCache> = Mutex::new(LineNumberCache::new());
-    static ref SWASH_CACHE: Mutex<SwashCache> = Mutex::new(SwashCache::new());
-    static ref SYNTAX_SYSTEM: SyntaxSystem = {
+static FONT_SYSTEM: OnceLock<Mutex<FontSystem>> = OnceLock::new();
+static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
+static LINE_NUMBER_CACHE: OnceLock<Mutex<LineNumberCache>> = OnceLock::new();
+static SWASH_CACHE: OnceLock<Mutex<SwashCache>> = OnceLock::new();
+static SYNTAX_SYSTEM: OnceLock<SyntaxSystem> = OnceLock::new();
+
+pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
+    let mut icon_cache = ICON_CACHE.get().unwrap().lock().unwrap();
+    icon_cache.get(name, size)
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    FONT_SYSTEM.get_or_init(|| Mutex::new(FontSystem::new()));
+    ICON_CACHE.get_or_init(|| Mutex::new(IconCache::new()));
+    LINE_NUMBER_CACHE.get_or_init(|| Mutex::new(LineNumberCache::new()));
+    SWASH_CACHE.get_or_init(|| Mutex::new(SwashCache::new()));
+    SYNTAX_SYSTEM.get_or_init(|| {
         let lazy_theme_set = two_face::theme::LazyThemeSet::from(two_face::theme::extra());
         let mut theme_set = syntect::highlighting::ThemeSet::from(&lazy_theme_set);
         for (theme_name, theme_data) in &[
             ("COSMIC Dark", cosmic_syntax_theme::COSMIC_DARK_TM_THEME),
-            ("COSMIC Light", cosmic_syntax_theme::COSMIC_LIGHT_TM_THEME)
+            ("COSMIC Light", cosmic_syntax_theme::COSMIC_LIGHT_TM_THEME),
         ] {
             let mut cursor = io::Cursor::new(theme_data);
             match syntect::highlighting::ThemeSet::load_from_reader(&mut cursor) {
@@ -87,15 +98,8 @@ lazy_static::lazy_static! {
             syntax_set: two_face::syntax::extra_no_newlines(),
             theme_set,
         }
-    };
-}
+    });
 
-pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
-    let mut icon_cache = ICON_CACHE.lock().unwrap();
-    icon_cache.get(name, size)
-}
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(all(unix, not(target_os = "redox")))]
     match fork::daemon(true, true) {
         Ok(fork::Fork::Child) => (),
@@ -829,7 +833,7 @@ impl App {
             .iter()
             .position(|theme_name| theme_name == &self.config.syntax_theme_light);
         let font_selected = {
-            let font_system = FONT_SYSTEM.lock().unwrap();
+            let font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
             let current_font_name = font_system.db().family_name(&Family::Monospace);
             self.font_names
                 .iter()
@@ -920,7 +924,7 @@ impl Application for App {
     fn init(core: Core, flags: Self::Flags) -> (Self, Command<Self::Message>) {
         // Update font name from config
         {
-            let mut font_system = FONT_SYSTEM.lock().unwrap();
+            let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
             font_system
                 .db_mut()
                 .set_monospace_family(&flags.config.font_name);
@@ -930,7 +934,7 @@ impl Application for App {
 
         let font_names = {
             let mut font_names = Vec::new();
-            let font_system = FONT_SYSTEM.lock().unwrap();
+            let font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
             //TODO: do not repeat, used in Tab::new
             let attrs = cosmic_text::Attrs::new().family(Family::Monospace);
             for face in font_system.db().faces() {
@@ -954,8 +958,9 @@ impl Application for App {
             font_sizes.push(font_size);
         }
 
-        let mut theme_names = Vec::with_capacity(SYNTAX_SYSTEM.theme_set.themes.len());
-        for (theme_name, _theme) in SYNTAX_SYSTEM.theme_set.themes.iter() {
+        let mut theme_names =
+            Vec::with_capacity(SYNTAX_SYSTEM.get().unwrap().theme_set.themes.len());
+        for (theme_name, _theme) in SYNTAX_SYSTEM.get().unwrap().theme_set.themes.iter() {
             theme_names.push(theme_name.to_string());
         }
 
@@ -1172,13 +1177,14 @@ impl Application for App {
                         if font_name != &self.config.font_name {
                             // Update font name from config
                             {
-                                let mut font_system = FONT_SYSTEM.lock().unwrap();
+                                let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
                                 font_system.db_mut().set_monospace_family(font_name);
                             }
 
                             // Reset line number cache
                             {
-                                let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
+                                let mut line_number_cache =
+                                    LINE_NUMBER_CACHE.get().unwrap().lock().unwrap();
                                 line_number_cache.clear();
                             }
 

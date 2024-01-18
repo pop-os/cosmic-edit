@@ -47,14 +47,18 @@ impl EditorTab {
 
         let mut buffer = Buffer::new_empty(config.metrics());
         buffer.set_text(
-            &mut FONT_SYSTEM.lock().unwrap(),
+            &mut FONT_SYSTEM.get().unwrap().lock().unwrap(),
             "",
             attrs,
             Shaping::Advanced,
         );
 
-        let editor =
-            SyntaxEditor::new(Arc::new(buffer), &SYNTAX_SYSTEM, config.syntax_theme()).unwrap();
+        let editor = SyntaxEditor::new(
+            Arc::new(buffer),
+            SYNTAX_SYSTEM.get().unwrap(),
+            config.syntax_theme(),
+        )
+        .unwrap();
 
         let mut tab = Self {
             path_opt: None,
@@ -71,7 +75,7 @@ impl EditorTab {
 
     pub fn set_config(&mut self, config: &Config) {
         let mut editor = self.editor.lock().unwrap();
-        let mut font_system = FONT_SYSTEM.lock().unwrap();
+        let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
         editor.set_auto_indent(config.auto_indent);
         editor.set_passthrough(!config.vim_bindings);
@@ -89,7 +93,7 @@ impl EditorTab {
 
     pub fn open(&mut self, path: PathBuf) {
         let mut editor = self.editor.lock().unwrap();
-        let mut font_system = FONT_SYSTEM.lock().unwrap();
+        let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
         match editor.load_text(&path, self.attrs) {
             Ok(()) => {
@@ -111,7 +115,7 @@ impl EditorTab {
 
     pub fn reload(&mut self) {
         let mut editor = self.editor.lock().unwrap();
-        let mut font_system = FONT_SYSTEM.lock().unwrap();
+        let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
         if let Some(path) = &self.path_opt {
             // Save scroll
