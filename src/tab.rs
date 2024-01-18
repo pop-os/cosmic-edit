@@ -191,7 +191,7 @@ impl EditorTab {
             match path.file_name() {
                 Some(file_name_os) => match file_name_os.to_str() {
                     Some(file_name) => match file_name {
-                        "mod.rs" => title_with_parent(&path, file_name),
+                        "mod.rs" => title_with_parent(path, file_name),
                         _ => file_name.to_string(),
                     },
                     None => format!("{}", path.display()),
