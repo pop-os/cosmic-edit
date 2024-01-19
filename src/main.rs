@@ -18,8 +18,10 @@ use cosmic::{
     Application, ApplicationExt, Apply, Element,
 };
 use cosmic_text::{Cursor, Edit, Family, FontSystem, Selection, SwashCache, SyntaxSystem, ViMode};
+use serde::{Deserialize, Serialize};
 use std::{
     any::TypeId,
+    collections::HashMap,
     env, fs, io,
     path::{Path, PathBuf},
     process,
@@ -27,7 +29,7 @@ use std::{
 };
 use tokio::time;
 
-use config::{Action, AppTheme, Config, CONFIG_VERSION};
+use config::{AppTheme, Config, CONFIG_VERSION};
 mod config;
 
 use git::{GitDiff, GitDiffLine, GitRepository, GitStatus, GitStatusKind};
@@ -35,6 +37,9 @@ mod git;
 
 use icon_cache::IconCache;
 mod icon_cache;
+
+use key_bind::{key_binds, KeyBind};
+mod key_bind;
 
 use line_number::LineNumberCache;
 mod line_number;
@@ -147,6 +152,57 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     cosmic::app::run::<App>(settings, flags)?;
 
     Ok(())
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub enum Action {
+    CloseFile,
+    CloseProject,
+    Copy,
+    Cut,
+    Find,
+    FindAndReplace,
+    NewFile,
+    NewWindow,
+    OpenFileDialog,
+    OpenProjectDialog,
+    Paste,
+    Quit,
+    Redo,
+    Save,
+    SelectAll,
+    ToggleGitManagement,
+    ToggleProjectSearch,
+    ToggleSettingsPage,
+    ToggleWordWrap,
+    Undo,
+}
+
+impl Action {
+    pub fn message(&self) -> Message {
+        match self {
+            Self::CloseFile => Message::CloseFile,
+            Self::CloseProject => Message::CloseProject,
+            Self::Copy => Message::Copy,
+            Self::Cut => Message::Cut,
+            Self::Find => Message::Find(Some(false)),
+            Self::FindAndReplace => Message::Find(Some(true)),
+            Self::NewFile => Message::NewFile,
+            Self::NewWindow => Message::NewWindow,
+            Self::OpenFileDialog => Message::OpenFileDialog,
+            Self::OpenProjectDialog => Message::OpenProjectDialog,
+            Self::Paste => Message::Paste,
+            Self::Quit => Message::Quit,
+            Self::Redo => Message::Redo,
+            Self::Save => Message::Save,
+            Self::SelectAll => Message::SelectAll,
+            Self::ToggleGitManagement => Message::ToggleContextPage(ContextPage::GitManagement),
+            Self::ToggleProjectSearch => Message::ToggleContextPage(ContextPage::ProjectSearch),
+            Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
+            Self::ToggleWordWrap => Message::ToggleWordWrap,
+            Self::Undo => Message::Undo,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -264,6 +320,7 @@ pub struct App {
     tab_model: segmented_button::SingleSelectModel,
     config_handler: Option<cosmic_config::Config>,
     config: Config,
+    key_binds: HashMap<KeyBind, Action>,
     app_themes: Vec<String>,
     font_names: Vec<String>,
     font_size_names: Vec<String>,
@@ -970,6 +1027,7 @@ impl Application for App {
             tab_model: segmented_button::Model::builder().build(),
             config_handler: flags.config_handler,
             config: flags.config,
+            key_binds: key_binds(),
             app_themes,
             font_names,
             font_size_names,
@@ -1281,7 +1339,7 @@ impl Application for App {
                 self.git_project_status = Some(project_status);
             }
             Message::Key(modifiers, key_code) => {
-                for (key_bind, action) in self.config.keybinds.iter() {
+                for (key_bind, action) in self.key_binds.iter() {
                     if key_bind.matches(modifiers, key_code) {
                         return self.update(action.message());
                     }
@@ -1765,7 +1823,7 @@ impl Application for App {
     }
 
     fn header_start(&self) -> Vec<Element<Message>> {
-        vec![menu_bar(&self.config)]
+        vec![menu_bar(&self.config, &self.key_binds)]
     }
 
     fn view(&self) -> Element<Message> {
@@ -1838,7 +1896,7 @@ impl Application for App {
                     text_box = text_box.line_numbers();
                 }
                 let mut popover =
-                    widget::popover(text_box, menu::context_menu(&self.config, tab_id));
+                    widget::popover(text_box, menu::context_menu(&self.key_binds, tab_id));
                 popover = match tab.context_menu {
                     Some(position) => popover.position(position),
                     None => popover.show_popup(false),
