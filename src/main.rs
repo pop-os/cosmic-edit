@@ -216,6 +216,8 @@ pub enum Message {
     TabClose(segmented_button::Entity),
     TabContextAction(segmented_button::Entity, Action),
     TabContextMenu(segmented_button::Entity, Option<Point>),
+    TabNext,
+    TabPrev,
     TabSetCursor(segmented_button::Entity, Cursor),
     TabWidth(u16),
     Todo,
@@ -1637,6 +1639,38 @@ impl Application for App {
                 if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
                     // Update context menu
                     tab.context_menu = position_opt;
+                }
+            }
+            Message::TabNext => {
+                let len = self.tab_model.iter().count();
+                // Next tab position. Wraps around to 0 (the first tab) if the last tab is active.
+                let pos = self
+                    .tab_model
+                    .position(self.tab_model.active())
+                    .map(|i| (i as usize + 1) % len)
+                    .expect("at least one tab is always open");
+
+                let entity = self.tab_model.iter().nth(pos);
+                if let Some(entity) = entity {
+                    return self.update(Message::TabActivate(entity));
+                }
+            }
+            Message::TabPrev => {
+                let pos = self
+                    .tab_model
+                    .position(self.tab_model.active())
+                    .and_then(|i| (i as usize).checked_sub(1))
+                    .unwrap_or_else(|| {
+                        self.tab_model
+                            .iter()
+                            .count()
+                            .checked_sub(1)
+                            .unwrap_or_default()
+                    });
+
+                let entity = self.tab_model.iter().nth(pos);
+                if let Some(entity) = entity {
+                    return self.update(Message::TabActivate(entity));
                 }
             }
             Message::TabSetCursor(entity, cursor) => {

@@ -35,6 +35,8 @@ pub enum Action {
     ToggleSettingsPage,
     ToggleWordWrap,
     Undo,
+    TabNext,
+    TabPrev,
 }
 
 impl Action {
@@ -55,6 +57,8 @@ impl Action {
             Self::Redo => Message::Redo,
             Self::Save => Message::Save,
             Self::SelectAll => Message::SelectAll,
+            Self::TabNext => Message::TabNext,
+            Self::TabPrev => Message::TabPrev,
             Self::ToggleGitManagement => Message::ToggleContextPage(ContextPage::GitManagement),
             Self::ToggleProjectSearch => Message::ToggleContextPage(ContextPage::ProjectSearch),
             Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
@@ -131,6 +135,8 @@ impl KeyBind {
         bind!([Ctrl], Comma, ToggleSettingsPage);
         bind!([Alt], Z, ToggleWordWrap);
         bind!([Ctrl], Z, Undo);
+        bind!([Ctrl], PageUp, TabNext);
+        bind!([Ctrl], PageDown, TabPrev);
 
         keybinds
     }
