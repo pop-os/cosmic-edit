@@ -30,6 +30,7 @@ pub enum Action {
     Redo,
     Save,
     SelectAll,
+    TabJump(usize),
     ToggleGitManagement,
     ToggleProjectSearch,
     ToggleSettingsPage,
@@ -57,6 +58,7 @@ impl Action {
             Self::Redo => Message::Redo,
             Self::Save => Message::Save,
             Self::SelectAll => Message::SelectAll,
+            Self::TabJump(n) => Message::TabActivateJump(*n),
             Self::TabNext => Message::TabNext,
             Self::TabPrev => Message::TabPrev,
             Self::ToggleGitManagement => Message::ToggleContextPage(ContextPage::GitManagement),
@@ -114,6 +116,17 @@ impl KeyBind {
                     Action::$action,
                 );
             }};
+
+            // Match enums with a payload
+            ([$($modifier:ident),+ $(,)?], $key_code:ident, $action:ident($($arg:expr)*)) => {{
+                keybinds.insert(
+                    KeyBind {
+                        modifiers: vec![$(Modifier::$modifier),+],
+                        key_code: KeyCode::$key_code,
+                    },
+                    Action::$action($($arg)*),
+                );
+            }};
         }
 
         bind!([Ctrl], W, CloseFile);
@@ -130,13 +143,22 @@ impl KeyBind {
         bind!([Ctrl, Shift], Z, Redo);
         bind!([Ctrl], S, Save);
         bind!([Ctrl], A, SelectAll);
+        bind!([Ctrl], Key1, TabJump(0));
+        bind!([Ctrl], Key2, TabJump(1));
+        bind!([Ctrl], Key3, TabJump(2));
+        bind!([Ctrl], Key4, TabJump(3));
+        bind!([Ctrl], Key5, TabJump(4));
+        bind!([Ctrl], Key6, TabJump(5));
+        bind!([Ctrl], Key7, TabJump(6));
+        bind!([Ctrl], Key8, TabJump(7));
+        bind!([Ctrl], Key9, TabJump(8));
+        bind!([Ctrl], PageUp, TabNext);
+        bind!([Ctrl], PageDown, TabPrev);
         bind!([Ctrl, Shift], G, ToggleGitManagement);
         bind!([Ctrl, Shift], F, ToggleProjectSearch);
         bind!([Ctrl], Comma, ToggleSettingsPage);
         bind!([Alt], Z, ToggleWordWrap);
         bind!([Ctrl], Z, Undo);
-        bind!([Ctrl], PageUp, TabNext);
-        bind!([Ctrl], PageDown, TabPrev);
 
         keybinds
     }

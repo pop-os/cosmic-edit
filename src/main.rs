@@ -212,6 +212,7 @@ pub enum Message {
     SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
     TabActivate(segmented_button::Entity),
+    TabActivateJump(usize),
     TabChanged(segmented_button::Entity),
     TabClose(segmented_button::Entity),
     TabContextAction(segmented_button::Entity, Action),
@@ -1598,6 +1599,21 @@ impl Application for App {
             Message::TabActivate(entity) => {
                 self.tab_model.activate(entity);
                 return self.update_tab();
+            }
+            Message::TabActivateJump(pos) => {
+                // Length is always at least one, so there shouldn't be a division by zero
+                let len = self.tab_model.iter().count();
+                //
+                let pos = if pos >= 8 || pos > len - 1 {
+                    len - 1
+                } else {
+                    pos % len
+                };
+
+                let entity = self.tab_model.iter().nth(pos);
+                if let Some(entity) = entity {
+                    return self.update(Message::TabActivate(entity));
+                }
             }
             Message::TabChanged(entity) => {
                 if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
