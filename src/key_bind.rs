@@ -67,6 +67,17 @@ pub fn key_binds() -> HashMap<KeyBind, Action> {
     bind!([Ctrl, Shift], Z, Redo);
     bind!([Ctrl], S, Save);
     bind!([Ctrl], A, SelectAll);
+    bind!([Ctrl], Key1, TabActivate0);
+    bind!([Ctrl], Key2, TabActivate1);
+    bind!([Ctrl], Key3, TabActivate2);
+    bind!([Ctrl], Key4, TabActivate3);
+    bind!([Ctrl], Key5, TabActivate4);
+    bind!([Ctrl], Key6, TabActivate5);
+    bind!([Ctrl], Key7, TabActivate6);
+    bind!([Ctrl], Key8, TabActivate7);
+    bind!([Ctrl], Key9, TabActivate8);
+    bind!([Ctrl], Tab, TabNext);
+    bind!([Ctrl, Shift], Tab, TabPrev);
     bind!([Ctrl, Shift], G, ToggleGitManagement);
     bind!([Ctrl, Shift], F, ToggleProjectSearch);
     bind!([Ctrl], Comma, ToggleSettingsPage);

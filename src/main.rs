@@ -171,6 +171,17 @@ pub enum Action {
     Redo,
     Save,
     SelectAll,
+    TabActivate0,
+    TabActivate1,
+    TabActivate2,
+    TabActivate3,
+    TabActivate4,
+    TabActivate5,
+    TabActivate6,
+    TabActivate7,
+    TabActivate8,
+    TabNext,
+    TabPrev,
     ToggleGitManagement,
     ToggleProjectSearch,
     ToggleSettingsPage,
@@ -196,6 +207,17 @@ impl Action {
             Self::Redo => Message::Redo,
             Self::Save => Message::Save,
             Self::SelectAll => Message::SelectAll,
+            Self::TabActivate0 => Message::TabActivateJump(0),
+            Self::TabActivate1 => Message::TabActivateJump(1),
+            Self::TabActivate2 => Message::TabActivateJump(2),
+            Self::TabActivate3 => Message::TabActivateJump(3),
+            Self::TabActivate4 => Message::TabActivateJump(4),
+            Self::TabActivate5 => Message::TabActivateJump(5),
+            Self::TabActivate6 => Message::TabActivateJump(6),
+            Self::TabActivate7 => Message::TabActivateJump(7),
+            Self::TabActivate8 => Message::TabActivateJump(8),
+            Self::TabNext => Message::TabNext,
+            Self::TabPrev => Message::TabPrev,
             Self::ToggleGitManagement => Message::ToggleContextPage(ContextPage::GitManagement),
             Self::ToggleProjectSearch => Message::ToggleContextPage(ContextPage::ProjectSearch),
             Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
@@ -272,10 +294,13 @@ pub enum Message {
     SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
     TabActivate(segmented_button::Entity),
+    TabActivateJump(usize),
     TabChanged(segmented_button::Entity),
     TabClose(segmented_button::Entity),
     TabContextAction(segmented_button::Entity, Action),
     TabContextMenu(segmented_button::Entity, Option<Point>),
+    TabNext,
+    TabPrev,
     TabSetCursor(segmented_button::Entity, Cursor),
     TabWidth(u16),
     Todo,
@@ -1661,6 +1686,21 @@ impl Application for App {
                 self.tab_model.activate(entity);
                 return self.update_tab();
             }
+            Message::TabActivateJump(pos) => {
+                // Length is always at least one, so there shouldn't be a division by zero
+                let len = self.tab_model.iter().count();
+                // Indices 1 to 8 jumps to tabs 1-8 while 9 jumps to the last
+                let pos = if pos >= 8 || pos > len - 1 {
+                    len - 1
+                } else {
+                    pos % len
+                };
+
+                let entity = self.tab_model.iter().nth(pos);
+                if let Some(entity) = entity {
+                    return self.update(Message::TabActivate(entity));
+                }
+            }
             Message::TabChanged(entity) => {
                 if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
                     let mut title = tab.title();
@@ -1701,6 +1741,38 @@ impl Application for App {
                 if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
                     // Update context menu
                     tab.context_menu = position_opt;
+                }
+            }
+            Message::TabNext => {
+                let len = self.tab_model.iter().count();
+                // Next tab position. Wraps around to 0 (the first tab) if the last tab is active.
+                let pos = self
+                    .tab_model
+                    .position(self.tab_model.active())
+                    .map(|i| (i as usize + 1) % len)
+                    .expect("at least one tab is always open");
+
+                let entity = self.tab_model.iter().nth(pos);
+                if let Some(entity) = entity {
+                    return self.update(Message::TabActivate(entity));
+                }
+            }
+            Message::TabPrev => {
+                let pos = self
+                    .tab_model
+                    .position(self.tab_model.active())
+                    .and_then(|i| (i as usize).checked_sub(1))
+                    .unwrap_or_else(|| {
+                        self.tab_model
+                            .iter()
+                            .count()
+                            .checked_sub(1)
+                            .unwrap_or_default()
+                    });
+
+                let entity = self.tab_model.iter().nth(pos);
+                if let Some(entity) = entity {
+                    return self.update(Message::TabActivate(entity));
                 }
             }
             Message::TabSetCursor(entity, cursor) => {
