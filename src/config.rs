@@ -2,73 +2,12 @@
 
 use cosmic::{
     cosmic_config::{self, cosmic_config_derive::CosmicConfigEntry, CosmicConfigEntry},
-    iced::keyboard::{KeyCode, Modifiers},
     theme,
 };
 use cosmic_text::Metrics;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt};
-
-use crate::{ContextPage, Message};
 
 pub const CONFIG_VERSION: u64 = 1;
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
-pub enum Action {
-    CloseFile,
-    CloseProject,
-    Copy,
-    Cut,
-    Find,
-    FindAndReplace,
-    NewFile,
-    NewWindow,
-    OpenFileDialog,
-    OpenProjectDialog,
-    Paste,
-    Quit,
-    Redo,
-    Save,
-    SelectAll,
-    TabJump(usize),
-    ToggleGitManagement,
-    ToggleProjectSearch,
-    ToggleSettingsPage,
-    ToggleWordWrap,
-    Undo,
-    TabNext,
-    TabPrev,
-}
-
-impl Action {
-    pub fn message(&self) -> Message {
-        match self {
-            Self::CloseFile => Message::CloseFile,
-            Self::CloseProject => Message::CloseProject,
-            Self::Copy => Message::Copy,
-            Self::Cut => Message::Cut,
-            Self::Find => Message::Find(Some(false)),
-            Self::FindAndReplace => Message::Find(Some(true)),
-            Self::NewFile => Message::NewFile,
-            Self::NewWindow => Message::NewWindow,
-            Self::OpenFileDialog => Message::OpenFileDialog,
-            Self::OpenProjectDialog => Message::OpenProjectDialog,
-            Self::Paste => Message::Paste,
-            Self::Quit => Message::Quit,
-            Self::Redo => Message::Redo,
-            Self::Save => Message::Save,
-            Self::SelectAll => Message::SelectAll,
-            Self::TabJump(n) => Message::TabActivateJump(*n),
-            Self::TabNext => Message::TabNext,
-            Self::TabPrev => Message::TabPrev,
-            Self::ToggleGitManagement => Message::ToggleContextPage(ContextPage::GitManagement),
-            Self::ToggleProjectSearch => Message::ToggleContextPage(ContextPage::ProjectSearch),
-            Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
-            Self::ToggleWordWrap => Message::ToggleWordWrap,
-            Self::Undo => Message::Undo,
-        }
-    }
-}
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum AppTheme {
@@ -87,100 +26,6 @@ impl AppTheme {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
-pub enum Modifier {
-    Super,
-    Ctrl,
-    Alt,
-    Shift,
-}
-
-#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct KeyBind {
-    pub modifiers: Vec<Modifier>,
-    pub key_code: KeyCode,
-}
-
-impl KeyBind {
-    //TODO: load from config
-    pub fn load() -> HashMap<KeyBind, Action> {
-        let mut keybinds = HashMap::new();
-
-        macro_rules! bind {
-            ([$($modifier:ident),+ $(,)?], $key_code:ident, $action:ident) => {{
-                keybinds.insert(
-                    KeyBind {
-                        modifiers: vec![$(Modifier::$modifier),+],
-                        key_code: KeyCode::$key_code,
-                    },
-                    Action::$action,
-                );
-            }};
-
-            // Match enums with a payload
-            ([$($modifier:ident),+ $(,)?], $key_code:ident, $action:ident($($arg:expr)*)) => {{
-                keybinds.insert(
-                    KeyBind {
-                        modifiers: vec![$(Modifier::$modifier),+],
-                        key_code: KeyCode::$key_code,
-                    },
-                    Action::$action($($arg)*),
-                );
-            }};
-        }
-
-        bind!([Ctrl], W, CloseFile);
-        bind!([Ctrl], X, Cut);
-        bind!([Ctrl], C, Copy);
-        bind!([Ctrl], F, Find);
-        bind!([Ctrl], H, FindAndReplace);
-        bind!([Ctrl], V, Paste);
-        bind!([Ctrl], T, NewFile);
-        bind!([Ctrl], N, NewWindow);
-        bind!([Ctrl], O, OpenFileDialog);
-        bind!([Ctrl, Shift], O, OpenProjectDialog);
-        bind!([Ctrl], Q, Quit);
-        bind!([Ctrl, Shift], Z, Redo);
-        bind!([Ctrl], S, Save);
-        bind!([Ctrl], A, SelectAll);
-        bind!([Ctrl], Key1, TabJump(0));
-        bind!([Ctrl], Key2, TabJump(1));
-        bind!([Ctrl], Key3, TabJump(2));
-        bind!([Ctrl], Key4, TabJump(3));
-        bind!([Ctrl], Key5, TabJump(4));
-        bind!([Ctrl], Key6, TabJump(5));
-        bind!([Ctrl], Key7, TabJump(6));
-        bind!([Ctrl], Key8, TabJump(7));
-        bind!([Ctrl], Key9, TabJump(8));
-        bind!([Ctrl], PageUp, TabNext);
-        bind!([Ctrl], PageDown, TabPrev);
-        bind!([Ctrl, Shift], G, ToggleGitManagement);
-        bind!([Ctrl, Shift], F, ToggleProjectSearch);
-        bind!([Ctrl], Comma, ToggleSettingsPage);
-        bind!([Alt], Z, ToggleWordWrap);
-        bind!([Ctrl], Z, Undo);
-
-        keybinds
-    }
-
-    pub fn matches(&self, modifiers: Modifiers, key_code: KeyCode) -> bool {
-        self.key_code == key_code
-            && modifiers.logo() == self.modifiers.contains(&Modifier::Super)
-            && modifiers.control() == self.modifiers.contains(&Modifier::Ctrl)
-            && modifiers.alt() == self.modifiers.contains(&Modifier::Alt)
-            && modifiers.shift() == self.modifiers.contains(&Modifier::Shift)
-    }
-}
-
-impl fmt::Display for KeyBind {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for modifier in self.modifiers.iter() {
-            write!(f, "{:?} + ", modifier)?;
-        }
-        write!(f, "{:?}", self.key_code)
-    }
-}
-
 #[derive(Clone, CosmicConfigEntry, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Config {
     pub app_theme: AppTheme,
@@ -193,7 +38,6 @@ pub struct Config {
     pub tab_width: u16,
     pub vim_bindings: bool,
     pub word_wrap: bool,
-    pub keybinds: HashMap<KeyBind, Action>,
 }
 
 impl Default for Config {
@@ -209,7 +53,6 @@ impl Default for Config {
             tab_width: 4,
             vim_bindings: false,
             word_wrap: false,
-            keybinds: KeyBind::load(),
         }
     }
 }

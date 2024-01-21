@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::widget::icon;
-use std::{collections::HashMap, path::Path, sync::Mutex};
+use std::{collections::HashMap, path::Path, sync::Mutex, sync::OnceLock};
 
 pub const FALLBACK_MIME_ICON: &str = "text-x-generic";
 
@@ -39,18 +39,18 @@ impl MimeIconCache {
     }
 }
 
-lazy_static::lazy_static! {
-    static ref MIME_ICON_CACHE: Mutex<MimeIconCache> = Mutex::new(MimeIconCache::new());
-}
+static MIME_ICON_CACHE: OnceLock<Mutex<MimeIconCache>> = OnceLock::new();
 
 pub fn mime_icon<P: AsRef<Path>>(path: P, size: u16) -> icon::Icon {
+    MIME_ICON_CACHE.get_or_init(|| Mutex::new(MimeIconCache::new()));
+
     //TODO: smarter path handling
     let path = path
         .as_ref()
         .to_str()
         .expect("failed to convert path to UTF-8")
         .to_owned();
-    let mut mime_icon_cache = MIME_ICON_CACHE.lock().unwrap();
+    let mut mime_icon_cache = MIME_ICON_CACHE.get().unwrap().lock().unwrap();
     match mime_icon_cache.get(MimeIconKey { path, size }) {
         Some(handle) => icon::icon(handle).size(size),
         None => icon::from_name(FALLBACK_MIME_ICON).size(size).icon(),

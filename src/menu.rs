@@ -14,8 +14,9 @@ use cosmic::{
     },
     Element,
 };
+use std::collections::HashMap;
 
-use crate::{fl, icon_cache_get, Action, Config, ContextPage, Message};
+use crate::{fl, icon_cache_get, Action, Config, ContextPage, KeyBind, Message};
 
 macro_rules! menu_button {
     ($($x:expr),+ $(,)?) => (
@@ -32,10 +33,13 @@ macro_rules! menu_button {
     );
 }
 
-pub fn context_menu<'a>(config: &Config, entity: segmented_button::Entity) -> Element<'a, Message> {
+pub fn context_menu<'a>(
+    key_binds: &HashMap<KeyBind, Action>,
+    entity: segmented_button::Entity,
+) -> Element<'a, Message> {
     let menu_item = |menu_label, menu_action| {
         let mut key = String::new();
-        for (key_bind, key_action) in config.keybinds.iter() {
+        for (key_bind, key_action) in key_binds.iter() {
             if key_action == &menu_action {
                 key = key_bind.to_string();
                 break;
@@ -76,7 +80,7 @@ pub fn context_menu<'a>(config: &Config, entity: segmented_button::Entity) -> El
     .into()
 }
 
-pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
+pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> Element<'a, Message> {
     //TODO: port to libcosmic
     let menu_root = |label| {
         widget::button(widget::text(label))
@@ -89,7 +93,7 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
 
     let find_key = |message: &Message| -> String {
         let mut key = String::new();
-        for (key_bind, action) in config.keybinds.iter() {
+        for (key_bind, action) in key_binds.iter() {
             if &action.message() == message {
                 key = key_bind.to_string();
                 break;

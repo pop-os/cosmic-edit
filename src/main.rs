@@ -18,16 +18,18 @@ use cosmic::{
     Application, ApplicationExt, Apply, Element,
 };
 use cosmic_text::{Cursor, Edit, Family, FontSystem, Selection, SwashCache, SyntaxSystem, ViMode};
+use serde::{Deserialize, Serialize};
 use std::{
     any::TypeId,
+    collections::HashMap,
     env, fs, io,
     path::{Path, PathBuf},
     process,
-    sync::Mutex,
+    sync::{Mutex, OnceLock},
 };
 use tokio::time;
 
-use config::{Action, AppTheme, Config, CONFIG_VERSION};
+use config::{AppTheme, Config, CONFIG_VERSION};
 mod config;
 
 use git::{GitDiff, GitDiffLine, GitRepository, GitStatus, GitStatusKind};
@@ -35,6 +37,9 @@ mod git;
 
 use icon_cache::IconCache;
 mod icon_cache;
+
+use key_bind::{key_binds, KeyBind};
+mod key_bind;
 
 use line_number::LineNumberCache;
 mod line_number;
@@ -60,17 +65,28 @@ use self::text_box::text_box;
 mod text_box;
 
 //TODO: re-use iced FONT_SYSTEM
-lazy_static::lazy_static! {
-    static ref FONT_SYSTEM: Mutex<FontSystem> = Mutex::new(FontSystem::new());
-    static ref ICON_CACHE: Mutex<IconCache> = Mutex::new(IconCache::new());
-    static ref LINE_NUMBER_CACHE: Mutex<LineNumberCache> = Mutex::new(LineNumberCache::new());
-    static ref SWASH_CACHE: Mutex<SwashCache> = Mutex::new(SwashCache::new());
-    static ref SYNTAX_SYSTEM: SyntaxSystem = {
+static FONT_SYSTEM: OnceLock<Mutex<FontSystem>> = OnceLock::new();
+static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
+static LINE_NUMBER_CACHE: OnceLock<Mutex<LineNumberCache>> = OnceLock::new();
+static SWASH_CACHE: OnceLock<Mutex<SwashCache>> = OnceLock::new();
+static SYNTAX_SYSTEM: OnceLock<SyntaxSystem> = OnceLock::new();
+
+pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
+    let mut icon_cache = ICON_CACHE.get().unwrap().lock().unwrap();
+    icon_cache.get(name, size)
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    FONT_SYSTEM.get_or_init(|| Mutex::new(FontSystem::new()));
+    ICON_CACHE.get_or_init(|| Mutex::new(IconCache::new()));
+    LINE_NUMBER_CACHE.get_or_init(|| Mutex::new(LineNumberCache::new()));
+    SWASH_CACHE.get_or_init(|| Mutex::new(SwashCache::new()));
+    SYNTAX_SYSTEM.get_or_init(|| {
         let lazy_theme_set = two_face::theme::LazyThemeSet::from(two_face::theme::extra());
         let mut theme_set = syntect::highlighting::ThemeSet::from(&lazy_theme_set);
         for (theme_name, theme_data) in &[
             ("COSMIC Dark", cosmic_syntax_theme::COSMIC_DARK_TM_THEME),
-            ("COSMIC Light", cosmic_syntax_theme::COSMIC_LIGHT_TM_THEME)
+            ("COSMIC Light", cosmic_syntax_theme::COSMIC_LIGHT_TM_THEME),
         ] {
             let mut cursor = io::Cursor::new(theme_data);
             match syntect::highlighting::ThemeSet::load_from_reader(&mut cursor) {
@@ -87,15 +103,8 @@ lazy_static::lazy_static! {
             syntax_set: two_face::syntax::extra_no_newlines(),
             theme_set,
         }
-    };
-}
+    });
 
-pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
-    let mut icon_cache = ICON_CACHE.lock().unwrap();
-    icon_cache.get(name, size)
-}
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(all(unix, not(target_os = "redox")))]
     match fork::daemon(true, true) {
         Ok(fork::Fork::Child) => (),
@@ -143,6 +152,79 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     cosmic::app::run::<App>(settings, flags)?;
 
     Ok(())
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub enum Action {
+    CloseFile,
+    CloseProject,
+    Copy,
+    Cut,
+    Find,
+    FindAndReplace,
+    NewFile,
+    NewWindow,
+    OpenFileDialog,
+    OpenProjectDialog,
+    Paste,
+    Quit,
+    Redo,
+    Save,
+    SelectAll,
+    TabActivate0,
+    TabActivate1,
+    TabActivate2,
+    TabActivate3,
+    TabActivate4,
+    TabActivate5,
+    TabActivate6,
+    TabActivate7,
+    TabActivate8,
+    TabNext,
+    TabPrev,
+    ToggleGitManagement,
+    ToggleProjectSearch,
+    ToggleSettingsPage,
+    ToggleWordWrap,
+    Undo,
+}
+
+impl Action {
+    pub fn message(&self) -> Message {
+        match self {
+            Self::CloseFile => Message::CloseFile,
+            Self::CloseProject => Message::CloseProject,
+            Self::Copy => Message::Copy,
+            Self::Cut => Message::Cut,
+            Self::Find => Message::Find(Some(false)),
+            Self::FindAndReplace => Message::Find(Some(true)),
+            Self::NewFile => Message::NewFile,
+            Self::NewWindow => Message::NewWindow,
+            Self::OpenFileDialog => Message::OpenFileDialog,
+            Self::OpenProjectDialog => Message::OpenProjectDialog,
+            Self::Paste => Message::Paste,
+            Self::Quit => Message::Quit,
+            Self::Redo => Message::Redo,
+            Self::Save => Message::Save,
+            Self::SelectAll => Message::SelectAll,
+            Self::TabActivate0 => Message::TabActivateJump(0),
+            Self::TabActivate1 => Message::TabActivateJump(1),
+            Self::TabActivate2 => Message::TabActivateJump(2),
+            Self::TabActivate3 => Message::TabActivateJump(3),
+            Self::TabActivate4 => Message::TabActivateJump(4),
+            Self::TabActivate5 => Message::TabActivateJump(5),
+            Self::TabActivate6 => Message::TabActivateJump(6),
+            Self::TabActivate7 => Message::TabActivateJump(7),
+            Self::TabActivate8 => Message::TabActivateJump(8),
+            Self::TabNext => Message::TabNext,
+            Self::TabPrev => Message::TabPrev,
+            Self::ToggleGitManagement => Message::ToggleContextPage(ContextPage::GitManagement),
+            Self::ToggleProjectSearch => Message::ToggleContextPage(ContextPage::ProjectSearch),
+            Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
+            Self::ToggleWordWrap => Message::ToggleWordWrap,
+            Self::Undo => Message::Undo,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -263,6 +345,7 @@ pub struct App {
     tab_model: segmented_button::SingleSelectModel,
     config_handler: Option<cosmic_config::Config>,
     config: Config,
+    key_binds: HashMap<KeyBind, Action>,
     app_themes: Vec<String>,
     font_names: Vec<String>,
     font_size_names: Vec<String>,
@@ -832,7 +915,7 @@ impl App {
             .iter()
             .position(|theme_name| theme_name == &self.config.syntax_theme_light);
         let font_selected = {
-            let font_system = FONT_SYSTEM.lock().unwrap();
+            let font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
             let current_font_name = font_system.db().family_name(&Family::Monospace);
             self.font_names
                 .iter()
@@ -923,7 +1006,7 @@ impl Application for App {
     fn init(core: Core, flags: Self::Flags) -> (Self, Command<Self::Message>) {
         // Update font name from config
         {
-            let mut font_system = FONT_SYSTEM.lock().unwrap();
+            let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
             font_system
                 .db_mut()
                 .set_monospace_family(&flags.config.font_name);
@@ -933,7 +1016,7 @@ impl Application for App {
 
         let font_names = {
             let mut font_names = Vec::new();
-            let font_system = FONT_SYSTEM.lock().unwrap();
+            let font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
             //TODO: do not repeat, used in Tab::new
             let attrs = cosmic_text::Attrs::new().family(Family::Monospace);
             for face in font_system.db().faces() {
@@ -957,8 +1040,9 @@ impl Application for App {
             font_sizes.push(font_size);
         }
 
-        let mut theme_names = Vec::with_capacity(SYNTAX_SYSTEM.theme_set.themes.len());
-        for (theme_name, _theme) in SYNTAX_SYSTEM.theme_set.themes.iter() {
+        let mut theme_names =
+            Vec::with_capacity(SYNTAX_SYSTEM.get().unwrap().theme_set.themes.len());
+        for (theme_name, _theme) in SYNTAX_SYSTEM.get().unwrap().theme_set.themes.iter() {
             theme_names.push(theme_name.to_string());
         }
 
@@ -968,6 +1052,7 @@ impl Application for App {
             tab_model: segmented_button::Model::builder().build(),
             config_handler: flags.config_handler,
             config: flags.config,
+            key_binds: key_binds(),
             app_themes,
             font_names,
             font_size_names,
@@ -1175,13 +1260,14 @@ impl Application for App {
                         if font_name != &self.config.font_name {
                             // Update font name from config
                             {
-                                let mut font_system = FONT_SYSTEM.lock().unwrap();
+                                let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
                                 font_system.db_mut().set_monospace_family(font_name);
                             }
 
                             // Reset line number cache
                             {
-                                let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
+                                let mut line_number_cache =
+                                    LINE_NUMBER_CACHE.get().unwrap().lock().unwrap();
                                 line_number_cache.clear();
                             }
 
@@ -1278,7 +1364,7 @@ impl Application for App {
                 self.git_project_status = Some(project_status);
             }
             Message::Key(modifiers, key_code) => {
-                for (key_bind, action) in self.config.keybinds.iter() {
+                for (key_bind, action) in self.key_binds.iter() {
                     if key_bind.matches(modifiers, key_code) {
                         return self.update(action.message());
                     }
@@ -1603,7 +1689,7 @@ impl Application for App {
             Message::TabActivateJump(pos) => {
                 // Length is always at least one, so there shouldn't be a division by zero
                 let len = self.tab_model.iter().count();
-                //
+                // Indices 1 to 8 jumps to tabs 1-8 while 9 jumps to the last
                 let pos = if pos >= 8 || pos > len - 1 {
                     len - 1
                 } else {
@@ -1809,7 +1895,7 @@ impl Application for App {
     }
 
     fn header_start(&self) -> Vec<Element<Message>> {
-        vec![menu_bar(&self.config)]
+        vec![menu_bar(&self.config, &self.key_binds)]
     }
 
     fn view(&self) -> Element<Message> {
@@ -1882,7 +1968,7 @@ impl Application for App {
                     text_box = text_box.line_numbers();
                 }
                 let mut popover =
-                    widget::popover(text_box, menu::context_menu(&self.config, tab_id));
+                    widget::popover(text_box, menu::context_menu(&self.key_binds, tab_id));
                 popover = match tab.context_menu {
                     Some(position) => popover.position(position),
                     None => popover.show_popup(false),
