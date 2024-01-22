@@ -3,7 +3,9 @@
 use cosmic::{
     app::{message, Command, Core, Settings},
     cosmic_config::{self, CosmicConfigEntry},
-    cosmic_theme, executor,
+    cosmic_theme,
+    dialog::file_chooser,
+    executor,
     font::Font,
     iced::{
         clipboard, event,
@@ -1437,17 +1439,15 @@ impl Application for App {
                 }
             },
             Message::OpenFileDialog => {
-                #[cfg(feature = "rfd")]
-                return Command::perform(
-                    async {
-                        if let Some(handle) = rfd::AsyncFileDialog::new().pick_file().await {
-                            message::app(Message::OpenFile(handle.path().to_owned()))
-                        } else {
-                            message::none()
+                return cosmic::command::future(async {
+                    if let Ok(response) = file_chooser::open::Dialog::new().open_file().await {
+                        if let Ok(path) = response.url().to_file_path() {
+                            return message::app(Message::OpenFile(path));
                         }
-                    },
-                    |x| x,
-                );
+                    }
+
+                    message::none()
+                });
             }
             Message::OpenFile(path) => {
                 self.open_tab(Some(path));
