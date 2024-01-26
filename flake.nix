@@ -35,7 +35,6 @@
             ];
           };
           nativeBuildInputs = with pkgs; [
-            gtk3
             just
             pkg-config
             autoPatchelfHook
