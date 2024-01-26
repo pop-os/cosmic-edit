@@ -12,7 +12,7 @@ use cosmic::{
         futures::{self, SinkExt},
         keyboard::{self, Modifiers},
         subscription,
-        widget::{row, text},
+        widget::text,
         window, Alignment, Background, Color, Length, Point,
     },
     style, theme,
@@ -1908,20 +1908,23 @@ impl Application for App {
         let mut tab_column = widget::column::with_capacity(3).padding([space_none, space_xxs]);
 
         tab_column = tab_column.push(
-            row![
-                view_switcher::horizontal(&self.tab_model)
-                    .button_height(32)
-                    .button_spacing(space_xxs)
-                    .close_icon(icon_cache_get("window-close-symbolic", 16))
-                    .on_activate(Message::TabActivate)
-                    .on_close(Message::TabClose)
-                    .width(Length::Shrink),
-                button(icon_cache_get("list-add-symbolic", 16))
-                    .on_press(Message::NewFile)
-                    .padding(space_xxs)
-                    .style(style::Button::Icon)
-            ]
-            .align_items(Alignment::Center),
+            widget::row::with_capacity(2)
+                .align_items(Alignment::Center)
+                .push(
+                    view_switcher::horizontal(&self.tab_model)
+                        .button_height(32)
+                        .button_spacing(space_xxs)
+                        .close_icon(icon_cache_get("window-close-symbolic", 16))
+                        .on_activate(Message::TabActivate)
+                        .on_close(Message::TabClose)
+                        .width(Length::Shrink),
+                )
+                .push(
+                    button(icon_cache_get("list-add-symbolic", 16))
+                        .on_press(Message::NewFile)
+                        .padding(space_xxs)
+                        .style(style::Button::Icon),
+                ),
         );
 
         let tab_id = self.tab_model.active();
@@ -2220,24 +2223,24 @@ impl Application for App {
                 Self::APP_ID.into(),
                 CONFIG_VERSION,
             )
-            .map(|(_, res)| match res {
-                Ok(config) => Message::Config(config),
-                Err((errs, config)) => {
-                    log::info!("errors loading config: {:?}", errs);
-                    Message::Config(config)
+            .map(|update| {
+                for error in update.errors {
+                    log::error!("error loading config: {error:?}");
                 }
+
+                Message::Config(update.config)
             }),
             cosmic_config::config_subscription::<_, cosmic_theme::ThemeMode>(
                 TypeId::of::<ThemeSubscription>(),
                 cosmic_theme::THEME_MODE_ID.into(),
                 cosmic_theme::ThemeMode::version(),
             )
-            .map(|(_, u)| match u {
-                Ok(t) => Message::SystemThemeModeChange(t),
-                Err((errs, t)) => {
-                    log::info!("errors loading theme mode: {:?}", errs);
-                    Message::SystemThemeModeChange(t)
+            .map(|update| {
+                for error in update.errors {
+                    log::error!("error loading theme mode: {error:?}");
                 }
+
+                Message::SystemThemeModeChange(update.config)
             }),
         ])
     }

@@ -33,7 +33,6 @@ features = ["syntect", "vi"]
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
-branch = "dialog"
 default-features = false
 features = ["tokio", "winit"]
 
