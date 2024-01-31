@@ -22,7 +22,7 @@ project-search = Nájsť projekt
 ## Settings
 settings = Nastavenia
 
-## Appearance
+### Appearance
 appearance = Vzhľad
 theme = Téma
 match-desktop = Podľa systému
@@ -36,6 +36,14 @@ default-font-size = Východzia veľkosť písma
 ### Keyboard shortcuts
 keyboard-shortcuts = Klávesové skratky
 enable-vim-bindings = Zapnúť Vim ovládanie
+
+# Find
+find-placeholder = Nájsť...
+find-previous = Nájsť predchádzajúce
+find-next = Nájsť následujúce
+replace-placeholder = Nahradiť...
+replace = Nahradiť
+replace-all = Nahradiť všetko
 
 # Menu
 
@@ -68,7 +76,6 @@ copy = Kopírovať
 paste = Vložiť
 select-all = Vybrať všetko
 find = Nájsť
-replace = Nahradiť
 find-in-project = Nájsť v projekte...
 spell-check = Kontrola pravopisu...
 
