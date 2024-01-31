@@ -94,7 +94,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(mut theme) => {
                     // Use cosmic theme background
                     theme.settings.background = Some(syntect::highlighting::Color {
-                        r: 0, g: 0, b: 0, a: 0
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 0,
                     });
                     theme_set.themes.insert(theme_name.to_string(), theme);
                 }
