@@ -1,7 +1,7 @@
 #TODO: more build-out, desktop actions, translations?
 [Desktop Entry]
 Name=COSMIC Text Editor
-Exec=cosmic-edit %U
+Exec=cosmic-edit %F
 Terminal=false
 Type=Application
 StartupNotify=true

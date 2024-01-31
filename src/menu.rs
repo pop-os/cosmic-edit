@@ -14,8 +14,9 @@ use cosmic::{
     },
     Element,
 };
+use std::collections::HashMap;
 
-use crate::{fl, icon_cache_get, Action, Config, ContextPage, Message};
+use crate::{fl, icon_cache_get, Action, Config, ContextPage, KeyBind, Message};
 
 macro_rules! menu_button {
     ($($x:expr),+ $(,)?) => (
@@ -32,21 +33,24 @@ macro_rules! menu_button {
     );
 }
 
-pub fn context_menu<'a>(config: &Config, entity: segmented_button::Entity) -> Element<'a, Message> {
-    let menu_item = |label, action| {
+pub fn context_menu<'a>(
+    key_binds: &HashMap<KeyBind, Action>,
+    entity: segmented_button::Entity,
+) -> Element<'a, Message> {
+    let menu_item = |menu_label, menu_action| {
         let mut key = String::new();
-        for (key_bind, action) in config.keybinds.iter() {
-            if action == action {
+        for (key_bind, key_action) in key_binds.iter() {
+            if key_action == &menu_action {
                 key = key_bind.to_string();
                 break;
             }
         }
         menu_button!(
-            widget::text(label),
+            widget::text(menu_label),
             horizontal_space(Length::Fill),
             widget::text(key)
         )
-        .on_press(Message::TabContextAction(entity, action))
+        .on_press(Message::TabContextAction(entity, menu_action))
     };
 
     widget::container(column!(
@@ -76,7 +80,7 @@ pub fn context_menu<'a>(config: &Config, entity: segmented_button::Entity) -> El
     .into()
 }
 
-pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
+pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> Element<'a, Message> {
     //TODO: port to libcosmic
     let menu_root = |label| {
         widget::button(widget::text(label))
@@ -89,7 +93,7 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
 
     let find_key = |message: &Message| -> String {
         let mut key = String::new();
-        for (key_bind, action) in config.keybinds.iter() {
+        for (key_bind, action) in key_binds.iter() {
             if &action.message() == message {
                 key = key_bind.to_string();
                 break;
@@ -197,8 +201,8 @@ pub fn menu_bar<'a>(config: &Config) -> Element<'a, Message> {
                 menu_item(fl!("paste"), Message::Paste),
                 menu_item(fl!("select-all"), Message::SelectAll),
                 MenuTree::new(horizontal_rule(1)),
-                menu_key(fl!("find"), "Ctrl + F", Message::Todo),
-                menu_key(fl!("replace"), "Ctrl + H", Message::Todo),
+                menu_item(fl!("find"), Message::Find(Some(false))),
+                menu_item(fl!("replace"), Message::Find(Some(true))),
                 menu_item(
                     fl!("find-in-project"),
                     Message::ToggleContextPage(ContextPage::ProjectSearch),

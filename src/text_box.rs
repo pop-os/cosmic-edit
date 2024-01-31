@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::{
+    cosmic_theme::palette::{blend::Compose, WithAlpha},
     iced::{
         event::{Event, Status},
         keyboard::{Event as KeyEvent, KeyCode, Modifiers},
@@ -11,55 +12,35 @@ use cosmic::{
         clipboard::Clipboard,
         image,
         layout::{self, Layout},
-        renderer::{self, Quad},
-        widget::{self, tree, Widget},
+        renderer::{self, Quad, Renderer as _},
+        widget::{
+            self,
+            operation::{self, Operation, OperationOutputWrapper},
+            tree, Id, Widget,
+        },
         Shell,
     },
     theme::Theme,
+    Renderer,
 };
-use cosmic_text::{Action, Edit, Metrics, ViEditor};
-use std::{cell::Cell, cmp, sync::Mutex, time::Instant};
+use cosmic_text::{Action, Edit, Metrics, Motion, Scroll, ViEditor};
+use std::{
+    cell::Cell,
+    cmp,
+    sync::Mutex,
+    time::{Duration, Instant},
+};
 
 use crate::{line_number::LineNumberKey, FONT_SYSTEM, LINE_NUMBER_CACHE, SWASH_CACHE};
 
-pub struct Appearance {
-    pub text_color: Color,
-}
-
-impl Appearance {
-    pub fn dark() -> Self {
-        Self {
-            text_color: Color::from_rgb8(0xFF, 0xFF, 0xFF),
-        }
-    }
-
-    pub fn light() -> Self {
-        Self {
-            text_color: Color::from_rgb8(0x00, 0x00, 0x00),
-        }
-    }
-}
-
-pub trait StyleSheet {
-    fn appearance(&self) -> Appearance;
-}
-
-impl StyleSheet for Theme {
-    fn appearance(&self) -> Appearance {
-        if self.theme_type.is_dark() {
-            Appearance::dark()
-        } else {
-            Appearance::light()
-        }
-    }
-}
-
 pub struct TextBox<'a, Message> {
-    editor: &'a Mutex<ViEditor<'static>>,
+    editor: &'a Mutex<ViEditor<'static, 'static>>,
     metrics: Metrics,
+    id: Option<Id>,
     padding: Padding,
     on_changed: Option<Message>,
-    context_menu: Option<Point>,
+    click_timing: Duration,
+    has_context_menu: bool,
     on_context_menu: Option<Box<dyn Fn(Option<Point>) -> Message + 'a>>,
     line_numbers: bool,
 }
@@ -68,16 +49,23 @@ impl<'a, Message> TextBox<'a, Message>
 where
     Message: Clone,
 {
-    pub fn new(editor: &'a Mutex<ViEditor<'static>>, metrics: Metrics) -> Self {
+    pub fn new(editor: &'a Mutex<ViEditor<'static, 'static>>, metrics: Metrics) -> Self {
         Self {
             editor,
             metrics,
+            id: None,
             padding: Padding::new(0.0),
             on_changed: None,
-            context_menu: None,
+            click_timing: Duration::from_millis(500),
+            has_context_menu: false,
             on_context_menu: None,
             line_numbers: false,
         }
+    }
+
+    pub fn id(mut self, id: Id) -> Self {
+        self.id = Some(id);
+        self
     }
 
     pub fn padding<P: Into<Padding>>(mut self, padding: P) -> Self {
@@ -90,8 +78,13 @@ where
         self
     }
 
-    pub fn context_menu(mut self, position: Point) -> Self {
-        self.context_menu = Some(position);
+    pub fn click_timing(mut self, click_timing: Duration) -> Self {
+        self.click_timing = click_timing;
+        self
+    }
+
+    pub fn has_context_menu(mut self, has_context_menu: bool) -> Self {
+        self.has_context_menu = has_context_menu;
         self
     }
 
@@ -110,7 +103,7 @@ where
 }
 
 pub fn text_box<'a, Message>(
-    editor: &'a Mutex<ViEditor<'static>>,
+    editor: &'a Mutex<ViEditor<'static, 'static>>,
     metrics: Metrics,
 ) -> TextBox<'a, Message>
 where
@@ -119,15 +112,28 @@ where
     TextBox::new(editor, metrics)
 }
 
-//TODO: improve performance
-fn draw_rect(
-    buffer: &mut [u32],
-    image_w: i32,
-    image_h: i32,
-    start_x: i32,
-    start_y: i32,
+struct Canvas {
     w: i32,
     h: i32,
+}
+
+struct Offset {
+    x: i32,
+    y: i32,
+}
+
+/// This function is called canvas.x * canvas.y number of times
+/// each time the text is scrolled or the canvas is resized.
+/// If the canvas is moved, it's not called as the pixel buffer
+/// is the same, it's just translated for the screen's x, y.
+/// canvas is the location of the pixel in the canvas.
+/// Screen is the location of the pixel on the screen.
+// TODO: improve performance
+fn draw_rect(
+    buffer: &mut [u32],
+    canvas: Canvas,
+    offset: Canvas,
+    screen: Offset,
     cosmic_color: cosmic_text::Color,
 ) {
     // Grab alpha channel and green channel
@@ -138,66 +144,80 @@ fn draw_rect(
     color |= (cosmic_color.0 & 0x000000FF) << 16;
 
     let alpha = (color >> 24) & 0xFF;
-    if alpha == 0 {
-        // Do not draw if alpha is zero
-        return;
-    } else if alpha >= 255 {
-        // Handle overwrite
-        for y in start_y..start_y + h {
-            if y < 0 || y >= image_h {
-                // Skip if y out of bounds
-                continue;
-            }
 
-            let line_offset = y as usize * image_w as usize;
-            for x in start_x..start_x + w {
-                if x < 0 || x >= image_w {
-                    // Skip if x out of bounds
+    log::debug!(
+        "Canvas: {{w: {}, h: {}}}; Offset: {{w: {}, h: {}}}; Screen: {{x: {}, y: {}}}; Alpha {:#}",
+        canvas.w,
+        canvas.h,
+        offset.w,
+        offset.h,
+        screen.x,
+        screen.y,
+        alpha
+    );
+
+    match alpha {
+        0 => {
+            // Do not draw if alpha is zero.
+        }
+        255 => {
+            // Handle overwrite
+            for x in screen.x..screen.x + offset.w {
+                if x < 0 || x >= canvas.w {
+                    // Skip if y out of bounds
                     continue;
                 }
 
-                let offset = line_offset + x as usize;
-                buffer[offset] = color;
+                for y in screen.y..screen.y + offset.h {
+                    if y < 0 || y >= canvas.h {
+                        // Skip if x out of bounds
+                        continue;
+                    }
+
+                    let line_offset = y as usize * canvas.w as usize;
+                    let offset = line_offset + x as usize;
+                    buffer[offset] = color;
+                }
             }
         }
-    } else {
-        let n_alpha = 255 - alpha;
-        for y in start_y..start_y + h {
-            if y < 0 || y >= image_h {
-                // Skip if y out of bounds
-                continue;
-            }
-
-            let line_offset = y as usize * image_w as usize;
-            for x in start_x..start_x + w {
-                if x < 0 || x >= image_w {
-                    // Skip if x out of bounds
+        _ => {
+            let n_alpha = 255 - alpha;
+            for y in screen.y..screen.y + offset.h {
+                if y < 0 || y >= canvas.h {
+                    // Skip if y out of bounds
                     continue;
                 }
 
-                // Alpha blend with current value
-                let offset = line_offset + x as usize;
-                let current = buffer[offset];
-                if current & 0xFF000000 == 0 {
-                    // Overwrite if buffer empty
-                    buffer[offset] = color;
-                } else {
-                    let rb =
-                        ((n_alpha * (current & 0x00FF00FF)) + (alpha * (color & 0x00FF00FF))) >> 8;
-                    let ag = (n_alpha * ((current & 0xFF00FF00) >> 8))
-                        + (alpha * (0x01000000 | ((color & 0x0000FF00) >> 8)));
-                    buffer[offset] = (rb & 0x00FF00FF) | (ag & 0xFF00FF00);
+                let line_offset = y as usize * canvas.w as usize;
+                for x in screen.x..screen.x + offset.w {
+                    if x < 0 || x >= canvas.w {
+                        // Skip if x out of bounds
+                        continue;
+                    }
+
+                    // Alpha blend with current value
+                    let offset = line_offset + x as usize;
+                    let current = buffer[offset];
+                    if current & 0xFF000000 == 0 {
+                        // Overwrite if buffer empty
+                        buffer[offset] = color;
+                    } else {
+                        let rb = ((n_alpha * (current & 0x00FF00FF))
+                            + (alpha * (color & 0x00FF00FF)))
+                            >> 8;
+                        let ag = (n_alpha * ((current & 0xFF00FF00) >> 8))
+                            + (alpha * (0x01000000 | ((color & 0x0000FF00) >> 8)));
+                        buffer[offset] = (rb & 0x00FF00FF) | (ag & 0xFF00FF00);
+                    }
                 }
             }
         }
     }
 }
 
-impl<'a, 'editor, Message, Renderer> Widget<Message, Renderer> for TextBox<'a, Message>
+impl<'a, Message> Widget<Message, Renderer> for TextBox<'a, Message>
 where
     Message: Clone,
-    Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
-    Renderer::Theme: StyleSheet,
 {
     fn tag(&self) -> tree::Tag {
         tree::Tag::of::<State>()
@@ -226,21 +246,35 @@ where
         let mut editor = self.editor.lock().unwrap();
         //TODO: set size?
         editor
-            .borrow_with(&mut FONT_SYSTEM.lock().unwrap())
-            .shape_as_needed();
+            .borrow_with(&mut FONT_SYSTEM.get().unwrap().lock().unwrap())
+            .shape_as_needed(true);
 
-        let mut layout_lines = 0;
-        for line in editor.buffer().lines.iter() {
-            match line.layout_opt() {
-                Some(layout) => layout_lines += layout.len(),
-                None => (),
+        editor.with_buffer(|buffer| {
+            let mut layout_lines = 0;
+            for line in buffer.lines.iter() {
+                match line.layout_opt() {
+                    Some(layout) => layout_lines += layout.len(),
+                    None => (),
+                }
             }
-        }
 
-        let height = layout_lines as f32 * editor.buffer().metrics().line_height;
-        let size = Size::new(limits.max().width, height);
+            let height = layout_lines as f32 * buffer.metrics().line_height;
+            let size = Size::new(limits.max().width, height);
 
-        layout::Node::new(limits.resolve(size))
+            layout::Node::new(limits.resolve(size))
+        })
+    }
+
+    fn operate(
+        &self,
+        tree: &mut widget::Tree,
+        _layout: Layout<'_>,
+        _renderer: &Renderer,
+        operation: &mut dyn Operation<OperationOutputWrapper<Message>>,
+    ) {
+        let state = tree.state.downcast_mut::<State>();
+
+        operation.focusable(state, self.id.as_ref());
     }
 
     fn mouse_interaction(
@@ -253,16 +287,15 @@ where
     ) -> mouse::Interaction {
         let state = tree.state.downcast_ref::<State>();
 
-        match &state.dragging {
-            Some(Dragging::Scrollbar { .. }) => return mouse::Interaction::Idle,
-            _ => {}
+        if let Some(Dragging::Scrollbar { .. }) = &state.dragging {
+            return mouse::Interaction::Idle;
         }
 
         if let Some(p) = cursor_position.position_in(layout.bounds()) {
             let editor_offset_x = state.editor_offset_x.get();
             let scale_factor = state.scale_factor.get();
             let editor = self.editor.lock().unwrap();
-            let buffer_size = editor.buffer().size();
+            let buffer_size = editor.with_buffer(|buffer| buffer.size());
 
             let x_logical = p.x - self.padding.left;
             let y_logical = p.y - self.padding.top;
@@ -280,24 +313,15 @@ where
         &self,
         tree: &widget::Tree,
         renderer: &mut Renderer,
-        theme: &Renderer::Theme,
+        theme: &Theme,
         style: &renderer::Style,
         layout: Layout<'_>,
-        _cursor_position: mouse::Cursor,
+        cursor_position: mouse::Cursor,
         viewport: &Rectangle,
     ) {
         let instant = Instant::now();
 
         let state = tree.state.downcast_ref::<State>();
-
-        let appearance = theme.appearance();
-
-        let text_color = cosmic_text::Color::rgba(
-            cmp::max(0, cmp::min(255, (appearance.text_color.r * 255.0) as i32)) as u8,
-            cmp::max(0, cmp::min(255, (appearance.text_color.g * 255.0) as i32)) as u8,
-            cmp::max(0, cmp::min(255, (appearance.text_color.b * 255.0) as i32)) as u8,
-            cmp::max(0, cmp::min(255, (appearance.text_color.a * 255.0) as i32)) as u8,
-        );
 
         let mut editor = self.editor.lock().unwrap();
 
@@ -312,8 +336,8 @@ where
         let image_w = (view_w as f32 * scale_factor) as i32;
         let image_h = (view_h as f32 * scale_factor) as i32;
 
-        //TODO: make this configurable and do not repeat
-        let scrollbar_w = (8.0 * scale_factor) as i32;
+        let cosmic_theme = theme.cosmic();
+        let scrollbar_w = (cosmic_theme.spacing.space_xxs as f32 * scale_factor) as i32;
 
         if image_w <= scrollbar_w || image_h <= 0 {
             // Zero sized image
@@ -324,13 +348,13 @@ where
         let image_w = image_w - scrollbar_w;
 
         // Lock font system (used throughout)
-        let mut font_system = FONT_SYSTEM.lock().unwrap();
+        let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
 
         // Calculate line number information
         let (line_number_chars, editor_offset_x) = if self.line_numbers {
             // Calculate number of characters needed in line number
             let mut line_number_chars = 1;
-            let mut line_count = editor.buffer().lines.len();
+            let mut line_count = editor.with_buffer(|buffer| buffer.lines.len());
             while line_count >= 10 {
                 line_count /= 10;
                 line_number_chars += 1;
@@ -339,7 +363,7 @@ where
             // Calculate line number width
             let mut line_number_width = 0.0;
             {
-                let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
+                let mut line_number_cache = LINE_NUMBER_CACHE.get().unwrap().lock().unwrap();
                 if let Some(layout_line) = line_number_cache
                     .get(
                         &mut font_system,
@@ -365,31 +389,33 @@ where
         // Save editor offset in state
         if state.editor_offset_x.replace(editor_offset_x) != editor_offset_x {
             // Mark buffer as needing redraw if editor offset has changed
-            editor.buffer_mut().set_redraw(true);
+            editor.set_redraw(true);
         }
 
         // Set metrics and size
-        editor.buffer_mut().set_metrics_and_size(
-            &mut font_system,
-            metrics,
-            (image_w - editor_offset_x) as f32,
-            image_h as f32,
-        );
+        editor.with_buffer_mut(|buffer| {
+            buffer.set_metrics_and_size(
+                &mut font_system,
+                metrics,
+                (image_w - editor_offset_x) as f32,
+                image_h as f32,
+            )
+        });
 
         // Shape and layout as needed
-        editor.shape_as_needed(&mut font_system);
+        editor.shape_as_needed(&mut font_system, true);
 
         let mut handle_opt = state.handle_opt.lock().unwrap();
-        if editor.buffer().redraw() || handle_opt.is_none() {
+        if editor.redraw() || handle_opt.is_none() {
             // Draw to pixel buffer
-            let mut pixels = vec![0; image_w as usize * image_h as usize * 4];
+            let mut pixels_u8 = vec![0; image_w as usize * image_h as usize * 4];
             {
-                let mut swash_cache = SWASH_CACHE.lock().unwrap();
+                let mut swash_cache = SWASH_CACHE.get().unwrap().lock().unwrap();
 
-                let buffer = unsafe {
+                let pixels = unsafe {
                     std::slice::from_raw_parts_mut(
-                        pixels.as_mut_ptr() as *mut u32,
-                        pixels.len() / 4,
+                        pixels_u8.as_mut_ptr() as *mut u32,
+                        pixels_u8.len() / 4,
                     )
                 };
 
@@ -412,22 +438,26 @@ where
 
                     // Ensure fill with gutter color
                     draw_rect(
-                        buffer,
-                        image_w,
-                        image_h,
-                        0,
-                        0,
-                        editor_offset_x,
-                        image_h,
+                        pixels,
+                        Canvas {
+                            w: image_w,
+                            h: image_h,
+                        },
+                        Canvas {
+                            w: editor_offset_x,
+                            h: image_h,
+                        },
+                        Offset { x: 0, y: 0 },
                         gutter,
                     );
 
                     // Draw line numbers
                     //TODO: move to cosmic-text?
-                    {
-                        let mut line_number_cache = LINE_NUMBER_CACHE.lock().unwrap();
+                    editor.with_buffer(|buffer| {
+                        let mut line_number_cache =
+                            LINE_NUMBER_CACHE.get().unwrap().lock().unwrap();
                         let mut last_line_number = 0;
-                        for run in editor.buffer().layout_runs() {
+                        for run in buffer.layout_runs() {
                             let line_number = run.line_i.saturating_add(1);
                             if line_number == last_line_number {
                                 // Skip duplicate lines
@@ -465,13 +495,16 @@ where
                                         gutter_foreground,
                                         |x, y, color| {
                                             draw_rect(
-                                                buffer,
-                                                image_w,
-                                                image_h,
-                                                physical_glyph.x + x,
-                                                physical_glyph.y + y,
-                                                1,
-                                                1,
+                                                pixels,
+                                                Canvas {
+                                                    w: image_w,
+                                                    h: image_h,
+                                                },
+                                                Canvas { w: 1, h: 1 },
+                                                Offset {
+                                                    x: physical_glyph.x + x,
+                                                    y: physical_glyph.y + y,
+                                                },
                                                 color,
                                             );
                                         },
@@ -479,33 +512,34 @@ where
                                 }
                             }
                         }
-                    }
+                    });
                 }
 
                 // Draw editor
-                editor.draw(
-                    &mut font_system,
-                    &mut swash_cache,
-                    text_color,
-                    |x, y, w, h, color| {
-                        draw_rect(
-                            buffer,
-                            image_w,
-                            image_h,
-                            editor_offset_x + x,
+                editor.draw(&mut font_system, &mut swash_cache, |x, y, w, h, color| {
+                    draw_rect(
+                        pixels,
+                        Canvas {
+                            w: image_w,
+                            h: image_h,
+                        },
+                        Canvas {
+                            w: w as i32,
+                            h: h as i32,
+                        },
+                        Offset {
+                            x: editor_offset_x + x,
                             y,
-                            w as i32,
-                            h as i32,
-                            color,
-                        );
-                    },
-                );
+                        },
+                        color,
+                    );
+                });
 
                 // Calculate scrollbar
-                {
+                editor.with_buffer(|buffer| {
                     let mut start_line_opt = None;
                     let mut end_line = 0;
-                    for run in editor.buffer().layout_runs() {
+                    for run in buffer.layout_runs() {
                         end_line = run.line_i;
                         if start_line_opt.is_none() {
                             start_line_opt = Some(end_line);
@@ -513,7 +547,7 @@ where
                     }
 
                     let start_line = start_line_opt.unwrap_or(end_line);
-                    let lines = editor.buffer().lines.len();
+                    let lines = buffer.lines.len();
                     let start_y = (start_line * image_h as usize) / lines;
                     let end_y = ((end_line + 1) * image_h as usize) / lines;
 
@@ -525,24 +559,23 @@ where
                         ),
                     );
                     state.scrollbar_rect.set(rect);
-                }
+                });
             }
 
             // Clear redraw flag
-            editor.buffer_mut().set_redraw(false);
+            editor.set_redraw(false);
 
             state.scale_factor.set(scale_factor);
             *handle_opt = Some(image::Handle::from_pixels(
                 image_w as u32,
                 image_h as u32,
-                pixels,
+                pixels_u8,
             ));
         }
 
-        let image_position =
-            layout.position() + [self.padding.left as f32, self.padding.top as f32].into();
+        let image_position = layout.position() + [self.padding.left, self.padding.top].into();
         if let Some(ref handle) = *handle_opt {
-            let image_size = image::Renderer::dimensions(renderer, &handle);
+            let image_size = image::Renderer::dimensions(renderer, handle);
             image::Renderer::draw(
                 renderer,
                 handle.clone(),
@@ -559,20 +592,87 @@ where
         }
 
         // Draw scrollbar
-        let scrollbar_alpha = match &state.dragging {
-            Some(Dragging::Scrollbar { .. }) => 0.5,
-            _ => 0.25,
-        };
-        renderer.fill_quad(
-            Quad {
-                bounds: state.scrollbar_rect.get()
-                    + Vector::new(image_position.x, image_position.y),
-                border_radius: 0.0.into(),
-                border_width: 0.0,
-                border_color: Color::TRANSPARENT,
-            },
-            Color::new(1.0, 1.0, 1.0, scrollbar_alpha),
-        );
+        {
+            let scrollbar_rect = state.scrollbar_rect.get();
+
+            // neutral_3, 0.7
+            let track_color = cosmic_theme
+                .palette
+                .neutral_3
+                .without_alpha()
+                .with_alpha(0.7);
+
+            // Draw track quad
+            renderer.fill_quad(
+                Quad {
+                    bounds: Rectangle::new(
+                        Point::new(image_position.x + scrollbar_rect.x, image_position.y),
+                        Size::new(scrollbar_rect.width, layout.bounds().height),
+                    ),
+                    border_radius: (scrollbar_rect.width / 2.0).into(),
+                    border_width: 0.0,
+                    border_color: Color::TRANSPARENT,
+                },
+                Color::from(track_color),
+            );
+
+            let pressed = matches!(&state.dragging, Some(Dragging::Scrollbar { .. }));
+
+            let mut hover = false;
+            if let Some(p) = cursor_position.position_in(layout.bounds()) {
+                let x = p.x - self.padding.left;
+                if x >= scrollbar_rect.x && x < (scrollbar_rect.x + scrollbar_rect.width) {
+                    hover = true;
+                }
+            }
+
+            let mut scrollbar_draw =
+                scrollbar_rect + Vector::new(image_position.x, image_position.y);
+            if !hover && !pressed {
+                // Decrease draw width and keep centered when not hovered or pressed
+                scrollbar_draw.width /= 2.0;
+                scrollbar_draw.x += scrollbar_draw.width / 2.0;
+            }
+
+            // neutral_6, 0.7
+            let base_color = cosmic_theme
+                .palette
+                .neutral_6
+                .without_alpha()
+                .with_alpha(0.7);
+            let scrollbar_color = if pressed {
+                // pressed_state_color, 0.5
+                cosmic_theme
+                    .background
+                    .component
+                    .pressed
+                    .without_alpha()
+                    .with_alpha(0.5)
+                    .over(base_color)
+            } else if hover {
+                // hover_state_color, 0.2
+                cosmic_theme
+                    .background
+                    .component
+                    .hover
+                    .without_alpha()
+                    .with_alpha(0.2)
+                    .over(base_color)
+            } else {
+                base_color
+            };
+
+            // Draw scrollbar quad
+            renderer.fill_quad(
+                Quad {
+                    bounds: scrollbar_draw,
+                    border_radius: (scrollbar_draw.width / 2.0).into(),
+                    border_width: 0.0,
+                    border_color: Color::TRANSPARENT,
+                },
+                Color::from(scrollbar_color),
+            );
+        }
 
         let duration = instant.elapsed();
         log::debug!("redraw {}, {}: {:?}", view_w, view_h, duration);
@@ -594,9 +694,9 @@ where
         let scale_factor = state.scale_factor.get();
         let scrollbar_rect = state.scrollbar_rect.get();
         let mut editor = self.editor.lock().unwrap();
-        let buffer_size = editor.buffer().size();
+        let buffer_size = editor.with_buffer(|buffer| buffer.size());
         let last_changed = editor.changed();
-        let mut font_system = FONT_SYSTEM.lock().unwrap();
+        let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
         let mut editor = editor.borrow_with(&mut font_system);
 
         let mut status = Status::Ignored;
@@ -604,37 +704,37 @@ where
             Event::Keyboard(KeyEvent::KeyPressed {
                 key_code,
                 modifiers,
-            }) => match key_code {
+            }) if state.is_focused => match key_code {
                 KeyCode::Left => {
-                    editor.action(Action::Left);
+                    editor.action(Action::Motion(Motion::Left));
                     status = Status::Captured;
                 }
                 KeyCode::Right => {
-                    editor.action(Action::Right);
+                    editor.action(Action::Motion(Motion::Right));
                     status = Status::Captured;
                 }
                 KeyCode::Up => {
-                    editor.action(Action::Up);
+                    editor.action(Action::Motion(Motion::Up));
                     status = Status::Captured;
                 }
                 KeyCode::Down => {
-                    editor.action(Action::Down);
+                    editor.action(Action::Motion(Motion::Down));
                     status = Status::Captured;
                 }
                 KeyCode::Home => {
-                    editor.action(Action::Home);
+                    editor.action(Action::Motion(Motion::Home));
                     status = Status::Captured;
                 }
                 KeyCode::End => {
-                    editor.action(Action::End);
+                    editor.action(Action::Motion(Motion::End));
                     status = Status::Captured;
                 }
                 KeyCode::PageUp => {
-                    editor.action(Action::PageUp);
+                    editor.action(Action::Motion(Motion::PageUp));
                     status = Status::Captured;
                 }
                 KeyCode::PageDown => {
-                    editor.action(Action::PageDown);
+                    editor.action(Action::Motion(Motion::PageDown));
                     status = Status::Captured;
                 }
                 KeyCode::Escape => {
@@ -666,7 +766,7 @@ where
             Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
                 state.modifiers = modifiers;
             }
-            Event::Keyboard(KeyEvent::CharacterReceived(character)) => {
+            Event::Keyboard(KeyEvent::CharacterReceived(character)) if state.is_focused => {
                 // Only parse keys when Super, Ctrl, and Alt are not pressed
                 if !state.modifiers.logo() && !state.modifiers.control() && !state.modifiers.alt() {
                     if !character.is_control() {
@@ -677,6 +777,8 @@ where
             }
             Event::Mouse(MouseEvent::ButtonPressed(button)) => {
                 if let Some(p) = cursor_position.position_in(layout.bounds()) {
+                    state.is_focused = true;
+
                     // Handle left click drag
                     if let Button::Left = button {
                         let x_logical = p.x - self.padding.left;
@@ -684,38 +786,68 @@ where
                         let x = x_logical * scale_factor - editor_offset_x as f32;
                         let y = y_logical * scale_factor;
                         if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
-                            editor.action(Action::Click {
-                                x: x as i32,
-                                y: y as i32,
-                            });
+                            let click_kind =
+                                if let Some((click_kind, click_time)) = state.click.take() {
+                                    if click_time.elapsed() < self.click_timing {
+                                        match click_kind {
+                                            ClickKind::Single => ClickKind::Double,
+                                            ClickKind::Double => ClickKind::Triple,
+                                            ClickKind::Triple => ClickKind::Single,
+                                        }
+                                    } else {
+                                        ClickKind::Single
+                                    }
+                                } else {
+                                    ClickKind::Single
+                                };
+                            match click_kind {
+                                ClickKind::Single => editor.action(Action::Click {
+                                    x: x as i32,
+                                    y: y as i32,
+                                }),
+                                ClickKind::Double => editor.action(Action::DoubleClick {
+                                    x: x as i32,
+                                    y: y as i32,
+                                }),
+                                ClickKind::Triple => editor.action(Action::TripleClick {
+                                    x: x as i32,
+                                    y: y as i32,
+                                }),
+                            }
+                            state.click = Some((click_kind, Instant::now()));
                             state.dragging = Some(Dragging::Buffer);
                         } else if scrollbar_rect.contains(Point::new(x_logical, y_logical)) {
                             state.dragging = Some(Dragging::Scrollbar {
                                 start_y: y,
-                                start_scroll: editor.buffer().scroll(),
+                                start_scroll: editor.with_buffer(|buffer| buffer.scroll()),
                             });
                         } else if x_logical >= scrollbar_rect.x
                             && x_logical < (scrollbar_rect.x + scrollbar_rect.width)
                         {
-                            let mut buffer = editor.buffer_mut();
-                            let scroll_offset =
-                                ((y / buffer.size().1) * buffer.lines.len() as f32) as i32;
-                            buffer.set_scroll(scroll_offset);
-                            state.dragging = Some(Dragging::Scrollbar {
-                                start_y: y,
-                                start_scroll: editor.buffer().scroll(),
+                            editor.with_buffer_mut(|buffer| {
+                                let scroll_line =
+                                    ((y / buffer.size().1) * buffer.lines.len() as f32) as i32;
+                                buffer.set_scroll(Scroll::new(
+                                    scroll_line.try_into().unwrap_or_default(),
+                                    0,
+                                ));
+                                state.dragging = Some(Dragging::Scrollbar {
+                                    start_y: y,
+                                    start_scroll: buffer.scroll(),
+                                });
                             });
                         }
                     }
 
                     // Update context menu state
                     if let Some(on_context_menu) = &self.on_context_menu {
-                        shell.publish((on_context_menu)(match self.context_menu {
-                            Some(_) => None,
-                            None => match button {
+                        shell.publish((on_context_menu)(if self.has_context_menu {
+                            None
+                        } else {
+                            match button {
                                 Button::Right => Some(p),
                                 _ => None,
-                            },
+                            }
                         }));
                     }
 
@@ -744,11 +876,17 @@ where
                                 start_y,
                                 start_scroll,
                             } => {
-                                let mut buffer = editor.buffer_mut();
-                                let scroll_offset = (((y - start_y) / buffer.size().1)
-                                    * buffer.lines.len() as f32)
-                                    as i32;
-                                buffer.set_scroll(start_scroll + scroll_offset);
+                                editor.with_buffer_mut(|buffer| {
+                                    let scroll_offset = (((y - start_y) / buffer.size().1)
+                                        * buffer.lines.len() as f32)
+                                        as i32;
+                                    buffer.set_scroll(Scroll::new(
+                                        (start_scroll.line as i32 + scroll_offset)
+                                            .try_into()
+                                            .unwrap_or_default(),
+                                        0,
+                                    ));
+                                });
                             }
                         }
                     }
@@ -758,7 +896,7 @@ where
             Event::Mouse(MouseEvent::WheelScrolled { delta }) => {
                 if let Some(_p) = cursor_position.position_in(layout.bounds()) {
                     match delta {
-                        ScrollDelta::Lines { x, y } => {
+                        ScrollDelta::Lines { x: _, y } => {
                             //TODO: this adjustment is just a guess!
                             state.scroll_pixels = 0.0;
                             let lines = (-y * 6.0) as i32;
@@ -767,11 +905,11 @@ where
                             }
                             status = Status::Captured;
                         }
-                        ScrollDelta::Pixels { x, y } => {
+                        ScrollDelta::Pixels { x: _, y } => {
                             //TODO: this adjustment is just a guess!
                             state.scroll_pixels -= y * 6.0;
                             let mut lines = 0;
-                            let metrics = editor.buffer().metrics();
+                            let metrics = editor.with_buffer(|buffer| buffer.metrics());
                             while state.scroll_pixels <= -metrics.line_height {
                                 lines -= 1;
                                 state.scroll_pixels += metrics.line_height;
@@ -801,26 +939,32 @@ where
     }
 }
 
-impl<'a, 'editor, Message, Renderer> From<TextBox<'a, Message>> for Element<'a, Message, Renderer>
+impl<'a, Message> From<TextBox<'a, Message>> for Element<'a, Message, Renderer>
 where
     Message: Clone + 'a,
-    Renderer: renderer::Renderer + image::Renderer<Handle = image::Handle>,
-    Renderer::Theme: StyleSheet,
 {
     fn from(text_box: TextBox<'a, Message>) -> Self {
         Self::new(text_box)
     }
 }
 
+enum ClickKind {
+    Single,
+    Double,
+    Triple,
+}
+
 enum Dragging {
     Buffer,
-    Scrollbar { start_y: f32, start_scroll: i32 },
+    Scrollbar { start_y: f32, start_scroll: Scroll },
 }
 
 pub struct State {
     modifiers: Modifiers,
+    click: Option<(ClickKind, Instant)>,
     dragging: Option<Dragging>,
     editor_offset_x: Cell<i32>,
+    is_focused: bool,
     scale_factor: Cell<f32>,
     scroll_pixels: f32,
     scrollbar_rect: Cell<Rectangle<f32>>,
@@ -832,12 +976,28 @@ impl State {
     pub fn new() -> State {
         State {
             modifiers: Modifiers::empty(),
+            click: None,
             dragging: None,
             editor_offset_x: Cell::new(0),
+            is_focused: false,
             scale_factor: Cell::new(1.0),
             scroll_pixels: 0.0,
             scrollbar_rect: Cell::new(Rectangle::default()),
             handle_opt: Mutex::new(None),
         }
+    }
+}
+
+impl operation::Focusable for State {
+    fn is_focused(&self) -> bool {
+        self.is_focused
+    }
+
+    fn focus(&mut self) {
+        self.is_focused = true;
+    }
+
+    fn unfocus(&mut self) {
+        self.is_focused = false;
     }
 }

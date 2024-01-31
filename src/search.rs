@@ -54,13 +54,10 @@ impl ProjectSearchResult {
                             }
                         };
 
-                        match entry.file_type() {
-                            Some(file_type) => {
-                                if file_type.is_dir() {
-                                    continue;
-                                }
+                        if let Some(file_type) = entry.file_type() {
+                            if file_type.is_dir() {
+                                continue;
                             }
-                            None => {}
                         }
 
                         let entry_path = entry.path();
@@ -68,7 +65,7 @@ impl ProjectSearchResult {
                         let mut lines = Vec::new();
                         match searcher.search_path(
                             &matcher,
-                            &entry_path,
+                            entry_path,
                             UTF8(|number_u64, text| {
                                 match usize::try_from(number_u64) {
                                     Ok(number) => match matcher.find(text.as_bytes()) {

@@ -22,7 +22,7 @@ project-search = Project search
 ## Settings
 settings = Settings
 
-## Appearance
+### Appearance
 appearance = Appearance
 theme = Theme
 match-desktop = Match desktop
@@ -36,6 +36,14 @@ default-font-size = Default font size
 ### Keyboard shortcuts
 keyboard-shortcuts = Keyboard shortcuts
 enable-vim-bindings = Enable Vim bindings
+
+# Find
+find-placeholder = Find...
+find-previous = Find previous
+find-next = Find next
+replace-placeholder = Replace...
+replace = Replace
+replace-all = Replace all
 
 # Menu
 
@@ -68,7 +76,6 @@ copy = Copy
 paste = Paste
 select-all = Select all
 find = Find
-replace = Replace
 find-in-project = Find in project...
 spell-check = Spell check...
 

@@ -11,6 +11,11 @@ character-count = Символов
 character-count-no-spaces = Символов (без пробелов)
 line-count = Строк
 
+## Git management
+git-management = Управление Git
+unstaged-changes = Не проиндексированные изменения
+staged-changes = Проиндексированные изменения
+
 ## Project search
 project-search = Поиск проекта
 
@@ -32,6 +37,14 @@ default-font-size = Размер шрифта по умолчанию
 keyboard-shortcuts = Сочетания клавиш
 enable-vim-bindings = Привязки клавиш Vim
 
+# Find
+find-placeholder = Найти...
+find-previous = Найти ранее
+find-next = Найти далее
+replace-placeholder = Заменить...
+replace = Заменить
+replace-all = Заменить все
+
 # Menu
 
 ## File
@@ -50,6 +63,7 @@ revert-all-changes = Отменить все изменения
 menu-document-statistics = Статистика документа...
 document-type = Тип документа...
 encoding = Кодировка...
+menu-git-management = Управление Git...
 print = Печать
 quit = Завершить
 
@@ -62,7 +76,6 @@ copy = Копировать
 paste = Вставить
 select-all = Выбрать все
 find = Найти
-replace = Заменить
 find-in-project = Найти в проекте...
 spell-check = Проверить правописание...
 
