@@ -36,6 +36,13 @@ features = ["syntect", "vi"]
 git = "https://github.com/pop-os/libcosmic"
 default-features = false
 features = ["tokio", "winit"]
+#path = "../libcosmic"
+
+[dependencies.rfd]
+version = "0.13.0"
+default-features = false
+features = ["tokio", "xdg-portal"]
+optional = true
 
 #TODO: clean up and send changes upstream
 [dependencies.systemicons]
@@ -45,13 +52,8 @@ git = "https://github.com/jackpot51/systemicons"
 fork = "0.1"
 
 [features]
-default = ["xdg-portal", "wgpu"]
-# Use RFD for file chooser dialogs
-rfd = ["libcosmic/rfd"]
-# Enable GPU rendering with WGPU
+default = ["rfd", "wgpu"]
 wgpu = ["libcosmic/wgpu"]
-# Use XDG portal dialogs on Linux
-xdg-portal = ["libcosmic/xdg-portal"]
 
 [patch.crates-io]
 smithay-client-toolkit = { git = "https://github.com/pop-os/client-toolkit", branch = "wayland-resize" }
