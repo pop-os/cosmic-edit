@@ -82,7 +82,7 @@ impl EditorTab {
         editor.set_tab_width(config.tab_width);
         editor.with_buffer_mut(|buffer| {
             buffer.set_wrap(if config.word_wrap {
-                Wrap::Word
+                Wrap::WordOrGlyph
             } else {
                 Wrap::None
             })

@@ -1095,7 +1095,7 @@ dependencies = [
 [[package]]
 name = "cosmic-text"
 version = "0.10.0"
-source = "git+https://github.com/pop-os/cosmic-text#1b025ae56e0122cff5798b9f54fc56d47a182d2b"
+source = "git+https://github.com/pop-os/cosmic-text#cc75bb66b40794702ebc9fc9e30b1b29d7438bb5"
 dependencies = [
  "bitflags 2.4.2",
  "cosmic_undo_2",
