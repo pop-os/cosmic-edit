@@ -28,14 +28,22 @@ theme = Тема
 match-desktop = Као систем
 dark = Тамна
 light = Светла
-syntax-dark = Тамна синтакса
-syntax-light = Светла синтакса
+syntax-dark = Тамна тема синтаксе
+syntax-light = Светла тема синтаксе
 default-font = Подразумевани фонт
 default-font-size = Подразумевана величина фонта
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Пречице на тастатури
 enable-vim-bindings = Омогући Vim режим
+
+# Find
+find-placeholder = Пронађи...
+find-previous = Пронађи претходно
+find-next = Пронађи следеће
+replace-placeholder = Замени...
+replace = Замени
+replace-all = Замени све
 
 # Menu
 
@@ -68,7 +76,6 @@ copy = Копирај
 paste = Налепи
 select-all = Изабери све
 find = Пронађи
-replace = Замени
 find-in-project = Пронађи у пројекту...
 spell-check = Провера правописа...
 
