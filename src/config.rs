@@ -52,7 +52,7 @@ impl Default for Config {
             syntax_theme_light: "COSMIC Light".to_string(),
             tab_width: 4,
             vim_bindings: false,
-            word_wrap: false,
+            word_wrap: true,
         }
     }
 }
