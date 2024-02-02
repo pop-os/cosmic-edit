@@ -92,8 +92,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut cursor = io::Cursor::new(theme_data);
             match syntect::highlighting::ThemeSet::load_from_reader(&mut cursor) {
                 Ok(mut theme) => {
-                    // Use cosmic theme background
+                    // Use libcosmic theme for background and gutter
                     theme.settings.background = Some(syntect::highlighting::Color {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 0,
+                    });
+                    theme.settings.gutter = Some(syntect::highlighting::Color {
                         r: 0,
                         g: 0,
                         b: 0,
