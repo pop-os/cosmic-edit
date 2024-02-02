@@ -16,7 +16,7 @@ use cosmic::{
 };
 use std::collections::HashMap;
 
-use crate::{fl, icon_cache_get, Action, Config, ContextPage, KeyBind, Message};
+use crate::{fl, icon_cache_get, Action, Config, KeyBind, Message};
 
 macro_rules! menu_button {
     ($($x:expr),+ $(,)?) => (
@@ -91,10 +91,10 @@ pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> El
     let menu_folder =
         |label| menu_button!(widget::text(label), horizontal_space(Length::Fill), ">");
 
-    let find_key = |message: &Message| -> String {
+    let find_key = |action: &Action| -> String {
         let mut key = String::new();
-        for (key_bind, action) in key_binds.iter() {
-            if &action.message() == message {
+        for (key_bind, key_action) in key_binds.iter() {
+            if action == key_action {
                 key = key_bind.to_string();
                 break;
             }
@@ -102,26 +102,26 @@ pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> El
         key
     };
 
-    let menu_item = |label, message| {
-        let key = find_key(&message);
+    let menu_item = |label, action| {
+        let key = find_key(&action);
         MenuTree::new(
             menu_button!(
                 widget::text(label),
                 horizontal_space(Length::Fill),
                 widget::text(key)
             )
-            .on_press(message),
+            .on_press(action.message()),
         )
     };
 
     //TODO: support key lookup?
-    let menu_checkbox = |label, value, message| {
+    let menu_checkbox = |label, value, action| {
         let check: Element<_> = if value {
             icon_cache_get("object-select-symbolic", 16).into()
         } else {
             widget::Space::with_width(Length::Fixed(16.0)).into()
         };
-        let key = find_key(&message);
+        let key = find_key(&action);
         MenuTree::new(
             menu_button!(
                 check,
@@ -130,14 +130,14 @@ pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> El
                 horizontal_space(Length::Fill),
                 widget::text(key)
             )
-            .on_press(message),
+            .on_press(action.message()),
         )
     };
 
-    let menu_key = |label, key, message| {
+    let menu_key = |label, key, action: Action| {
         MenuTree::new(
             menu_button!(widget::text(label), horizontal_space(Length::Fill), key)
-                .on_press(message),
+                .on_press(action.message()),
         )
     };
 
@@ -145,7 +145,7 @@ pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> El
         menu_checkbox(
             fl!("tab-width", tab_width = tab_width),
             config.tab_width == tab_width,
-            Message::TabWidth(tab_width),
+            Action::TabWidth(tab_width),
         )
     };
 
@@ -153,62 +153,56 @@ pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> El
         MenuTree::with_children(
             menu_root(fl!("file")),
             vec![
-                menu_item(fl!("new-file"), Message::NewFile),
-                menu_item(fl!("new-window"), Message::NewWindow),
+                menu_item(fl!("new-file"), Action::NewFile),
+                menu_item(fl!("new-window"), Action::NewWindow),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("open-file"), Message::OpenFileDialog),
+                menu_item(fl!("open-file"), Action::OpenFileDialog),
                 MenuTree::with_children(
                     menu_folder(fl!("open-recent-file")),
-                    vec![menu_item(fl!("todo"), Message::Todo)],
+                    vec![menu_item(fl!("todo"), Action::Todo)],
                 ),
-                menu_item(fl!("close-file"), Message::CloseFile),
+                menu_item(fl!("close-file"), Action::CloseFile),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("menu-open-project"), Message::OpenProjectDialog),
+                menu_item(fl!("menu-open-project"), Action::OpenProjectDialog),
                 MenuTree::with_children(
                     menu_folder(fl!("open-recent-project")),
-                    vec![menu_item(fl!("todo"), Message::Todo)],
+                    vec![menu_item(fl!("todo"), Action::Todo)],
                 ),
-                menu_item(fl!("close-project"), Message::CloseProject),
+                menu_item(fl!("close-project"), Action::CloseProject),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("save"), Message::Save),
-                menu_key(fl!("save-as"), "Ctrl + Shift + S", Message::Todo),
+                menu_item(fl!("save"), Action::Save),
+                menu_key(fl!("save-as"), "Ctrl + Shift + S", Action::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("revert-all-changes"), Message::Todo),
+                menu_item(fl!("revert-all-changes"), Action::Todo),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(
                     fl!("menu-document-statistics"),
-                    Message::ToggleContextPage(ContextPage::DocumentStatistics),
+                    Action::ToggleDocumentStatistics,
                 ),
-                menu_item(fl!("document-type"), Message::Todo),
-                menu_item(fl!("encoding"), Message::Todo),
-                menu_item(
-                    fl!("menu-git-management"),
-                    Message::ToggleContextPage(ContextPage::GitManagement),
-                ),
-                menu_item(fl!("print"), Message::Todo),
+                menu_item(fl!("document-type"), Action::Todo),
+                menu_item(fl!("encoding"), Action::Todo),
+                menu_item(fl!("menu-git-management"), Action::ToggleGitManagement),
+                menu_item(fl!("print"), Action::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("quit"), Message::Quit),
+                menu_item(fl!("quit"), Action::Quit),
             ],
         ),
         MenuTree::with_children(
             menu_root(fl!("edit")),
             vec![
-                menu_item(fl!("undo"), Message::Undo),
-                menu_item(fl!("redo"), Message::Redo),
+                menu_item(fl!("undo"), Action::Undo),
+                menu_item(fl!("redo"), Action::Redo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("cut"), Message::Cut),
-                menu_item(fl!("copy"), Message::Copy),
-                menu_item(fl!("paste"), Message::Paste),
-                menu_item(fl!("select-all"), Message::SelectAll),
+                menu_item(fl!("cut"), Action::Cut),
+                menu_item(fl!("copy"), Action::Copy),
+                menu_item(fl!("paste"), Action::Paste),
+                menu_item(fl!("select-all"), Action::SelectAll),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("find"), Message::Find(Some(false))),
-                menu_item(fl!("replace"), Message::Find(Some(true))),
-                menu_item(
-                    fl!("find-in-project"),
-                    Message::ToggleContextPage(ContextPage::ProjectSearch),
-                ),
+                menu_item(fl!("find"), Action::Find),
+                menu_item(fl!("replace"), Action::FindAndReplace),
+                menu_item(fl!("find-in-project"), Action::ToggleProjectSearch),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("spell-check"), Message::Todo),
+                menu_item(fl!("spell-check"), Action::Todo),
             ],
         ),
         MenuTree::with_children(
@@ -220,7 +214,7 @@ pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> El
                         menu_checkbox(
                             fl!("automatic-indentation"),
                             config.auto_indent,
-                            Message::ToggleAutoIndent,
+                            Action::ToggleAutoIndent,
                         ),
                         MenuTree::new(horizontal_rule(1)),
                         menu_tab_width(1),
@@ -232,28 +226,25 @@ pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> El
                         menu_tab_width(7),
                         menu_tab_width(8),
                         MenuTree::new(horizontal_rule(1)),
-                        menu_item(fl!("convert-indentation-to-spaces"), Message::Todo),
-                        menu_item(fl!("convert-indentation-to-tabs"), Message::Todo),
+                        menu_item(fl!("convert-indentation-to-spaces"), Action::Todo),
+                        menu_item(fl!("convert-indentation-to-tabs"), Action::Todo),
                     ],
                 ),
                 MenuTree::new(horizontal_rule(1)),
-                menu_checkbox(fl!("word-wrap"), config.word_wrap, Message::ToggleWordWrap),
+                menu_checkbox(fl!("word-wrap"), config.word_wrap, Action::ToggleWordWrap),
                 menu_checkbox(
                     fl!("show-line-numbers"),
                     config.line_numbers,
-                    Message::ToggleLineNumbers,
+                    Action::ToggleLineNumbers,
                 ),
-                menu_checkbox(fl!("highlight-current-line"), false, Message::Todo),
-                menu_item(fl!("syntax-highlighting"), Message::Todo),
+                menu_checkbox(fl!("highlight-current-line"), false, Action::Todo),
+                menu_item(fl!("syntax-highlighting"), Action::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(
-                    fl!("menu-settings"),
-                    Message::ToggleContextPage(ContextPage::Settings),
-                ),
+                menu_item(fl!("menu-settings"), Action::ToggleSettingsPage),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("menu-keyboard-shortcuts"), Message::Todo),
+                menu_item(fl!("menu-keyboard-shortcuts"), Action::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("about-cosmic-text-editor"), Message::Todo),
+                menu_item(fl!("about-cosmic-text-editor"), Action::Todo),
             ],
         ),
     ])

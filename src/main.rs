@@ -164,6 +164,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Action {
+    Todo,
     CloseFile,
     CloseProject,
     Copy,
@@ -190,7 +191,11 @@ pub enum Action {
     TabActivate8,
     TabNext,
     TabPrev,
+    TabWidth(u16),
+    ToggleAutoIndent,
+    ToggleDocumentStatistics,
     ToggleGitManagement,
+    ToggleLineNumbers,
     ToggleProjectSearch,
     ToggleSettingsPage,
     ToggleWordWrap,
@@ -200,6 +205,7 @@ pub enum Action {
 impl Action {
     pub fn message(&self) -> Message {
         match self {
+            Self::Todo => Message::Todo,
             Self::CloseFile => Message::CloseFile,
             Self::CloseProject => Message::CloseProject,
             Self::Copy => Message::Copy,
@@ -226,7 +232,13 @@ impl Action {
             Self::TabActivate8 => Message::TabActivateJump(8),
             Self::TabNext => Message::TabNext,
             Self::TabPrev => Message::TabPrev,
+            Self::TabWidth(tab_width) => Message::TabWidth(*tab_width),
+            Self::ToggleAutoIndent => Message::ToggleAutoIndent,
+            Self::ToggleDocumentStatistics => {
+                Message::ToggleContextPage(ContextPage::DocumentStatistics)
+            }
             Self::ToggleGitManagement => Message::ToggleContextPage(ContextPage::GitManagement),
+            Self::ToggleLineNumbers => Message::ToggleLineNumbers,
             Self::ToggleProjectSearch => Message::ToggleContextPage(ContextPage::ProjectSearch),
             Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
             Self::ToggleWordWrap => Message::ToggleWordWrap,
@@ -259,7 +271,7 @@ impl PartialEq for WatcherWrapper {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Message {
     AppTheme(AppTheme),
     Config(Config),
