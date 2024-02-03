@@ -57,6 +57,8 @@ wgpu = ["libcosmic/wgpu"]
 
 [patch.crates-io]
 smithay-client-toolkit = { git = "https://github.com/pop-os/client-toolkit", branch = "wayland-resize" }
+# https://github.com/gfx-rs/wgpu/pull/4959
+wgpu = { git = "https://github.com/pop-os/wgpu", branch = "v0.18" }
 
 [profile.release-with-debug]
 inherits = "release"
