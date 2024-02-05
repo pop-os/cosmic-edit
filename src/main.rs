@@ -295,7 +295,7 @@ pub enum Message {
     FindReplaceValueChanged(String),
     FindSearchValueChanged(String),
     GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
-    Key(Modifiers, keyboard::KeyCode),
+    Key(Modifiers, keyboard::Key),
     Modifiers(Modifiers),
     NewFile,
     NewWindow,
@@ -1389,9 +1389,9 @@ impl Application for App {
             Message::GitProjectStatus(project_status) => {
                 self.git_project_status = Some(project_status);
             }
-            Message::Key(modifiers, key_code) => {
+            Message::Key(modifiers, key) => {
                 for (key_bind, action) in self.key_binds.iter() {
-                    if key_bind.matches(modifiers, key_code) {
+                    if key_bind.matches(modifiers, key.clone()) {
                         return self.update(action.message());
                     }
                 }
@@ -2173,10 +2173,9 @@ impl Application for App {
 
         subscription::Subscription::batch([
             event::listen_with(|event, _status| match event {
-                event::Event::Keyboard(keyboard::Event::KeyPressed {
-                    modifiers,
-                    key_code,
-                }) => Some(Message::Key(modifiers, key_code)),
+                event::Event::Keyboard(keyboard::Event::KeyPressed { modifiers, key, .. }) => {
+                    Some(Message::Key(modifiers, key))
+                }
                 event::Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
                     Some(Message::Modifiers(modifiers))
                 }

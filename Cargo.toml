@@ -36,13 +36,18 @@ features = ["syntect", "vi"]
 git = "https://github.com/pop-os/libcosmic"
 default-features = false
 features = ["tokio", "winit"]
-#path = "../libcosmic"
+# TODO remove before merging
+branch = "update-iced-latest"
 
 [dependencies.rfd]
 version = "0.13.0"
 default-features = false
 features = ["tokio", "xdg-portal"]
 optional = true
+
+[dependencies.smol_str]
+version = "0.2.1"
+features = ["serde"]
 
 #TODO: clean up and send changes upstream
 [dependencies.systemicons]
@@ -56,9 +61,7 @@ default = ["rfd", "wgpu"]
 wgpu = ["libcosmic/wgpu"]
 
 [patch.crates-io]
-smithay-client-toolkit = { git = "https://github.com/pop-os/client-toolkit", branch = "wayland-resize" }
-# https://github.com/gfx-rs/wgpu/pull/4959
-wgpu = { git = "https://github.com/pop-os/wgpu", branch = "v0.18" }
+wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "faed98b" }
 
 [profile.release-with-debug]
 inherits = "release"

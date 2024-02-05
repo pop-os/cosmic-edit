@@ -4,13 +4,14 @@ use cosmic::{
     cosmic_theme::palette::{blend::Compose, WithAlpha},
     iced::{
         event::{Event, Status},
-        keyboard::{Event as KeyEvent, KeyCode, Modifiers},
+        keyboard::{Event as KeyEvent, Modifiers},
         mouse::{self, Button, Event as MouseEvent, ScrollDelta},
         Color, Element, Length, Padding, Point, Rectangle, Size, Vector,
     },
     iced_core::{
         clipboard::Clipboard,
         image,
+        keyboard::{key::Named, Key},
         layout::{self, Layout},
         renderer::{self, Quad, Renderer as _},
         widget::{
@@ -18,7 +19,7 @@ use cosmic::{
             operation::{self, Operation, OperationOutputWrapper},
             tree, Id, Widget,
         },
-        Shell,
+        Border, Shell,
     },
     theme::Theme,
     Renderer,
@@ -215,7 +216,7 @@ fn draw_rect(
     }
 }
 
-impl<'a, Message> Widget<Message, Renderer> for TextBox<'a, Message>
+impl<'a, Message> Widget<Message, cosmic::Theme, Renderer> for TextBox<'a, Message>
 where
     Message: Clone,
 {
@@ -227,12 +228,8 @@ where
         tree::State::new(State::new())
     }
 
-    fn width(&self) -> Length {
-        Length::Fill
-    }
-
-    fn height(&self) -> Length {
-        Length::Fill
+    fn size(&self) -> Size<Length> {
+        Size::new(Length::Fill, Length::Fill)
     }
 
     fn layout(
@@ -261,7 +258,7 @@ where
             let height = layout_lines as f32 * buffer.metrics().line_height;
             let size = Size::new(limits.max().width, height);
 
-            layout::Node::new(limits.resolve(size))
+            layout::Node::new(limits.resolve(Length::Fill, Length::Fill, size))
         })
     }
 
@@ -609,9 +606,12 @@ where
                         Point::new(image_position.x + scrollbar_rect.x, image_position.y),
                         Size::new(scrollbar_rect.width, layout.bounds().height),
                     ),
-                    border_radius: (scrollbar_rect.width / 2.0).into(),
-                    border_width: 0.0,
-                    border_color: Color::TRANSPARENT,
+                    border: Border {
+                        radius: (scrollbar_rect.width / 2.0).into(),
+                        width: 0.0,
+                        color: Color::TRANSPARENT,
+                    },
+                    ..Default::default()
                 },
                 Color::from(track_color),
             );
@@ -666,9 +666,12 @@ where
             renderer.fill_quad(
                 Quad {
                     bounds: scrollbar_draw,
-                    border_radius: (scrollbar_draw.width / 2.0).into(),
-                    border_width: 0.0,
-                    border_color: Color::TRANSPARENT,
+                    border: Border {
+                        radius: (scrollbar_draw.width / 2.0).into(),
+                        width: 0.0,
+                        color: Color::TRANSPARENT,
+                    },
+                    ..Default::default()
                 },
                 Color::from(scrollbar_color),
             );
@@ -702,58 +705,59 @@ where
         let mut status = Status::Ignored;
         match event {
             Event::Keyboard(KeyEvent::KeyPressed {
-                key_code,
+                key: Key::Named(key),
                 modifiers,
-            }) if state.is_focused => match key_code {
-                KeyCode::Left => {
+                ..
+            }) if state.is_focused => match key {
+                Named::ArrowLeft => {
                     editor.action(Action::Motion(Motion::Left));
                     status = Status::Captured;
                 }
-                KeyCode::Right => {
+                Named::ArrowRight => {
                     editor.action(Action::Motion(Motion::Right));
                     status = Status::Captured;
                 }
-                KeyCode::Up => {
+                Named::ArrowUp => {
                     editor.action(Action::Motion(Motion::Up));
                     status = Status::Captured;
                 }
-                KeyCode::Down => {
+                Named::ArrowDown => {
                     editor.action(Action::Motion(Motion::Down));
                     status = Status::Captured;
                 }
-                KeyCode::Home => {
+                Named::Home => {
                     editor.action(Action::Motion(Motion::Home));
                     status = Status::Captured;
                 }
-                KeyCode::End => {
+                Named::End => {
                     editor.action(Action::Motion(Motion::End));
                     status = Status::Captured;
                 }
-                KeyCode::PageUp => {
+                Named::PageUp => {
                     editor.action(Action::Motion(Motion::PageUp));
                     status = Status::Captured;
                 }
-                KeyCode::PageDown => {
+                Named::PageDown => {
                     editor.action(Action::Motion(Motion::PageDown));
                     status = Status::Captured;
                 }
-                KeyCode::Escape => {
+                Named::Escape => {
                     editor.action(Action::Escape);
                     status = Status::Captured;
                 }
-                KeyCode::Enter => {
+                Named::Enter => {
                     editor.action(Action::Enter);
                     status = Status::Captured;
                 }
-                KeyCode::Backspace => {
+                Named::Backspace => {
                     editor.action(Action::Backspace);
                     status = Status::Captured;
                 }
-                KeyCode::Delete => {
+                Named::Delete => {
                     editor.action(Action::Delete);
                     status = Status::Captured;
                 }
-                KeyCode::Tab => {
+                Named::Tab => {
                     if modifiers.shift() {
                         editor.action(Action::Unindent);
                     } else {
@@ -766,7 +770,13 @@ where
             Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
                 state.modifiers = modifiers;
             }
-            Event::Keyboard(KeyEvent::CharacterReceived(character)) if state.is_focused => {
+            Event::Keyboard(KeyEvent::KeyPressed {
+                key: Key::Character(character),
+                modifiers,
+                text,
+                ..
+            }) if state.is_focused => {
+                let character = character.chars().next().unwrap_or_default();
                 // Only parse keys when Super, Ctrl, and Alt are not pressed
                 if !state.modifiers.logo() && !state.modifiers.control() && !state.modifiers.alt() {
                     if !character.is_control() {
@@ -939,7 +949,7 @@ where
     }
 }
 
-impl<'a, Message> From<TextBox<'a, Message>> for Element<'a, Message, Renderer>
+impl<'a, Message> From<TextBox<'a, Message>> for Element<'a, Message, cosmic::Theme, Renderer>
 where
     Message: Clone + 'a,
 {
