@@ -36,8 +36,6 @@ features = ["syntect", "vi"]
 git = "https://github.com/pop-os/libcosmic"
 default-features = false
 features = ["tokio", "winit"]
-# TODO remove before merging
-branch = "update-iced-latest"
 
 [dependencies.rfd]
 version = "0.13.0"
