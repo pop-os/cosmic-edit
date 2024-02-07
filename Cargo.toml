@@ -30,7 +30,6 @@ git = "https://github.com/pop-os/cosmic-syntax-theme"
 [dependencies.cosmic-text]
 git = "https://github.com/pop-os/cosmic-text"
 features = ["syntect", "vi"]
-#path = "../cosmic-text"
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
@@ -57,9 +56,6 @@ fork = "0.1"
 [features]
 default = ["rfd", "wgpu"]
 wgpu = ["libcosmic/wgpu"]
-
-[patch.crates-io]
-wgpu = { git = "https://github.com/gfx-rs/wgpu", rev = "faed98b" }
 
 [profile.release-with-debug]
 inherits = "release"
