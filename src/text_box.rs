@@ -145,18 +145,6 @@ fn draw_rect(
     color |= (cosmic_color.0 & 0x000000FF) << 16;
 
     let alpha = (color >> 24) & 0xFF;
-
-    log::debug!(
-        "Canvas: {{w: {}, h: {}}}; Offset: {{w: {}, h: {}}}; Screen: {{x: {}, y: {}}}; Alpha {:#}",
-        canvas.w,
-        canvas.h,
-        offset.w,
-        offset.h,
-        screen.x,
-        screen.y,
-        alpha
-    );
-
     match alpha {
         0 => {
             // Do not draw if alpha is zero.
@@ -772,8 +760,6 @@ where
             }
             Event::Keyboard(KeyEvent::KeyPressed {
                 key: Key::Character(character),
-                modifiers,
-                text,
                 ..
             }) if state.is_focused => {
                 let character = character.chars().next().unwrap_or_default();
