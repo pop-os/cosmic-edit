@@ -30,19 +30,21 @@ git = "https://github.com/pop-os/cosmic-syntax-theme"
 [dependencies.cosmic-text]
 git = "https://github.com/pop-os/cosmic-text"
 features = ["syntect", "vi"]
-#path = "../cosmic-text"
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
 default-features = false
 features = ["tokio", "winit"]
-#path = "../libcosmic"
 
 [dependencies.rfd]
 version = "0.13.0"
 default-features = false
 features = ["tokio", "xdg-portal"]
 optional = true
+
+[dependencies.smol_str]
+version = "0.2.1"
+features = ["serde"]
 
 #TODO: clean up and send changes upstream
 [dependencies.systemicons]
@@ -54,11 +56,6 @@ fork = "0.1"
 [features]
 default = ["rfd", "wgpu"]
 wgpu = ["libcosmic/wgpu"]
-
-[patch.crates-io]
-smithay-client-toolkit = { git = "https://github.com/pop-os/client-toolkit", branch = "wayland-resize" }
-# https://github.com/gfx-rs/wgpu/pull/4959
-wgpu = { git = "https://github.com/pop-os/wgpu", branch = "v0.18" }
 
 [profile.release-with-debug]
 inherits = "release"

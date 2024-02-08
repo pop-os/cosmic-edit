@@ -6,6 +6,7 @@ use cosmic::{
         widget::{column, horizontal_rule},
         Alignment, Background, Length,
     },
+    iced_core::Border,
     theme,
     widget::{
         self, horizontal_space,
@@ -71,9 +72,12 @@ pub fn context_menu<'a>(
             icon_color: Some(component.on.into()),
             text_color: Some(component.on.into()),
             background: Some(Background::Color(component.base.into())),
-            border_radius: 8.0.into(),
-            border_width: 1.0,
-            border_color: component.divider.into(),
+            border: Border {
+                radius: 8.0.into(),
+                width: 1.0,
+                color: component.divider.into(),
+            },
+            ..Default::default()
         }
     }))
     .width(Length::Fixed(240.0))
