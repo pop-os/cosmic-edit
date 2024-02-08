@@ -2,19 +2,24 @@ new-document = Nytt dokument
 open-project = Öppna projekt
 todo = TODO
 
-# Context Pages
+# Context sidor
 
-## Document statistics
+## Dokument statistik
 document-statistics = Dokument statistik
 word-count = Ordräknare
 character-count = Tecken
 character-count-no-spaces = Tecken (utan mellanslag)
 line-count = Rader
 
-## Settings
+## Git hantering
+git-management = Git hantering
+unstaged-changes = Oscenerade förändringar
+staged-changes = Iscensatta förändringar
+
+## Inställningar
 settings = Inställningar
 
-## Appearance
+## Utseende
 appearance = Utseende
 theme = Tema
 match-desktop = Matcha skrivbordet
@@ -25,11 +30,19 @@ syntax-light = Syntax ljus
 default-font = Standard teckensnitt
 default-font-size = Standard teckensnittsstorlek
 
-### Keyboard shortcuts
+### Tangentbordsgenvägar
 keyboard-shortcuts = Tangentbordsgenvägar
 enable-vim-bindings = Aktivera Vim bindningar
 
-# Menu
+# Sök
+find-placeholder = Sök...
+find-previous = Sök föregående
+find-next = Sök nästa
+replace-placeholder = Ersätt...
+replace = Ersätt
+replace-all = Ersätt alla
+
+# Meny
 
 ## File
 file = Fil
@@ -47,10 +60,11 @@ revert-all-changes = Återställ alla ändringar
 menu-document-statistics = Dokumentstatistik...
 document-type = Dokument typ...
 encoding = Kodning...
+menu-git-management = Git hantering...
 print = Skriv ut
 quit = Avsluta
 
-## Edit
+## Redigera
 edit = Redigera
 undo = Ångra
 redo = Gör om
@@ -58,11 +72,12 @@ cut = Klipp ut
 copy = Kopiera
 paste = Klistra in
 select-all = Välj alla
-find = Hitta
+find = Sök
+find-in-project = Sök i projekt...
 replace = Ersätt
 spell-check = Stavningskontroll...
 
-## View
+## Visa
 view = Visa
 indentation = Indrag
 
