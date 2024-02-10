@@ -6679,7 +6679,7 @@ dependencies = [
 [[package]]
 name = "winit"
 version = "0.29.10"
-source = "git+https://github.com/pop-os/winit.git?branch=winit-0.29#8987daa8e6a860b8927e040076482cd63b6e734f"
+source = "git+https://github.com/pop-os/winit.git?branch=winit-0.29#bdc66109acc85c912264c9e4b864520345bdb45f"
 dependencies = [
  "ahash",
  "android-activity",
