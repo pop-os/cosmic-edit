@@ -696,7 +696,7 @@ where
                 key: Key::Named(key),
                 modifiers,
                 ..
-            }) if state.is_focused => match key {
+            }) if state.is_focused && !matches!(key, Named::Space) => match key {
                 Named::ArrowLeft => {
                     editor.action(Action::Motion(Motion::Left));
                     status = Status::Captured;
@@ -758,11 +758,8 @@ where
             Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
                 state.modifiers = modifiers;
             }
-            Event::Keyboard(KeyEvent::KeyPressed {
-                key: Key::Character(character),
-                ..
-            }) if state.is_focused => {
-                let character = character.chars().next().unwrap_or_default();
+            Event::Keyboard(KeyEvent::KeyPressed { text, .. }) if state.is_focused => {
+                let character = text.unwrap_or_default().chars().next().unwrap_or_default();
                 // Only parse keys when Super, Ctrl, and Alt are not pressed
                 if !state.modifiers.logo() && !state.modifiers.control() && !state.modifiers.alt() {
                     if !character.is_control() {
