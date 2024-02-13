@@ -17,6 +17,7 @@ use cosmic::{
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
     Application, ApplicationExt, Apply, Element,
 };
+use cosmic_files::dialog::{Dialog, DialogMessage, DialogResult};
 use cosmic_text::{Cursor, Edit, Family, FontSystem, Selection, SwashCache, SyntaxSystem, ViMode};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -279,6 +280,7 @@ pub enum Message {
     Cut,
     DefaultFont(usize),
     DefaultFontSize(usize),
+    DialogMessage(DialogMessage),
     Find(Option<bool>),
     FindNext,
     FindPrevious,
@@ -293,11 +295,12 @@ pub enum Message {
     NewWindow,
     NotifyEvent(notify::Event),
     NotifyWatcher(WatcherWrapper),
-    OpenFileDialog,
     OpenFile(PathBuf),
+    OpenFileDialog,
+    OpenFileResult(DialogResult),
     OpenGitDiff(PathBuf, GitDiff),
     OpenProjectDialog,
-    OpenProject(PathBuf),
+    OpenProjectResult(DialogResult),
     OpenSearchResult(usize, usize),
     Paste,
     PasteValue(String),
@@ -371,6 +374,7 @@ pub struct App {
     theme_names: Vec<String>,
     context_page: ContextPage,
     text_box_id: widget::Id,
+    dialog_opt: Option<Dialog<Message>>,
     find_opt: Option<bool>,
     find_replace_id: widget::Id,
     find_replace_value: String,
@@ -637,7 +641,10 @@ impl App {
 
         let window_title = format!("{title} - COSMIC Text Editor");
         self.set_header_title(title.clone());
-        Command::batch([self.set_window_title(window_title), self.update_focus()])
+        Command::batch([
+            self.set_window_title(window_title, self.main_window_id()),
+            self.update_focus(),
+        ])
     }
 
     fn document_statistics(&self) -> Element<Message> {
@@ -1078,6 +1085,7 @@ impl Application for App {
             theme_names,
             context_page: ContextPage::Settings,
             text_box_id: widget::Id::unique(),
+            dialog_opt: None,
             find_opt: None,
             find_replace_id: widget::Id::unique(),
             find_replace_value: String::new(),
@@ -1322,6 +1330,11 @@ impl Application for App {
                     log::warn!("failed to find font with index {}", index);
                 }
             },
+            Message::DialogMessage(dialog_message) => {
+                if let Some(dialog) = &mut self.dialog_opt {
+                    return dialog.update(dialog_message);
+                }
+            }
             Message::Find(find_opt) => {
                 self.find_opt = find_opt;
 
@@ -1454,22 +1467,29 @@ impl Application for App {
                     log::warn!("message did not contain notify watcher");
                 }
             },
-            Message::OpenFileDialog => {
-                #[cfg(feature = "rfd")]
-                return Command::perform(
-                    async {
-                        if let Some(handle) = rfd::AsyncFileDialog::new().pick_file().await {
-                            message::app(Message::OpenFile(handle.path().to_owned()))
-                        } else {
-                            message::none()
-                        }
-                    },
-                    |x| x,
-                );
-            }
             Message::OpenFile(path) => {
                 self.open_tab(Some(path));
                 return self.update_tab();
+            }
+            Message::OpenFileDialog => {
+                if self.dialog_opt.is_none() {
+                    let (dialog, command) =
+                        Dialog::new(Message::DialogMessage, Message::OpenFileResult);
+                    self.dialog_opt = Some(dialog);
+                    return command;
+                }
+            }
+            Message::OpenFileResult(result) => {
+                self.dialog_opt = None;
+                match result {
+                    DialogResult::Cancel => {}
+                    DialogResult::Open(paths) => {
+                        for path in paths {
+                            self.open_tab(Some(path));
+                        }
+                        return self.update_tab();
+                    }
+                }
             }
             Message::OpenGitDiff(project_path, diff) => {
                 let relative_path = match diff.path.strip_prefix(project_path.clone()) {
@@ -1505,20 +1525,23 @@ impl Application for App {
                 return self.update_tab();
             }
             Message::OpenProjectDialog => {
-                #[cfg(feature = "rfd")]
-                return Command::perform(
-                    async {
-                        if let Some(handle) = rfd::AsyncFileDialog::new().pick_folder().await {
-                            message::app(Message::OpenProject(handle.path().to_owned()))
-                        } else {
-                            message::none()
-                        }
-                    },
-                    |x| x,
-                );
+                if self.dialog_opt.is_none() {
+                    let (dialog, command) =
+                        Dialog::new(Message::DialogMessage, Message::OpenProjectResult);
+                    self.dialog_opt = Some(dialog);
+                    return command;
+                }
             }
-            Message::OpenProject(path) => {
-                self.open_project(path);
+            Message::OpenProjectResult(result) => {
+                self.dialog_opt = None;
+                match result {
+                    DialogResult::Cancel => {}
+                    DialogResult::Open(paths) => {
+                        for path in paths {
+                            self.open_project(path);
+                        }
+                    }
+                }
             }
             Message::OpenSearchResult(file_i, line_i) => {
                 let path_cursor_opt = match &self.project_search_result {
@@ -2158,6 +2181,13 @@ impl Application for App {
         content
     }
 
+    fn view_window(&self, window_id: window::Id) -> Element<Message> {
+        match &self.dialog_opt {
+            Some(dialog) => dialog.view(window_id),
+            None => widget::text("Unknown window ID").into(),
+        }
+    }
+
     fn subscription(&self) -> subscription::Subscription<Message> {
         struct WatcherSubscription;
         struct ConfigSubscription;
@@ -2259,6 +2289,10 @@ impl Application for App {
 
                 Message::SystemThemeModeChange(update.config)
             }),
+            match &self.dialog_opt {
+                Some(dialog) => dialog.subscription(),
+                None => subscription::Subscription::none(),
+            },
         ])
     }
 }

@@ -24,6 +24,10 @@ i18n-embed = { version = "0.14", features = ["fluent-system", "desktop-requester
 i18n-embed-fl = "0.7"
 rust-embed = "8"
 
+[dependencies.cosmic-files]
+git = "https://github.com/pop-os/cosmic-files"
+default-features = false
+
 [dependencies.cosmic-syntax-theme]
 git = "https://github.com/pop-os/cosmic-syntax-theme"
 
@@ -34,13 +38,7 @@ features = ["syntect", "vi"]
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic"
 default-features = false
-features = ["tokio", "winit"]
-
-[dependencies.rfd]
-version = "0.13.0"
-default-features = false
-features = ["tokio", "xdg-portal"]
-optional = true
+features = ["multi-window", "tokio", "winit"]
 
 [dependencies.smol_str]
 version = "0.2.1"
@@ -54,8 +52,8 @@ git = "https://github.com/jackpot51/systemicons"
 fork = "0.1"
 
 [features]
-default = ["rfd", "wgpu"]
-wgpu = ["libcosmic/wgpu"]
+default = ["wgpu"]
+wgpu = ["libcosmic/wgpu", "cosmic-files/wgpu"]
 
 [profile.release-with-debug]
 inherits = "release"
