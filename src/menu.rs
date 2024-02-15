@@ -143,13 +143,6 @@ pub fn menu_bar<'a>(
         )
     };
 
-    let menu_key = |label, key, action: Action| {
-        MenuTree::new(
-            menu_button!(widget::text(label), horizontal_space(Length::Fill), key)
-                .on_press(action.message()),
-        )
-    };
-
     let menu_tab_width = |tab_width: u16| {
         menu_checkbox(
             fl!("tab-width", tab_width = tab_width),
@@ -199,7 +192,7 @@ pub fn menu_bar<'a>(
                 MenuTree::with_children(menu_folder(fl!("close-project")), close_projects),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("save"), Action::Save),
-                menu_key(fl!("save-as"), "Ctrl + Shift + S", Action::Todo),
+                menu_item(fl!("save-as"), Action::SaveAsDialog),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("revert-all-changes"), Action::Todo),
                 MenuTree::new(horizontal_rule(1)),

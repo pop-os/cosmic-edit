@@ -17,7 +17,7 @@ use cosmic::{
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
     Application, ApplicationExt, Apply, Element,
 };
-use cosmic_files::dialog::{Dialog, DialogMessage, DialogResult};
+use cosmic_files::dialog::{Dialog, DialogKind, DialogMessage, DialogResult};
 use cosmic_text::{Cursor, Edit, Family, FontSystem, Selection, SwashCache, SyntaxSystem, ViMode};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -180,6 +180,7 @@ pub enum Action {
     Quit,
     Redo,
     Save,
+    SaveAsDialog,
     SelectAll,
     TabActivate0,
     TabActivate1,
@@ -223,6 +224,7 @@ impl Action {
             Self::Quit => Message::Quit,
             Self::Redo => Message::Redo,
             Self::Save => Message::Save,
+            Self::SaveAsDialog => Message::SaveAsDialog,
             Self::SelectAll => Message::SelectAll,
             Self::TabActivate0 => Message::TabActivateJump(0),
             Self::TabActivate1 => Message::TabActivateJump(1),
@@ -317,6 +319,8 @@ pub enum Message {
     Quit,
     Redo,
     Save,
+    SaveAsDialog,
+    SaveAsResult(segmented_button::Entity, DialogResult),
     SelectAll,
     SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
@@ -1526,8 +1530,12 @@ impl Application for App {
             }
             Message::OpenFileDialog => {
                 if self.dialog_opt.is_none() {
-                    let (dialog, command) =
-                        Dialog::new(Message::DialogMessage, Message::OpenFileResult);
+                    let (dialog, command) = Dialog::new(
+                        DialogKind::OpenMultipleFiles,
+                        None,
+                        Message::DialogMessage,
+                        Message::OpenFileResult,
+                    );
                     self.dialog_opt = Some(dialog);
                     return command;
                 }
@@ -1579,8 +1587,12 @@ impl Application for App {
             }
             Message::OpenProjectDialog => {
                 if self.dialog_opt.is_none() {
-                    let (dialog, command) =
-                        Dialog::new(Message::DialogMessage, Message::OpenProjectResult);
+                    let (dialog, command) = Dialog::new(
+                        DialogKind::OpenMultipleFolders,
+                        None,
+                        Message::DialogMessage,
+                        Message::OpenProjectResult,
+                    );
                     self.dialog_opt = Some(dialog);
                     return command;
                 }
@@ -1742,10 +1754,8 @@ impl Application for App {
                 let mut title_opt = None;
 
                 if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
-                    #[cfg(feature = "rfd")]
                     if tab.path_opt.is_none() {
-                        //TODO: use async file dialog
-                        tab.path_opt = rfd::FileDialog::new().save_file();
+                        return self.update(Message::SaveAsDialog);
                     }
                     title_opt = Some(tab.title());
                     tab.save();
@@ -1753,6 +1763,40 @@ impl Application for App {
 
                 if let Some(title) = title_opt {
                     self.tab_model.text_set(self.tab_model.active(), title);
+                }
+            }
+            Message::SaveAsDialog => {
+                if self.dialog_opt.is_none() {
+                    let entity = self.tab_model.active();
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                        let (dialog, command) = Dialog::new(
+                            DialogKind::SaveFile,
+                            tab.path_opt.clone(),
+                            Message::DialogMessage,
+                            move |result| Message::SaveAsResult(entity, result),
+                        );
+                        self.dialog_opt = Some(dialog);
+                        return command;
+                    }
+                }
+            }
+            Message::SaveAsResult(entity, result) => {
+                self.dialog_opt = None;
+                match result {
+                    DialogResult::Cancel => {}
+                    DialogResult::Open(mut paths) => {
+                        if !paths.is_empty() {
+                            let mut title_opt = None;
+                            if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                                tab.path_opt = Some(paths.remove(0));
+                                title_opt = Some(tab.title());
+                                tab.save();
+                            }
+                            if let Some(title) = title_opt {
+                                self.tab_model.text_set(entity, title);
+                            }
+                        }
+                    }
                 }
             }
             Message::SelectAll => {
