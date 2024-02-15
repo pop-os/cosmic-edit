@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::{
-    iced::Point,
+    iced::{advanced::graphics::text::font_system, Point},
     widget::{icon, Icon},
 };
 use cosmic_text::{Attrs, Buffer, Edit, Shaping, SyntaxEditor, ViEditor, Wrap};
@@ -12,7 +12,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{fl, git::GitDiff, mime_icon, Config, FALLBACK_MIME_ICON, FONT_SYSTEM, SYNTAX_SYSTEM};
+use crate::{fl, git::GitDiff, mime_icon, Config, FALLBACK_MIME_ICON, SYNTAX_SYSTEM};
 
 pub enum Tab {
     Editor(EditorTab),
@@ -47,7 +47,7 @@ impl EditorTab {
 
         let mut buffer = Buffer::new_empty(config.metrics());
         buffer.set_text(
-            &mut FONT_SYSTEM.get().unwrap().lock().unwrap(),
+            font_system().write().unwrap().raw(),
             "",
             attrs,
             Shaping::Advanced,
@@ -75,8 +75,8 @@ impl EditorTab {
 
     pub fn set_config(&mut self, config: &Config) {
         let mut editor = self.editor.lock().unwrap();
-        let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
-        let mut editor = editor.borrow_with(&mut font_system);
+        let mut font_system = font_system().write().unwrap();
+        let mut editor = editor.borrow_with(font_system.raw());
         editor.set_auto_indent(config.auto_indent);
         editor.set_passthrough(!config.vim_bindings);
         editor.set_tab_width(config.tab_width);
@@ -93,8 +93,8 @@ impl EditorTab {
 
     pub fn open(&mut self, path: PathBuf) {
         let mut editor = self.editor.lock().unwrap();
-        let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
-        let mut editor = editor.borrow_with(&mut font_system);
+        let mut font_system = font_system().write().unwrap();
+        let mut editor = editor.borrow_with(font_system.raw());
         match editor.load_text(&path, self.attrs) {
             Ok(()) => {
                 log::info!("opened {:?}", path);
@@ -115,8 +115,8 @@ impl EditorTab {
 
     pub fn reload(&mut self) {
         let mut editor = self.editor.lock().unwrap();
-        let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
-        let mut editor = editor.borrow_with(&mut font_system);
+        let mut font_system = font_system().write().unwrap();
+        let mut editor = editor.borrow_with(font_system.raw());
         if let Some(path) = &self.path_opt {
             // Save scroll
             let scroll = editor.with_buffer(|buffer| buffer.scroll());

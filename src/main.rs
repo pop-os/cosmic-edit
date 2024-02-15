@@ -6,6 +6,7 @@ use cosmic::{
     cosmic_theme, executor,
     font::Font,
     iced::{
+        advanced::graphics::text::font_system,
         clipboard, event,
         futures::{self, SinkExt},
         keyboard::{self, Modifiers},
@@ -18,7 +19,7 @@ use cosmic::{
     Application, ApplicationExt, Apply, Element,
 };
 use cosmic_files::dialog::{Dialog, DialogKind, DialogMessage, DialogResult};
-use cosmic_text::{Cursor, Edit, Family, FontSystem, Selection, SwashCache, SyntaxSystem, ViMode};
+use cosmic_text::{Cursor, Edit, Family, Selection, SwashCache, SyntaxSystem, ViMode};
 use serde::{Deserialize, Serialize};
 use std::{
     any::TypeId,
@@ -65,8 +66,6 @@ mod tab;
 use self::text_box::text_box;
 mod text_box;
 
-//TODO: re-use iced FONT_SYSTEM
-static FONT_SYSTEM: OnceLock<Mutex<FontSystem>> = OnceLock::new();
 static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
 static LINE_NUMBER_CACHE: OnceLock<Mutex<LineNumberCache>> = OnceLock::new();
 static SWASH_CACHE: OnceLock<Mutex<SwashCache>> = OnceLock::new();
@@ -78,7 +77,6 @@ pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    FONT_SYSTEM.get_or_init(|| Mutex::new(FontSystem::new()));
     ICON_CACHE.get_or_init(|| Mutex::new(IconCache::new()));
     LINE_NUMBER_CACHE.get_or_init(|| Mutex::new(LineNumberCache::new()));
     SWASH_CACHE.get_or_init(|| Mutex::new(SwashCache::new()));
@@ -972,8 +970,8 @@ impl App {
             .iter()
             .position(|theme_name| theme_name == &self.config.syntax_theme_light);
         let font_selected = {
-            let font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
-            let current_font_name = font_system.db().family_name(&Family::Monospace);
+            let mut font_system = font_system().write().unwrap();
+            let current_font_name = font_system.raw().db().family_name(&Family::Monospace);
             self.font_names
                 .iter()
                 .position(|font_name| font_name == current_font_name)
@@ -1063,8 +1061,9 @@ impl Application for App {
     fn init(core: Core, flags: Self::Flags) -> (Self, Command<Self::Message>) {
         // Update font name from config
         {
-            let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
+            let mut font_system = font_system().write().unwrap();
             font_system
+                .raw()
                 .db_mut()
                 .set_monospace_family(&flags.config.font_name);
         }
@@ -1073,10 +1072,10 @@ impl Application for App {
 
         let font_names = {
             let mut font_names = Vec::new();
-            let font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
+            let mut font_system = font_system().write().unwrap();
             //TODO: do not repeat, used in Tab::new
             let attrs = cosmic_text::Attrs::new().family(Family::Monospace);
-            for face in font_system.db().faces() {
+            for face in font_system.raw().db().faces() {
                 if attrs.matches(face) && face.monospaced {
                     //TODO: get localized name if possible
                     let font_name = face
@@ -1343,8 +1342,8 @@ impl Application for App {
                         if font_name != &self.config.font_name {
                             // Update font name from config
                             {
-                                let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
-                                font_system.db_mut().set_monospace_family(font_name);
+                                let mut font_system = font_system().write().unwrap();
+                                font_system.raw().db_mut().set_monospace_family(font_name);
                             }
 
                             // Reset line number cache
@@ -2127,7 +2126,9 @@ impl Application for App {
                     None => popover.show_popup(false),
                 };
                 tab_column = tab_column.push(popover);
-                tab_column = tab_column.push(text(status).font(Font::MONOSPACE));
+                if !status.is_empty() {
+                    tab_column = tab_column.push(text(status).font(Font::MONOSPACE));
+                }
             }
             Some(Tab::GitDiff(tab)) => {
                 let mut diff_widget = widget::column::with_capacity(tab.diff.hunks.len());

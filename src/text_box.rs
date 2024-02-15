@@ -3,6 +3,7 @@
 use cosmic::{
     cosmic_theme::palette::{blend::Compose, WithAlpha},
     iced::{
+        advanced::graphics::text::font_system,
         event::{Event, Status},
         keyboard::{Event as KeyEvent, Modifiers},
         mouse::{self, Button, Event as MouseEvent, ScrollDelta},
@@ -32,7 +33,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{line_number::LineNumberKey, FONT_SYSTEM, LINE_NUMBER_CACHE, SWASH_CACHE};
+use crate::{line_number::LineNumberKey, LINE_NUMBER_CACHE, SWASH_CACHE};
 
 pub struct TextBox<'a, Message> {
     editor: &'a Mutex<ViEditor<'static, 'static>>,
@@ -231,7 +232,7 @@ where
         let mut editor = self.editor.lock().unwrap();
         //TODO: set size?
         editor
-            .borrow_with(&mut FONT_SYSTEM.get().unwrap().lock().unwrap())
+            .borrow_with(font_system().write().unwrap().raw())
             .shape_as_needed(true);
 
         editor.with_buffer(|buffer| {
@@ -333,7 +334,7 @@ where
         let image_w = image_w - scrollbar_w;
 
         // Lock font system (used throughout)
-        let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
+        let mut font_system = font_system().write().unwrap();
 
         // Calculate line number information
         let (line_number_chars, editor_offset_x) = if self.line_numbers {
@@ -351,7 +352,7 @@ where
                 let mut line_number_cache = LINE_NUMBER_CACHE.get().unwrap().lock().unwrap();
                 if let Some(layout_line) = line_number_cache
                     .get(
-                        &mut font_system,
+                        font_system.raw(),
                         LineNumberKey {
                             number: 1,
                             width: line_number_chars,
@@ -380,7 +381,7 @@ where
         // Set metrics and size
         editor.with_buffer_mut(|buffer| {
             buffer.set_metrics_and_size(
-                &mut font_system,
+                font_system.raw(),
                 metrics,
                 (image_w - editor_offset_x) as f32,
                 image_h as f32,
@@ -388,7 +389,7 @@ where
         });
 
         // Shape and layout as needed
-        editor.shape_as_needed(&mut font_system, true);
+        editor.shape_as_needed(font_system.raw(), true);
 
         let mut handle_opt = state.handle_opt.lock().unwrap();
         if editor.redraw() || handle_opt.is_none() {
@@ -453,7 +454,7 @@ where
 
                             if let Some(layout_line) = line_number_cache
                                 .get(
-                                    &mut font_system,
+                                    font_system.raw(),
                                     LineNumberKey {
                                         number: line_number,
                                         width: line_number_chars,
@@ -475,7 +476,7 @@ where
                                         layout_glyph.physical((0., line_y), metrics.font_size);
 
                                     swash_cache.with_pixels(
-                                        &mut font_system,
+                                        font_system.raw(),
                                         physical_glyph.cache_key,
                                         gutter_foreground,
                                         |x, y, color| {
@@ -501,7 +502,7 @@ where
                 }
 
                 // Draw editor
-                editor.draw(&mut font_system, &mut swash_cache, |x, y, w, h, color| {
+                editor.draw(font_system.raw(), &mut swash_cache, |x, y, w, h, color| {
                     draw_rect(
                         pixels,
                         Canvas {
@@ -687,8 +688,8 @@ where
         let mut editor = self.editor.lock().unwrap();
         let buffer_size = editor.with_buffer(|buffer| buffer.size());
         let last_changed = editor.changed();
-        let mut font_system = FONT_SYSTEM.get().unwrap().lock().unwrap();
-        let mut editor = editor.borrow_with(&mut font_system);
+        let mut font_system = font_system().write().unwrap();
+        let mut editor = editor.borrow_with(font_system.raw());
 
         let mut status = Status::Ignored;
         match event {
