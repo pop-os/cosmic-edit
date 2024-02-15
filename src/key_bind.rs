@@ -71,7 +71,7 @@ pub fn key_binds() -> HashMap<KeyBind, Action> {
     bind!([Ctrl], Key::Character("o".into()), OpenFileDialog);
     bind!([Ctrl, Shift], Key::Character("O".into()), OpenProjectDialog);
     bind!([Ctrl], Key::Character("q".into()), Quit);
-    bind!([Ctrl, Shift], Key::Character("z".into()), Redo);
+    bind!([Ctrl, Shift], Key::Character("Z".into()), Redo);
     bind!([Ctrl], Key::Character("s".into()), Save);
     bind!([Ctrl], Key::Character("a".into()), SelectAll);
     bind!([Ctrl], Key::Character("1".into()), TabActivate0);
