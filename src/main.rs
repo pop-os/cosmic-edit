@@ -474,12 +474,20 @@ impl App {
                         *open = true;
                         *root = true;
 
+                        for (project_name, project_path) in self.projects.iter() {
+                            if project_path == path {
+                                // Project already open
+                                return;
+                            }
+                        }
+
                         // Save the absolute path
                         self.projects.push((name.to_string(), path.to_path_buf()));
 
                         // Add to recent projects, ensuring only one entry
                         self.config.recent_projects.retain(|x| x != path);
                         self.config.recent_projects.push_front(path.to_path_buf());
+                        self.config.recent_projects.truncate(10);
                         self.save_config_no_update();
                     }
                     _ => {
@@ -537,6 +545,7 @@ impl App {
                 // Add to recent files, ensuring only one entry
                 self.config.recent_files.retain(|x| x != &canonical);
                 self.config.recent_files.push_front(canonical.to_path_buf());
+                self.config.recent_files.truncate(10);
                 self.save_config_no_update();
 
                 let mut tab = EditorTab::new(&self.config);
@@ -1623,7 +1632,7 @@ impl Application for App {
                 }
             }
             Message::OpenRecentProject(index) => {
-                if let Some(path) = self.config.recent_files.get(index).cloned() {
+                if let Some(path) = self.config.recent_projects.get(index).cloned() {
                     self.open_project(path);
                 }
             }
