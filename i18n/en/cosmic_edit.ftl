@@ -13,6 +13,8 @@ line-count = Lines
 
 ## Git management
 git-management = Git management
+git-management-description = Git management is a developer tool used for version control operations.
+git-management-loading = Loading Git management...
 unstaged-changes = Unstaged changes
 staged-changes = Staged changes
 

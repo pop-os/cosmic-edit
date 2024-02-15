@@ -734,7 +734,10 @@ impl App {
                 || widget::text("[-]").style(theme::Text::Color(destructive_color.into()));
             let modified = || widget::text("[*]").style(theme::Text::Color(warning_color.into()));
 
-            let mut items = Vec::with_capacity(project_status.len().saturating_mul(3));
+            let mut items =
+                Vec::with_capacity(project_status.len().saturating_mul(3).saturating_add(1));
+            items.push(widget::text(fl!("git-management-description")).into());
+
             for (project_name, project_path, status) in project_status.iter() {
                 let mut unstaged_items = Vec::with_capacity(status.len());
                 let mut staged_items = Vec::with_capacity(status.len());
@@ -866,7 +869,13 @@ impl App {
                 .padding([spacing.space_xxs, spacing.space_none])
                 .into()
         } else {
-            widget::text("TODO (TRANSLATE): Loading git status...").into()
+            widget::column::with_children(vec![
+                widget::text(fl!("git-management-description")).into(),
+                widget::text(fl!("git-management-loading")).into(),
+            ])
+            .spacing(spacing.space_s)
+            .padding([spacing.space_xxs, spacing.space_none])
+            .into()
         }
     }
 
