@@ -640,7 +640,6 @@ impl App {
         };
 
         let window_title = format!("{title} - COSMIC Text Editor");
-        self.set_header_title(title.clone());
         Command::batch([
             self.set_window_title(window_title, self.main_window_id()),
             self.update_focus(),
@@ -1956,6 +1955,7 @@ impl Application for App {
                         .button_height(32)
                         .button_spacing(space_xxs)
                         .close_icon(icon_cache_get("window-close-symbolic", 16))
+                        //TODO: this causes issues with small window sizes .minimum_button_width(240)
                         .on_activate(Message::TabActivate)
                         .on_close(Message::TabClose)
                         .width(Length::Shrink),
