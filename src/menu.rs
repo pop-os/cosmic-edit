@@ -158,6 +158,26 @@ pub fn menu_bar<'a>(
         )
     };
 
+    let home_dir_opt = dirs::home_dir();
+    let format_path = |path: &PathBuf| -> String {
+        if let Some(home_dir) = &home_dir_opt {
+            if let Ok(part) = path.strip_prefix(home_dir) {
+                return format!("~/{}", part.display());
+            }
+        }
+        path.display().to_string()
+    };
+
+    let mut recent_files = Vec::with_capacity(config.recent_files.len());
+    for (i, path) in config.recent_files.iter().enumerate() {
+        recent_files.push(menu_item(format_path(path), Action::OpenRecentFile(i)));
+    }
+
+    let mut recent_projects = Vec::with_capacity(config.recent_projects.len());
+    for (i, path) in config.recent_projects.iter().enumerate() {
+        recent_projects.push(menu_item(format_path(path), Action::OpenRecentProject(i)));
+    }
+
     let mut close_projects = Vec::with_capacity(projects.len());
     for (project_i, (name, _path)) in projects.iter().enumerate() {
         close_projects.push(menu_item(name.clone(), Action::CloseProject(project_i)));
@@ -171,17 +191,11 @@ pub fn menu_bar<'a>(
                 menu_item(fl!("new-window"), Action::NewWindow),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("open-file"), Action::OpenFileDialog),
-                MenuTree::with_children(
-                    menu_folder(fl!("open-recent-file")),
-                    vec![menu_item(fl!("todo"), Action::Todo)],
-                ),
+                MenuTree::with_children(menu_folder(fl!("open-recent-file")), recent_files),
                 menu_item(fl!("close-file"), Action::CloseFile),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("menu-open-project"), Action::OpenProjectDialog),
-                MenuTree::with_children(
-                    menu_folder(fl!("open-recent-project")),
-                    vec![menu_item(fl!("todo"), Action::Todo)],
-                ),
+                MenuTree::with_children(menu_folder(fl!("open-recent-project")), recent_projects),
                 MenuTree::with_children(menu_folder(fl!("close-project")), close_projects),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("save"), Action::Save),
@@ -263,7 +277,7 @@ pub fn menu_bar<'a>(
         ),
     ])
     .item_height(ItemHeight::Dynamic(40))
-    .item_width(ItemWidth::Uniform(240))
+    .item_width(ItemWidth::Uniform(320))
     .spacing(4.0)
     .into()
 }

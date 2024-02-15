@@ -1178,6 +1178,7 @@ dependencies = [
  "cosmic-files",
  "cosmic-syntax-theme",
  "cosmic-text",
+ "dirs",
  "env_logger 0.10.2",
  "fork",
  "grep",

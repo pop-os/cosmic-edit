@@ -174,6 +174,8 @@ pub enum Action {
     NewWindow,
     OpenFileDialog,
     OpenProjectDialog,
+    OpenRecentFile(usize),
+    OpenRecentProject(usize),
     Paste,
     Quit,
     Redo,
@@ -215,6 +217,8 @@ impl Action {
             Self::NewWindow => Message::NewWindow,
             Self::OpenFileDialog => Message::OpenFileDialog,
             Self::OpenProjectDialog => Message::OpenProjectDialog,
+            Self::OpenRecentFile(index) => Message::OpenRecentFile(*index),
+            Self::OpenRecentProject(index) => Message::OpenRecentProject(*index),
             Self::Paste => Message::Paste,
             Self::Quit => Message::Quit,
             Self::Redo => Message::Redo,
@@ -301,6 +305,8 @@ pub enum Message {
     OpenGitDiff(PathBuf, GitDiff),
     OpenProjectDialog,
     OpenProjectResult(DialogResult),
+    OpenRecentFile(usize),
+    OpenRecentProject(usize),
     OpenSearchResult(usize, usize),
     Paste,
     PasteValue(String),
@@ -468,6 +474,11 @@ impl App {
 
                         // Save the absolute path
                         self.projects.push((name.to_string(), path.to_path_buf()));
+
+                        // Add to recent projects, ensuring only one entry
+                        self.config.recent_projects.retain(|x| x != path);
+                        self.config.recent_projects.push_front(path.to_path_buf());
+                        self.save_config_no_update();
                     }
                     _ => {
                         log::error!("failed to open project {:?}: not a directory", path);
@@ -521,6 +532,11 @@ impl App {
                     return Some(entity);
                 }
 
+                // Add to recent files, ensuring only one entry
+                self.config.recent_files.retain(|x| x != &canonical);
+                self.config.recent_files.push_front(canonical.to_path_buf());
+                self.save_config_no_update();
+
                 let mut tab = EditorTab::new(&self.config);
                 tab.open(canonical);
                 tab.watch(&mut self.watcher_opt);
@@ -553,13 +569,16 @@ impl App {
     }
 
     fn save_config(&mut self) -> Command<Message> {
+        self.save_config_no_update();
+        self.update_config()
+    }
+
+    fn save_config_no_update(&mut self) {
         if let Some(ref config_handler) = self.config_handler {
             if let Err(err) = self.config.write_entry(config_handler) {
                 log::error!("failed to save config: {}", err);
             }
         }
-
-        self.update_config()
     }
 
     fn update_focus(&self) -> Command<Message> {
@@ -1575,6 +1594,17 @@ impl Application for App {
                             self.open_project(path);
                         }
                     }
+                }
+            }
+            Message::OpenRecentFile(index) => {
+                if let Some(path) = self.config.recent_files.get(index).cloned() {
+                    self.open_tab(Some(path));
+                    return self.update_tab();
+                }
+            }
+            Message::OpenRecentProject(index) => {
+                if let Some(path) = self.config.recent_files.get(index).cloned() {
+                    self.open_project(path);
                 }
             }
             Message::OpenSearchResult(file_i, line_i) => {

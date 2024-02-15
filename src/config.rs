@@ -6,6 +6,7 @@ use cosmic::{
 };
 use cosmic_text::Metrics;
 use serde::{Deserialize, Serialize};
+use std::{collections::VecDeque, path::PathBuf};
 
 pub const CONFIG_VERSION: u64 = 1;
 
@@ -33,6 +34,9 @@ pub struct Config {
     pub font_name: String,
     pub font_size: u16,
     pub line_numbers: bool,
+    //TODO: move to state?
+    pub recent_files: VecDeque<PathBuf>,
+    pub recent_projects: VecDeque<PathBuf>,
     pub syntax_theme_dark: String,
     pub syntax_theme_light: String,
     pub tab_width: u16,
@@ -48,6 +52,8 @@ impl Default for Config {
             font_name: "Fira Mono".to_string(),
             font_size: 14,
             line_numbers: true,
+            recent_files: VecDeque::new(),
+            recent_projects: VecDeque::new(),
             syntax_theme_dark: "COSMIC Dark".to_string(),
             syntax_theme_light: "COSMIC Light".to_string(),
             tab_width: 4,
