@@ -15,7 +15,7 @@ use cosmic::{
     },
     Element,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::{fl, icon_cache_get, Action, Config, KeyBind, Message};
 
@@ -84,7 +84,11 @@ pub fn context_menu<'a>(
     .into()
 }
 
-pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> Element<'a, Message> {
+pub fn menu_bar<'a>(
+    config: &Config,
+    key_binds: &HashMap<KeyBind, Action>,
+    projects: &Vec<(String, PathBuf)>,
+) -> Element<'a, Message> {
     //TODO: port to libcosmic
     let menu_root = |label| {
         widget::button(widget::text(label))
@@ -96,14 +100,15 @@ pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> El
         |label| menu_button!(widget::text(label), horizontal_space(Length::Fill), ">");
 
     let find_key = |action: &Action| -> String {
-        let mut key = String::new();
         for (key_bind, key_action) in key_binds.iter() {
             if action == key_action {
-                key = key_bind.to_string();
-                break;
+                return key_bind.to_string();
             }
         }
-        key
+        if action == &Action::Todo {
+            return fl!("todo");
+        }
+        String::new()
     };
 
     let menu_item = |label, action| {
@@ -153,6 +158,11 @@ pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> El
         )
     };
 
+    let mut close_projects = Vec::with_capacity(projects.len());
+    for (project_i, (name, _path)) in projects.iter().enumerate() {
+        close_projects.push(menu_item(name.clone(), Action::CloseProject(project_i)));
+    }
+
     MenuBar::new(vec![
         MenuTree::with_children(
             menu_root(fl!("file")),
@@ -172,7 +182,7 @@ pub fn menu_bar<'a>(config: &Config, key_binds: &HashMap<KeyBind, Action>) -> El
                     menu_folder(fl!("open-recent-project")),
                     vec![menu_item(fl!("todo"), Action::Todo)],
                 ),
-                menu_item(fl!("close-project"), Action::CloseProject),
+                MenuTree::with_children(menu_folder(fl!("close-project")), close_projects),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("save"), Action::Save),
                 menu_key(fl!("save-as"), "Ctrl + Shift + S", Action::Todo),

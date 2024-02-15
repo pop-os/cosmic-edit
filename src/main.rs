@@ -165,7 +165,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 pub enum Action {
     Todo,
     CloseFile,
-    CloseProject,
+    CloseProject(usize),
     Copy,
     Cut,
     Find,
@@ -206,7 +206,7 @@ impl Action {
         match self {
             Self::Todo => Message::Todo,
             Self::CloseFile => Message::CloseFile,
-            Self::CloseProject => Message::CloseProject,
+            Self::CloseProject(project_i) => Message::CloseProject(*project_i),
             Self::Copy => Message::Copy,
             Self::Cut => Message::Cut,
             Self::Find => Message::Find(Some(false)),
@@ -275,7 +275,7 @@ pub enum Message {
     AppTheme(AppTheme),
     Config(Config),
     CloseFile,
-    CloseProject,
+    CloseProject(usize),
     Copy,
     Cut,
     DefaultFont(usize),
@@ -1255,8 +1255,33 @@ impl Application for App {
             Message::CloseFile => {
                 return self.update(Message::TabClose(self.tab_model.active()));
             }
-            Message::CloseProject => {
-                log::info!("TODO");
+            Message::CloseProject(project_i) => {
+                if project_i < self.projects.len() {
+                    let (_project_name, project_path) = self.projects.remove(project_i);
+                    let mut position = 0;
+                    let mut closing = false;
+                    while let Some(id) = self.nav_model.entity_at(position) {
+                        match self.nav_model.data::<ProjectNode>(id) {
+                            Some(node) => {
+                                if let ProjectNode::Folder { path, root, .. } = node {
+                                    if path == &project_path {
+                                        // Found the project root node, closing
+                                        closing = true;
+                                    } else if *root && closing {
+                                        // Found another project root node after closing, breaking
+                                        break;
+                                    }
+                                }
+                            }
+                            None => break,
+                        }
+                        if closing {
+                            self.nav_model.remove(id);
+                        } else {
+                            position += 1;
+                        }
+                    }
+                }
             }
             Message::Copy => {
                 if let Some(Tab::Editor(tab)) = self.active_tab() {
@@ -1935,7 +1960,7 @@ impl Application for App {
     }
 
     fn header_start(&self) -> Vec<Element<Message>> {
-        vec![menu_bar(&self.config, &self.key_binds)]
+        vec![menu_bar(&self.config, &self.key_binds, &self.projects)]
     }
 
     fn view(&self) -> Element<Message> {
