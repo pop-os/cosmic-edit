@@ -651,25 +651,35 @@ impl App {
         let mut character_count = 0;
         let mut character_count_no_spaces = 0;
         let mut line_count = 0;
+        let mut word_count = 0;
 
         if let Some(Tab::Editor(tab)) = self.active_tab() {
             let editor = tab.editor.lock().unwrap();
             editor.with_buffer(|buffer| {
                 line_count = buffer.lines.len();
                 for line in buffer.lines.iter() {
+                    let mut last_whitespace = true;
                     //TODO: do graphemes?
                     for c in line.text().chars() {
                         character_count += 1;
-                        if !c.is_whitespace() {
+                        let is_whitespace = c.is_whitespace();
+                        if !is_whitespace {
                             character_count_no_spaces += 1;
+                            if last_whitespace {
+                                word_count += 1;
+                            }
                         }
+                        last_whitespace = is_whitespace;
                     }
                 }
             });
         }
 
         widget::settings::view_column(vec![widget::settings::view_section("")
-            .add(widget::settings::item::builder(fl!("word-count")).control("TODO"))
+            .add(
+                widget::settings::item::builder(fl!("word-count"))
+                    .control(widget::text(word_count.to_string())),
+            )
             .add(
                 widget::settings::item::builder(fl!("character-count"))
                     .control(widget::text(character_count.to_string())),
