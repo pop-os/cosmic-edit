@@ -13,6 +13,8 @@ line-count = 行数
 
 ## Git management
 git-management = Gitの操作
+git-management-description = Gitの操作はバージョンコントロールための開発ツールです。
+git-management-loading = Gitの操作を読み込んでいます...
 unstaged-changes = コミットされない変更
 staged-changes = コミットされる変更
 
