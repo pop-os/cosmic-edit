@@ -195,6 +195,7 @@ pub enum Action {
     ToggleAutoIndent,
     ToggleDocumentStatistics,
     ToggleGitManagement,
+    ToggleHighlightCurrentLine,
     ToggleLineNumbers,
     ToggleProjectSearch,
     ToggleSettingsPage,
@@ -241,6 +242,7 @@ impl Action {
                 Message::ToggleContextPage(ContextPage::DocumentStatistics)
             }
             Self::ToggleGitManagement => Message::ToggleContextPage(ContextPage::GitManagement),
+            Self::ToggleHighlightCurrentLine => Message::ToggleHighlightCurrentLine,
             Self::ToggleLineNumbers => Message::ToggleLineNumbers,
             Self::ToggleProjectSearch => Message::ToggleContextPage(ContextPage::ProjectSearch),
             Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
@@ -335,6 +337,7 @@ pub enum Message {
     Todo,
     ToggleAutoIndent,
     ToggleContextPage(ContextPage),
+    ToggleHighlightCurrentLine,
     ToggleLineNumbers,
     ToggleWordWrap,
     Undo,
@@ -474,7 +477,7 @@ impl App {
                         *open = true;
                         *root = true;
 
-                        for (project_name, project_path) in self.projects.iter() {
+                        for (_project_name, project_path) in self.projects.iter() {
                             if project_path == path {
                                 // Project already open
                                 return;
@@ -2014,6 +2017,20 @@ impl Application for App {
                 // Ensure focus of correct input
                 return self.update_focus();
             }
+            Message::ToggleHighlightCurrentLine => {
+                self.config.highlight_current_line = !self.config.highlight_current_line;
+
+                // This forces a redraw of all buffers
+                let entities: Vec<_> = self.tab_model.iter().collect();
+                for entity in entities {
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                        let mut editor = tab.editor.lock().unwrap();
+                        editor.set_redraw(true);
+                    }
+                }
+
+                return self.save_config();
+            }
             Message::ToggleLineNumbers => {
                 self.config.line_numbers = !self.config.line_numbers;
 
@@ -2134,6 +2151,9 @@ impl Application for App {
                     .on_context_menu(move |position_opt| {
                         Message::TabContextMenu(tab_id, position_opt)
                     });
+                if self.config.highlight_current_line {
+                    text_box = text_box.highlight_current_line();
+                }
                 if self.config.line_numbers {
                     text_box = text_box.line_numbers();
                 }

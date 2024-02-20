@@ -33,6 +33,7 @@ pub struct Config {
     pub auto_indent: bool,
     pub font_name: String,
     pub font_size: u16,
+    pub highlight_current_line: bool,
     pub line_numbers: bool,
     //TODO: move to state?
     pub recent_files: VecDeque<PathBuf>,
@@ -51,6 +52,7 @@ impl Default for Config {
             auto_indent: true,
             font_name: "Fira Mono".to_string(),
             font_size: 14,
+            highlight_current_line: true,
             line_numbers: true,
             recent_files: VecDeque::new(),
             recent_projects: VecDeque::new(),

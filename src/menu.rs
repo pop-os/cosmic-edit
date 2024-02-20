@@ -258,7 +258,11 @@ pub fn menu_bar<'a>(
                     config.line_numbers,
                     Action::ToggleLineNumbers,
                 ),
-                menu_checkbox(fl!("highlight-current-line"), false, Action::Todo),
+                menu_checkbox(
+                    fl!("highlight-current-line"),
+                    config.highlight_current_line,
+                    Action::ToggleHighlightCurrentLine,
+                ),
                 //TODO: menu_item(fl!("syntax-highlighting"), Action::Todo),
                 MenuTree::new(horizontal_rule(1)),
                 menu_item(fl!("menu-settings"), Action::ToggleSettingsPage),

@@ -44,6 +44,7 @@ pub struct TextBox<'a, Message> {
     click_timing: Duration,
     has_context_menu: bool,
     on_context_menu: Option<Box<dyn Fn(Option<Point>) -> Message + 'a>>,
+    highlight_current_line: bool,
     line_numbers: bool,
 }
 
@@ -61,6 +62,7 @@ where
             click_timing: Duration::from_millis(500),
             has_context_menu: false,
             on_context_menu: None,
+            highlight_current_line: false,
             line_numbers: false,
         }
     }
@@ -95,6 +97,11 @@ where
         on_context_menu: impl Fn(Option<Point>) -> Message + 'a,
     ) -> Self {
         self.on_context_menu = Some(Box::new(on_context_menu));
+        self
+    }
+
+    pub fn highlight_current_line(mut self) -> Self {
+        self.highlight_current_line = true;
         self
     }
 
@@ -497,6 +504,46 @@ where
                                     );
                                 }
                             }
+                        }
+                    });
+                }
+
+                if self.highlight_current_line {
+                    let line_highlight = {
+                        let convert_color = |color: syntect::highlighting::Color| {
+                            cosmic_text::Color::rgba(color.r, color.g, color.b, color.a)
+                        };
+                        let syntax_theme = editor.theme();
+                        //TODO: ideal fallback for line highlight color
+                        syntax_theme
+                            .settings
+                            .line_highlight
+                            .map_or(editor.background_color(), convert_color)
+                    };
+
+                    let cursor = editor.cursor();
+                    editor.with_buffer(|buffer| {
+                        for run in buffer.layout_runs() {
+                            if run.line_i != cursor.line {
+                                continue;
+                            }
+
+                            draw_rect(
+                                pixels,
+                                Canvas {
+                                    w: image_w,
+                                    h: image_h,
+                                },
+                                Canvas {
+                                    w: image_w - editor_offset_x,
+                                    h: metrics.line_height as i32,
+                                },
+                                Offset {
+                                    x: editor_offset_x,
+                                    y: run.line_top as i32,
+                                },
+                                line_highlight,
+                            );
                         }
                     });
                 }
