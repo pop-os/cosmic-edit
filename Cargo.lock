@@ -721,9 +721,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.15.1"
+version = "3.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c764d619ca78fccbf3069b37bd7af92577f044bb15236036662d79b6559f25b7"
+checksum = "a3b1be7772ee4501dba05acbe66bb1e8760f6a6c474a36035631638e4415f130"
 
 [[package]]
 name = "bytecount"
@@ -1226,7 +1226,7 @@ dependencies = [
 [[package]]
 name = "cosmic-syntax-theme"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/cosmic-syntax-theme#103018a4a4796f8fab566b7b71dbe9417c031d70"
+source = "git+https://github.com/pop-os/cosmic-syntax-theme#b1e1eb0234568911e59888f092dfc779c609b499"
 dependencies = [
  "handlebars",
  "serde",
