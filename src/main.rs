@@ -1789,9 +1789,19 @@ impl Application for App {
                 if self.dialog_opt.is_none() {
                     let entity = self.tab_model.active();
                     if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                        let (filename, path_opt) = match &tab.path_opt {
+                            Some(path) => (
+                                path.file_name()
+                                    .and_then(|x| x.to_str())
+                                    .map(|x| x.to_string())
+                                    .unwrap_or(String::new()),
+                                path.parent().map(|x| x.to_path_buf()),
+                            ),
+                            None => (String::new(), None),
+                        };
                         let (dialog, command) = Dialog::new(
-                            DialogKind::SaveFile,
-                            tab.path_opt.clone(),
+                            DialogKind::SaveFile { filename },
+                            path_opt,
                             Message::DialogMessage,
                             move |result| Message::SaveAsResult(entity, result),
                         );
