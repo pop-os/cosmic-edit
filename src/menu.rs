@@ -17,7 +17,7 @@ use cosmic::{
 };
 use std::{collections::HashMap, path::PathBuf};
 
-use crate::{fl, icon_cache_get, Action, Config, KeyBind, Message};
+use crate::{fl, icon_cache_get, Action, Config, ConfigState, KeyBind, Message};
 
 macro_rules! menu_button {
     ($($x:expr),+ $(,)?) => (
@@ -86,6 +86,7 @@ pub fn context_menu<'a>(
 
 pub fn menu_bar<'a>(
     config: &Config,
+    config_state: &ConfigState,
     key_binds: &HashMap<KeyBind, Action>,
     projects: &Vec<(String, PathBuf)>,
 ) -> Element<'a, Message> {
@@ -161,13 +162,13 @@ pub fn menu_bar<'a>(
         path.display().to_string()
     };
 
-    let mut recent_files = Vec::with_capacity(config.recent_files.len());
-    for (i, path) in config.recent_files.iter().enumerate() {
+    let mut recent_files = Vec::with_capacity(config_state.recent_files.len());
+    for (i, path) in config_state.recent_files.iter().enumerate() {
         recent_files.push(menu_item(format_path(path), Action::OpenRecentFile(i)));
     }
 
-    let mut recent_projects = Vec::with_capacity(config.recent_projects.len());
-    for (i, path) in config.recent_projects.iter().enumerate() {
+    let mut recent_projects = Vec::with_capacity(config_state.recent_projects.len());
+    for (i, path) in config_state.recent_projects.iter().enumerate() {
         recent_projects.push(menu_item(format_path(path), Action::OpenRecentProject(i)));
     }
 

@@ -35,9 +35,6 @@ pub struct Config {
     pub font_size: u16,
     pub highlight_current_line: bool,
     pub line_numbers: bool,
-    //TODO: move to state?
-    pub recent_files: VecDeque<PathBuf>,
-    pub recent_projects: VecDeque<PathBuf>,
     pub syntax_theme_dark: String,
     pub syntax_theme_light: String,
     pub tab_width: u16,
@@ -54,8 +51,6 @@ impl Default for Config {
             font_size: 14,
             highlight_current_line: true,
             line_numbers: true,
-            recent_files: VecDeque::new(),
-            recent_projects: VecDeque::new(),
             syntax_theme_dark: "COSMIC Dark".to_string(),
             syntax_theme_light: "COSMIC Light".to_string(),
             tab_width: 4,
@@ -80,6 +75,21 @@ impl Config {
             &self.syntax_theme_dark
         } else {
             &self.syntax_theme_light
+        }
+    }
+}
+
+#[derive(Clone, CosmicConfigEntry, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct ConfigState {
+    pub recent_files: VecDeque<PathBuf>,
+    pub recent_projects: VecDeque<PathBuf>,
+}
+
+impl Default for ConfigState {
+    fn default() -> Self {
+        Self {
+            recent_files: VecDeque::new(),
+            recent_projects: VecDeque::new(),
         }
     }
 }

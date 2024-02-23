@@ -31,7 +31,7 @@ use std::{
 };
 use tokio::time;
 
-use config::{AppTheme, Config, CONFIG_VERSION};
+use config::{AppTheme, Config, ConfigState, CONFIG_VERSION};
 mod config;
 
 use git::{GitDiff, GitDiffLine, GitRepository, GitStatus, GitStatusKind};
@@ -146,6 +146,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    let (config_state_handler, config_state) =
+        match cosmic_config::Config::new_state(App::APP_ID, CONFIG_VERSION) {
+            Ok(config_state_handler) => {
+                let config_state = ConfigState::get_entry(&config_state_handler).unwrap_or_else(
+                    |(errs, config_state)| {
+                        log::info!("errors loading config_state: {:?}", errs);
+                        config_state
+                    },
+                );
+                (Some(config_state_handler), config_state)
+            }
+            Err(err) => {
+                log::error!("failed to create config_state handler: {}", err);
+                (None, ConfigState::default())
+            }
+        };
+
     let mut settings = Settings::default();
     settings = settings.theme(config.app_theme.theme());
     settings = settings.size_limits(Limits::NONE.min_width(360.0).min_height(180.0));
@@ -153,6 +170,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let flags = Flags {
         config_handler,
         config,
+        config_state_handler,
+        config_state,
     };
     cosmic::app::run::<App>(settings, flags)?;
 
@@ -256,6 +275,8 @@ impl Action {
 pub struct Flags {
     config_handler: Option<cosmic_config::Config>,
     config: Config,
+    config_state_handler: Option<cosmic_config::Config>,
+    config_state: ConfigState,
 }
 
 #[derive(Debug)]
@@ -280,6 +301,7 @@ impl PartialEq for WatcherWrapper {
 pub enum Message {
     AppTheme(AppTheme),
     Config(Config),
+    ConfigState(ConfigState),
     CloseFile,
     CloseProject(usize),
     Copy,
@@ -377,6 +399,8 @@ pub struct App {
     tab_model: segmented_button::SingleSelectModel,
     config_handler: Option<cosmic_config::Config>,
     config: Config,
+    config_state_handler: Option<cosmic_config::Config>,
+    config_state: ConfigState,
     key_binds: HashMap<KeyBind, Action>,
     app_themes: Vec<String>,
     font_names: Vec<String>,
@@ -488,10 +512,12 @@ impl App {
                         self.projects.push((name.to_string(), path.to_path_buf()));
 
                         // Add to recent projects, ensuring only one entry
-                        self.config.recent_projects.retain(|x| x != path);
-                        self.config.recent_projects.push_front(path.to_path_buf());
-                        self.config.recent_projects.truncate(10);
-                        self.save_config_no_update();
+                        self.config_state.recent_projects.retain(|x| x != path);
+                        self.config_state
+                            .recent_projects
+                            .push_front(path.to_path_buf());
+                        self.config_state.recent_projects.truncate(10);
+                        self.save_config_state();
                     }
                     _ => {
                         log::error!("failed to open project {:?}: not a directory", path);
@@ -546,10 +572,12 @@ impl App {
                 }
 
                 // Add to recent files, ensuring only one entry
-                self.config.recent_files.retain(|x| x != &canonical);
-                self.config.recent_files.push_front(canonical.to_path_buf());
-                self.config.recent_files.truncate(10);
-                self.save_config_no_update();
+                self.config_state.recent_files.retain(|x| x != &canonical);
+                self.config_state
+                    .recent_files
+                    .push_front(canonical.to_path_buf());
+                self.config_state.recent_files.truncate(10);
+                self.save_config_state();
 
                 let mut tab = EditorTab::new(&self.config);
                 tab.open(canonical);
@@ -583,14 +611,18 @@ impl App {
     }
 
     fn save_config(&mut self) -> Command<Message> {
-        self.save_config_no_update();
-        self.update_config()
-    }
-
-    fn save_config_no_update(&mut self) {
         if let Some(ref config_handler) = self.config_handler {
             if let Err(err) = self.config.write_entry(config_handler) {
                 log::error!("failed to save config: {}", err);
+            }
+        }
+        self.update_config()
+    }
+
+    fn save_config_state(&mut self) {
+        if let Some(ref config_state_handler) = self.config_state_handler {
+            if let Err(err) = self.config_state.write_entry(config_state_handler) {
+                log::error!("failed to save config_state: {}", err);
             }
         }
     }
@@ -1129,6 +1161,8 @@ impl Application for App {
             tab_model: segmented_button::Model::builder().build(),
             config_handler: flags.config_handler,
             config: flags.config,
+            config_state_handler: flags.config_state_handler,
+            config_state: flags.config_state,
             key_binds: key_binds(),
             app_themes,
             font_names,
@@ -1303,6 +1337,12 @@ impl Application for App {
                     //TODO: update syntax theme by clearing tabs, only if needed
                     self.config = config;
                     return self.update_config();
+                }
+            }
+            Message::ConfigState(config_state) => {
+                if config_state != self.config_state {
+                    log::info!("update config state");
+                    self.config_state = config_state;
                 }
             }
             Message::CloseFile => {
@@ -1629,13 +1669,13 @@ impl Application for App {
                 }
             }
             Message::OpenRecentFile(index) => {
-                if let Some(path) = self.config.recent_files.get(index).cloned() {
+                if let Some(path) = self.config_state.recent_files.get(index).cloned() {
                     self.open_tab(Some(path));
                     return self.update_tab();
                 }
             }
             Message::OpenRecentProject(index) => {
-                if let Some(path) = self.config.recent_projects.get(index).cloned() {
+                if let Some(path) = self.config_state.recent_projects.get(index).cloned() {
                     self.open_project(path);
                 }
             }
@@ -2088,7 +2128,12 @@ impl Application for App {
     }
 
     fn header_start(&self) -> Vec<Element<Message>> {
-        vec![menu_bar(&self.config, &self.key_binds, &self.projects)]
+        vec![menu_bar(
+            &self.config,
+            &self.config_state,
+            &self.key_binds,
+            &self.projects,
+        )]
     }
 
     fn view(&self) -> Element<Message> {
@@ -2349,6 +2394,7 @@ impl Application for App {
     fn subscription(&self) -> subscription::Subscription<Message> {
         struct WatcherSubscription;
         struct ConfigSubscription;
+        struct ConfigStateSubscription;
         struct ThemeSubscription;
 
         subscription::Subscription::batch([
@@ -2434,6 +2480,18 @@ impl Application for App {
                 }
 
                 Message::Config(update.config)
+            }),
+            cosmic_config::config_state_subscription(
+                TypeId::of::<ConfigStateSubscription>(),
+                Self::APP_ID.into(),
+                CONFIG_VERSION,
+            )
+            .map(|update| {
+                for error in update.errors {
+                    log::error!("error loading config: {error:?}");
+                }
+
+                Message::ConfigState(update.config)
             }),
             cosmic_config::config_subscription::<_, cosmic_theme::ThemeMode>(
                 TypeId::of::<ThemeSubscription>(),
