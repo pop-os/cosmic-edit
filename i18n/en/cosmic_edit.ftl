@@ -21,6 +21,9 @@ staged-changes = Staged changes
 ## Project search
 project-search = Project search
 
+## Prompt save changes
+prompt-save-change = Unsaved changes
+
 ## Settings
 settings = Settings
 

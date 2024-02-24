@@ -350,6 +350,7 @@ pub enum Message {
     TabActivateJump(usize),
     TabChanged(segmented_button::Entity),
     TabClose(segmented_button::Entity),
+    TabCloseForce(segmented_button::Entity),
     TabContextAction(segmented_button::Entity, Action),
     TabContextMenu(segmented_button::Entity, Option<Point>),
     TabNext,
@@ -372,6 +373,7 @@ pub enum ContextPage {
     GitManagement,
     //TODO: Move search to pop-up
     ProjectSearch,
+    PromptSaveChange,
     Settings,
 }
 
@@ -381,6 +383,7 @@ impl ContextPage {
             Self::DocumentStatistics => fl!("document-statistics"),
             Self::GitManagement => fl!("git-management"),
             Self::ProjectSearch => fl!("project-search"),
+            Self::PromptSaveChange => fl!("prompt-save-change"),
             Self::Settings => fl!("settings"),
         }
     }
@@ -1929,6 +1932,25 @@ impl Application for App {
                 }
             }
             Message::TabClose(entity) => {
+                match self.tab_model.data_mut::<Tab>(entity) {
+                    // Only match a changed editor tab...
+                    Some(Tab::Editor(tab)) if tab.changed() => {
+                        // Don't close the save prompt if `TabClose` is emitted again; only
+                        // toggle if no pages or a different page is open
+                        if self.context_page != ContextPage::PromptSaveChange
+                            || !self.core.window.show_context
+                        {
+                            return self
+                                .update(Message::ToggleContextPage(ContextPage::PromptSaveChange));
+                        }
+                    }
+                    // ...or else just close it
+                    _ => {
+                        return self.update(Message::TabCloseForce(entity));
+                    }
+                }
+            }
+            Message::TabCloseForce(entity) => {
                 // Activate closest item
                 if let Some(position) = self.tab_model.position(entity) {
                     if position > 0 {
@@ -2123,6 +2145,7 @@ impl Application for App {
             ContextPage::DocumentStatistics => self.document_statistics(),
             ContextPage::GitManagement => self.git_management(),
             ContextPage::ProjectSearch => self.project_search(),
+            ContextPage::PromptSaveChange => return None,
             ContextPage::Settings => self.settings(),
         })
     }
