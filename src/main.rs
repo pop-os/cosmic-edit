@@ -14,6 +14,7 @@ use cosmic::{
         widget::text,
         window, Alignment, Background, Color, Length, Limits, Point,
     },
+    prelude::CollectionWidget,
     style, theme,
     widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
     Application, ApplicationExt, Apply, Element,
@@ -1017,20 +1018,26 @@ impl App {
             (theme.spacing, theme.warning_text_color())
         };
 
-        // Save button is only valid if the file was previously saved
+        // Save is displayed regardless if the file was already saved
         let save = widget::text(fl!("save"));
         let save_button = widget::button(save)
             .on_press(Message::Save)
             .style(theme::Button::Standard)
-            .width(Length::Fill)
-            .into();
-
-        // Save As is always valid
-        let save_as = widget::text(fl!("save-as"));
-        let save_as_button = widget::button(save_as)
-            .on_press(Message::SaveAsDialog)
-            .style(theme::Button::Standard)
             .width(Length::Fill);
+
+        // Save As is shown if the file has been saved previously
+        // Rationale: The user may want to save the modified buffer as a new file
+        let save_as_button = match self.active_tab() {
+            Some(Tab::Editor(tab)) if tab.path_opt.is_some() => {
+                let save_as = widget::text(fl!("save-as"));
+                let save_as_button = widget::button(save_as)
+                    .on_press(Message::SaveAsDialog)
+                    .style(theme::Button::Standard)
+                    .width(Length::Fill);
+                Some(save_as_button)
+            }
+            _ => None,
+        };
 
         // TODO: Maybe a button to show diffs in a split?
         // let diff = widget::text(fl!("diff"));
@@ -1040,8 +1047,12 @@ impl App {
             widget::text(fl!("prompt-unsaved-changes"))
                 .style(theme::Text::Color(warning_color.into()))
                 .into(),
-            widget::row::with_children(vec![save_button, save_as_button.into()]).into(),
+            widget::row::with_capacity(2)
+                .push(save_button)
+                .push_maybe(save_as_button)
+                .into(),
         ])
+        .spacing(spacing.space_s)
         .into()
     }
 
