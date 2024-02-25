@@ -22,7 +22,9 @@ staged-changes = Staged changes
 project-search = Project search
 
 ## Prompt save changes
-prompt-save-change = Unsaved changes
+prompt-save-changes-title = Unsaved changes
+prompt-unsaved-changes = You have unsaved changes. Save?
+cancel = Cancel
 
 ## Settings
 settings = Settings

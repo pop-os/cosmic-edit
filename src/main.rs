@@ -373,7 +373,7 @@ pub enum ContextPage {
     GitManagement,
     //TODO: Move search to pop-up
     ProjectSearch,
-    PromptSaveChange,
+    PromptSaveChanges,
     Settings,
 }
 
@@ -383,7 +383,7 @@ impl ContextPage {
             Self::DocumentStatistics => fl!("document-statistics"),
             Self::GitManagement => fl!("git-management"),
             Self::ProjectSearch => fl!("project-search"),
-            Self::PromptSaveChange => fl!("prompt-save-change"),
+            Self::PromptSaveChanges => fl!("prompt-save-changes-title"),
             Self::Settings => fl!("settings"),
         }
     }
@@ -1009,6 +1009,40 @@ impl App {
             .spacing(spacing.space_s)
             .padding([spacing.space_xxs, spacing.space_none])
             .into()
+    }
+
+    fn prompt_save_changes(&self) -> Element<Message> {
+        let (spacing, warning_color) = {
+            let theme = self.core().system_theme().cosmic();
+            (theme.spacing, theme.warning_text_color())
+        };
+
+        // Save button is only valid if the file was previously saved
+        let save = widget::text(fl!("save"));
+        let save_button = widget::button(save)
+            .on_press(Message::Save)
+            .style(theme::Button::Standard)
+            .width(Length::Fill)
+            .into();
+
+        // Save As is always valid
+        let save_as = widget::text(fl!("save-as"));
+        let save_as_button = widget::button(save_as)
+            .on_press(Message::SaveAsDialog)
+            .style(theme::Button::Standard)
+            .width(Length::Fill);
+
+        // TODO: Maybe a button to show diffs in a split?
+        // let diff = widget::text(fl!("diff"));
+        // let diff_button = widget::button(diff.into());
+
+        widget::column::with_children(vec![
+            widget::text(fl!("prompt-unsaved-changes"))
+                .style(theme::Text::Color(warning_color.into()))
+                .into(),
+            widget::row::with_children(vec![save_button, save_as_button.into()]).into(),
+        ])
+        .into()
     }
 
     fn settings(&self) -> Element<Message> {
@@ -1868,6 +1902,10 @@ impl Application for App {
                             if let Some(title) = title_opt {
                                 self.tab_model.text_set(entity, title);
                             }
+                            // Close save changes prompt only if the dialog succeeded
+                            if self.context_page == ContextPage::PromptSaveChanges {
+                                self.core_mut().window.show_context = false;
+                            }
                         }
                     }
                 }
@@ -1937,11 +1975,12 @@ impl Application for App {
                     Some(Tab::Editor(tab)) if tab.changed() => {
                         // Don't close the save prompt if `TabClose` is emitted again; only
                         // toggle if no pages or a different page is open
-                        if self.context_page != ContextPage::PromptSaveChange
+                        if self.context_page != ContextPage::PromptSaveChanges
                             || !self.core.window.show_context
                         {
-                            return self
-                                .update(Message::ToggleContextPage(ContextPage::PromptSaveChange));
+                            return self.update(Message::ToggleContextPage(
+                                ContextPage::PromptSaveChanges,
+                            ));
                         }
                     }
                     // ...or else just close it
@@ -2145,7 +2184,7 @@ impl Application for App {
             ContextPage::DocumentStatistics => self.document_statistics(),
             ContextPage::GitManagement => self.git_management(),
             ContextPage::ProjectSearch => self.project_search(),
-            ContextPage::PromptSaveChange => return None,
+            ContextPage::PromptSaveChanges => self.prompt_save_changes(),
             ContextPage::Settings => self.settings(),
         })
     }
