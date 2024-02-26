@@ -15,7 +15,7 @@ use cosmic::{
         window, Alignment, Background, Color, Length, Limits, Point,
     },
     style, theme,
-    widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
+    widget::{self, button, icon, nav_bar, segmented_button},
     Application, ApplicationExt, Apply, Element,
 };
 use cosmic_files::dialog::{Dialog, DialogKind, DialogMessage, DialogResult};
@@ -1235,7 +1235,7 @@ impl Application for App {
             .button_spacing(space_xxxs)
             .on_activate(|entity| message::cosmic(cosmic::app::cosmic::Message::NavBar(entity)))
             .spacing(space_none)
-            .style(theme::SegmentedButton::ViewSwitcher)
+            .style(theme::SegmentedButton::TabBar)
             .apply(widget::container)
             .padding(space_s)
             .width(Length::Fill);
@@ -2149,7 +2149,7 @@ impl Application for App {
             widget::row::with_capacity(2)
                 .align_items(Alignment::Center)
                 .push(
-                    view_switcher::horizontal(&self.tab_model)
+                    widget::tab_bar::horizontal(&self.tab_model)
                         .button_height(32)
                         .button_spacing(space_xxs)
                         .close_icon(icon_cache_get("window-close-symbolic", 16))
