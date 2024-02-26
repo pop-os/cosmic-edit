@@ -374,7 +374,7 @@ pub enum ContextPage {
     GitManagement,
     //TODO: Move search to pop-up
     ProjectSearch,
-    PromptSaveChanges,
+    PromptSaveChanges(segmented_button::Entity),
     Settings,
 }
 
@@ -384,7 +384,7 @@ impl ContextPage {
             Self::DocumentStatistics => fl!("document-statistics"),
             Self::GitManagement => fl!("git-management"),
             Self::ProjectSearch => fl!("project-search"),
-            Self::PromptSaveChanges => fl!("prompt-save-changes-title"),
+            Self::PromptSaveChanges(_) => fl!("prompt-save-changes-title"),
             Self::Settings => fl!("settings"),
         }
     }
@@ -1012,7 +1012,7 @@ impl App {
             .into()
     }
 
-    fn prompt_save_changes(&self) -> Element<Message> {
+    fn prompt_save_changes(&self, entity: segmented_button::Entity) -> Element<Message> {
         let (spacing, warning_color) = {
             let theme = self.core().system_theme().cosmic();
             (theme.spacing, theme.warning_text_color())
@@ -1027,7 +1027,7 @@ impl App {
 
         // Save As is shown if the file has been saved previously
         // Rationale: The user may want to save the modified buffer as a new file
-        let save_as_button = match self.active_tab() {
+        let save_as_button = match self.tab_model.data(entity) {
             Some(Tab::Editor(tab)) if tab.path_opt.is_some() => {
                 let save_as = widget::text(fl!("save-as"));
                 let save_as_button = widget::button(save_as)
@@ -1914,7 +1914,7 @@ impl Application for App {
                                 self.tab_model.text_set(entity, title);
                             }
                             // Close save changes prompt only if the dialog succeeded
-                            if self.context_page == ContextPage::PromptSaveChanges {
+                            if let ContextPage::PromptSaveChanges(_) = self.context_page {
                                 self.core_mut().window.show_context = false;
                             }
                         }
@@ -1985,13 +1985,18 @@ impl Application for App {
                     // Only match a changed editor tab...
                     Some(Tab::Editor(tab)) if tab.changed() => {
                         // Don't close the save prompt if `TabClose` is emitted again; only
-                        // toggle if no pages or a different page is open
-                        if self.context_page != ContextPage::PromptSaveChanges
-                            || !self.core.window.show_context
+                        // toggle if no pages are open or a different page is open
+                        if !self.core.window.show_context
+                            || matches!(self.context_page, ContextPage::PromptSaveChanges(_))
                         {
-                            return self.update(Message::ToggleContextPage(
-                                ContextPage::PromptSaveChanges,
-                            ));
+                            // Focus the tab in case the user is closing an unfocussed tab
+                            // Otherwise, closing an unfocussed tab would be very confusing
+                            return Command::batch([
+                                self.update(Message::TabActivate(entity)),
+                                self.update(Message::ToggleContextPage(
+                                    ContextPage::PromptSaveChanges(entity),
+                                )),
+                            ]);
                         }
                     }
                     // ...or else just close it
@@ -2195,7 +2200,7 @@ impl Application for App {
             ContextPage::DocumentStatistics => self.document_statistics(),
             ContextPage::GitManagement => self.git_management(),
             ContextPage::ProjectSearch => self.project_search(),
-            ContextPage::PromptSaveChanges => self.prompt_save_changes(),
+            ContextPage::PromptSaveChanges(entity) => self.prompt_save_changes(entity),
             ContextPage::Settings => self.settings(),
         })
     }
