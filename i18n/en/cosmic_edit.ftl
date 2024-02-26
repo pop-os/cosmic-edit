@@ -24,7 +24,7 @@ project-search = Project search
 ## Prompt save changes
 prompt-save-changes-title = Unsaved changes
 prompt-unsaved-changes = You have unsaved changes. Save?
-cancel = Cancel
+discard = Discard changes
 
 ## Settings
 settings = Settings

@@ -1022,7 +1022,7 @@ impl App {
         let save = widget::text(fl!("save"));
         let save_button = widget::button(save)
             .on_press(Message::Save)
-            .style(theme::Button::Standard)
+            .style(theme::Button::Suggested)
             .width(Length::Fill);
 
         // Save As is shown if the file has been saved previously
@@ -1032,7 +1032,7 @@ impl App {
                 let save_as = widget::text(fl!("save-as"));
                 let save_as_button = widget::button(save_as)
                     .on_press(Message::SaveAsDialog)
-                    .style(theme::Button::Standard)
+                    .style(theme::Button::Suggested)
                     .width(Length::Fill);
                 Some(save_as_button)
             }
@@ -1040,8 +1040,15 @@ impl App {
         };
 
         // TODO: Maybe a button to show diffs in a split?
+        // And more info, such as the path if any?
         // let diff = widget::text(fl!("diff"));
         // let diff_button = widget::button(diff.into());
+
+        let discard = widget::text(fl!("discard"));
+        let discard_button = widget::button(discard)
+            .on_press(Message::TabCloseForce(entity))
+            .style(theme::Button::Destructive)
+            .width(Length::Fill);
 
         widget::column::with_children(vec![
             widget::text(fl!("prompt-unsaved-changes"))
@@ -1051,6 +1058,7 @@ impl App {
                 .push(save_button)
                 .push_maybe(save_as_button)
                 .into(),
+            discard_button.into(),
         ])
         .spacing(spacing.space_s)
         .into()
@@ -1986,8 +1994,12 @@ impl Application for App {
                     Some(Tab::Editor(tab)) if tab.changed() => {
                         // Don't close the save prompt if `TabClose` is emitted again; only
                         // toggle if no pages are open or a different page is open
-                        if !self.core.window.show_context
-                            || matches!(self.context_page, ContextPage::PromptSaveChanges(_))
+                        // `PromptSaveChanges` for a different tab other than `entity` counts as
+                        // a different page
+                        // If tab 2 and 3 both have unsaved changes and PromptSaveChanges is
+                        // open for tab 2, closing tab 3 should open the page for tab 3
+                        if !self.core().window.show_context
+                            || !matches!(self.context_page, ContextPage::PromptSaveChanges(id) if id != entity)
                         {
                             // Focus the tab in case the user is closing an unfocussed tab
                             // Otherwise, closing an unfocussed tab would be very confusing
@@ -2021,6 +2033,18 @@ impl Application for App {
                 // If that was the last tab, make a new empty one
                 if self.tab_model.iter().next().is_none() {
                     self.open_tab(None);
+                }
+
+                // Close PromptSaveChanges page if open for this entity
+                if self.core().window.show_context
+                    && matches!(self.context_page, ContextPage::PromptSaveChanges(_))
+                {
+                    return Command::batch([
+                        self.update(Message::ToggleContextPage(ContextPage::PromptSaveChanges(
+                            entity,
+                        ))),
+                        self.update_tab(),
+                    ]);
                 }
 
                 return self.update_tab();
