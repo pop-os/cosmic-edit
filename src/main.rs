@@ -2212,12 +2212,12 @@ impl Application for App {
                 if self.config.line_numbers {
                     text_box = text_box.line_numbers();
                 }
-                let mut popover =
-                    widget::popover(text_box, menu::context_menu(&self.key_binds, tab_id));
-                popover = match tab.context_menu {
-                    Some(position) => popover.position(position),
-                    None => popover.show_popup(false),
-                };
+                let mut popover = widget::popover(text_box);
+                if let Some(position) = tab.context_menu {
+                    popover = popover
+                        .popup(menu::context_menu(&self.key_binds, tab_id))
+                        .position(position);
+                }
                 tab_column = tab_column.push(popover);
                 if !status.is_empty() {
                     tab_column = tab_column.push(text(status).font(Font::MONOSPACE));
