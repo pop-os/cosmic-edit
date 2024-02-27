@@ -1018,14 +1018,15 @@ impl App {
             (theme.spacing, theme.warning_text_color())
         };
 
-        // Save is displayed regardless if the file was already saved
+        // "Save" is displayed regardless if the file was already saved because the message handles
+        // "Save As" if necessary
         let save = widget::text(fl!("save"));
         let save_button = widget::button(save)
             .on_press(Message::Save)
             .style(theme::Button::Suggested)
             .width(Length::Fill);
 
-        // Save As is shown if the file has been saved previously
+        // "Save As" is only shown if the file has been saved previously
         // Rationale: The user may want to save the modified buffer as a new file
         let save_as_button = match self.tab_model.data(entity) {
             Some(Tab::Editor(tab)) if tab.path_opt.is_some() => {
@@ -1044,6 +1045,7 @@ impl App {
         // let diff = widget::text(fl!("diff"));
         // let diff_button = widget::button(diff.into());
 
+        // Discards unsaved changes
         let discard = widget::text(fl!("discard"));
         let discard_button = widget::button(discard)
             .on_press(Message::TabCloseForce(entity))
@@ -1992,14 +1994,16 @@ impl Application for App {
                 match self.tab_model.data_mut::<Tab>(entity) {
                     // Only match a changed editor tab...
                     Some(Tab::Editor(tab)) if tab.changed() => {
-                        // Don't close the save prompt if `TabClose` is emitted again; only
-                        // toggle if no pages are open or a different page is open
+                        // * The save prompt shouldn't be closed if `TabClose` is emitted again
+                        // * Prompt should be opened if no pages are open
+                        // * Prompt should replace a different page (e.g. Settings)
+                        //
                         // `PromptSaveChanges` for a different tab other than `entity` counts as
                         // a different page
-                        // If tab 2 and 3 both have unsaved changes and PromptSaveChanges is
+                        // Ex. If tab 2 and 3 both have unsaved changes and `PromptSaveChanges` is
                         // open for tab 2, closing tab 3 should open the page for tab 3
                         if !self.core().window.show_context
-                            || !matches!(self.context_page, ContextPage::PromptSaveChanges(id) if id != entity)
+                            || self.context_page != ContextPage::PromptSaveChanges(entity)
                         {
                             // Focus the tab in case the user is closing an unfocussed tab
                             // Otherwise, closing an unfocussed tab would be very confusing
