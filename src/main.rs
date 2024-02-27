@@ -2213,10 +2213,11 @@ impl Application for App {
                     text_box = text_box.line_numbers();
                 }
                 let mut popover = widget::popover(text_box);
-                if let Some(position) = tab.context_menu {
+                if let Some(point) = tab.context_menu {
+                    let rounded = Point::new(point.x.round(), point.y.round());
                     popover = popover
                         .popup(menu::context_menu(&self.key_binds, tab_id))
-                        .position(position);
+                        .position(rounded);
                 }
                 tab_column = tab_column.push(popover);
                 if !status.is_empty() {
