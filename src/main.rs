@@ -321,6 +321,7 @@ pub enum Message {
     FindSearchValueChanged(String),
     GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
     Key(Modifiers, keyboard::Key),
+    LaunchUrl(String),
     Modifiers(Modifiers),
     NewFile,
     NewWindow,
@@ -721,24 +722,31 @@ impl App {
 
     fn about(&self) -> Element<Message> {
         let cosmic_theme::Spacing { space_xxs, .. } = self.core().system_theme().cosmic().spacing;
+        let repository = "https://github.com/pop-os/cosmic-edit";
+        let hash = env!("VERGEN_GIT_SHA");
+        let date = env!("VERGEN_GIT_COMMIT_DATE");
         widget::column::with_children(vec![
                 widget::svg(widget::svg::Handle::from_memory(
                     &include_bytes!(
-                        "../res/icons/hicolor/256x256/apps/com.system76.CosmicEdit.svg"
+                        "../res/icons/hicolor/128x128/apps/com.system76.CosmicEdit.svg"
                     )[..],
                 ))
                 .into(),
-                widget::text::heading(fl!("cosmic-text-editor")).into(),
-                widget::button::link("https://github.com/pop-os/cosmic-edit")
+                widget::text::title3(fl!("cosmic-text-editor")).into(),
+                widget::button::link(repository)
+                    .on_press(Message::LaunchUrl(repository.to_string()))
                     .padding(0)
                     .into(),
-                widget::text(fl!(
+                widget::button::link(fl!(
                     "git-description",
-                    hash = env!("VERGEN_GIT_SHA"),
-                    date = env!("VERGEN_GIT_COMMIT_DATE")
+                    hash = hash,
+                    date = date
                 ))
+                    .on_press(Message::LaunchUrl(format!("{}/commits/{}", repository, hash)))
+                    .padding(0)
                 .into(),
             ])
+        .align_items(Alignment::Center)
         .spacing(space_xxs)
         .into()
     }
@@ -1592,6 +1600,12 @@ impl Application for App {
             Message::GitProjectStatus(project_status) => {
                 self.git_project_status = Some(project_status);
             }
+            Message::LaunchUrl(url) => match open::that_detached(&url) {
+                Ok(()) => {}
+                Err(err) => {
+                    log::warn!("failed to open {:?}: {}", url, err);
+                }
+            },
             Message::Key(modifiers, key) => {
                 for (key_bind, action) in self.key_binds.iter() {
                     if key_bind.matches(modifiers, &key) {
