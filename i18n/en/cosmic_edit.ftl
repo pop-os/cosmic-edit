@@ -1,8 +1,13 @@
+cosmic-text-editor = COSMIC Text Editor
 new-document = New document
 open-project = Open project
 todo = TODO
 
 # Context Pages
+
+## About
+about = About
+git-description = Git commit {$hash} on {$date}
 
 ## Document statistics
 document-statistics = Document statistics
@@ -102,4 +107,4 @@ highlight-current-line = Highlight current line
 syntax-highlighting = Syntax highlighting...
 menu-settings = Settings...
 menu-keyboard-shortcuts = Keyboard shortcuts...
-about-cosmic-text-editor = About COSMIC Text Editor
+menu-about = About COSMIC Text Editor...

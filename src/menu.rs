@@ -270,7 +270,7 @@ pub fn menu_bar<'a>(
                 //TODO MenuTree::new(horizontal_rule(1)),
                 //TODO menu_item(fl!("menu-keyboard-shortcuts"), Action::Todo),
                 MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("about-cosmic-text-editor"), Action::Todo),
+                menu_item(fl!("menu-about"), Action::About),
             ],
         ),
     ])

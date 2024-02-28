@@ -182,6 +182,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Action {
     Todo,
+    About,
     CloseFile,
     CloseProject(usize),
     Copy,
@@ -227,6 +228,7 @@ impl Action {
     pub fn message(&self) -> Message {
         match self {
             Self::Todo => Message::Todo,
+            Self::About => Message::ToggleContextPage(ContextPage::About),
             Self::CloseFile => Message::CloseFile,
             Self::CloseProject(project_i) => Message::CloseProject(*project_i),
             Self::Copy => Message::Copy,
@@ -370,6 +372,7 @@ pub enum Message {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ContextPage {
+    About,
     DocumentStatistics,
     GitManagement,
     //TODO: Move search to pop-up
@@ -381,6 +384,7 @@ pub enum ContextPage {
 impl ContextPage {
     fn title(&self) -> String {
         match self {
+            Self::About => fl!("about"),
             Self::DocumentStatistics => fl!("document-statistics"),
             Self::GitManagement => fl!("git-management"),
             Self::ProjectSearch => fl!("project-search"),
@@ -708,11 +712,35 @@ impl App {
             None => "No Open File".to_string(),
         };
 
-        let window_title = format!("{title} - COSMIC Text Editor");
+        let window_title = format!("{title} - {}", fl!("cosmic-text-editor"));
         Command::batch([
             self.set_window_title(window_title, self.main_window_id()),
             self.update_focus(),
         ])
+    }
+
+    fn about(&self) -> Element<Message> {
+        let cosmic_theme::Spacing { space_xxs, .. } = self.core().system_theme().cosmic().spacing;
+        widget::column::with_children(vec![
+                widget::svg(widget::svg::Handle::from_memory(
+                    &include_bytes!(
+                        "../res/icons/hicolor/256x256/apps/com.system76.CosmicEdit.svg"
+                    )[..],
+                ))
+                .into(),
+                widget::text::heading(fl!("cosmic-text-editor")).into(),
+                widget::button::link("https://github.com/pop-os/cosmic-edit")
+                    .padding(0)
+                    .into(),
+                widget::text(fl!(
+                    "git-description",
+                    hash = env!("VERGEN_GIT_SHA"),
+                    date = env!("VERGEN_GIT_COMMIT_DATE")
+                ))
+                .into(),
+            ])
+        .spacing(space_xxs)
+        .into()
     }
 
     fn document_statistics(&self) -> Element<Message> {
@@ -2220,6 +2248,7 @@ impl Application for App {
         }
 
         Some(match self.context_page {
+            ContextPage::About => self.about(),
             ContextPage::DocumentStatistics => self.document_statistics(),
             ContextPage::GitManagement => self.git_management(),
             ContextPage::ProjectSearch => self.project_search(),
