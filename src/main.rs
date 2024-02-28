@@ -1020,20 +1020,18 @@ impl App {
 
         // "Save" is displayed regardless if the file was already saved because the message handles
         // "Save As" if necessary
-        let save = widget::text(fl!("save"));
-        let save_button = widget::button(save)
+        let save = fl!("save");
+        let save_button = widget::button::suggested(save)
             .on_press(Message::Save)
-            .style(theme::Button::Suggested)
             .width(Length::Fill);
 
         // "Save As" is only shown if the file has been saved previously
         // Rationale: The user may want to save the modified buffer as a new file
         let save_as_button = match self.tab_model.data(entity) {
             Some(Tab::Editor(tab)) if tab.path_opt.is_some() => {
-                let save_as = widget::text(fl!("save-as"));
-                let save_as_button = widget::button(save_as)
+                let save_as = fl!("save-as");
+                let save_as_button = widget::button::suggested(save_as)
                     .on_press(Message::SaveAsDialog)
-                    .style(theme::Button::Suggested)
                     .width(Length::Fill);
                 Some(save_as_button)
             }
@@ -1046,24 +1044,21 @@ impl App {
         // let diff_button = widget::button(diff.into());
 
         // Discards unsaved changes
-        let discard = widget::text(fl!("discard"));
-        let discard_button = widget::button(discard)
+        let discard = fl!("discard");
+        let discard_button = widget::button::destructive(discard)
             .on_press(Message::TabCloseForce(entity))
-            .style(theme::Button::Destructive)
             .width(Length::Fill);
 
-        widget::column::with_children(vec![
-            widget::text(fl!("prompt-unsaved-changes"))
-                .style(theme::Text::Color(warning_color.into()))
-                .into(),
-            widget::row::with_capacity(2)
-                .push(save_button)
-                .push_maybe(save_as_button)
-                .into(),
-            discard_button.into(),
-        ])
-        .spacing(spacing.space_s)
-        .into()
+        widget::column::with_capacity(3)
+            .push(
+                widget::text(fl!("prompt-unsaved-changes"))
+                    .style(theme::Text::Color(warning_color.into())),
+            )
+            .push(save_button)
+            .push_maybe(save_as_button)
+            .push(discard_button)
+            .spacing(spacing.space_s)
+            .into()
     }
 
     fn settings(&self) -> Element<Message> {
