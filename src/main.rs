@@ -1600,12 +1600,6 @@ impl Application for App {
             Message::GitProjectStatus(project_status) => {
                 self.git_project_status = Some(project_status);
             }
-            Message::LaunchUrl(url) => match open::that_detached(&url) {
-                Ok(()) => {}
-                Err(err) => {
-                    log::warn!("failed to open {:?}: {}", url, err);
-                }
-            },
             Message::Key(modifiers, key) => {
                 for (key_bind, action) in self.key_binds.iter() {
                     if key_bind.matches(modifiers, &key) {
@@ -1613,6 +1607,12 @@ impl Application for App {
                     }
                 }
             }
+            Message::LaunchUrl(url) => match open::that_detached(&url) {
+                Ok(()) => {}
+                Err(err) => {
+                    log::warn!("failed to open {:?}: {}", url, err);
+                }
+            },
             Message::Modifiers(modifiers) => {
                 self.modifiers = modifiers;
             }
