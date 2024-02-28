@@ -385,7 +385,7 @@ pub enum ContextPage {
 impl ContextPage {
     fn title(&self) -> String {
         match self {
-            Self::About => fl!("about"),
+            Self::About => String::new(),
             Self::DocumentStatistics => fl!("document-statistics"),
             Self::GitManagement => fl!("git-management"),
             Self::ProjectSearch => fl!("project-search"),

@@ -6,7 +6,6 @@ todo = TODO
 # Context Pages
 
 ## About
-about = About
 git-description = Git commit {$hash} on {$date}
 
 ## Document statistics
