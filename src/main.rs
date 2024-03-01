@@ -1331,7 +1331,7 @@ impl Application for App {
             .width(Length::Fill);
 
         if !self.core().is_condensed() {
-            nav = nav.max_width(300);
+            nav = nav.max_width(280);
         }
 
         Some(
