@@ -61,6 +61,8 @@ mod project;
 use self::search::ProjectSearchResult;
 mod search;
 
+mod session;
+
 use self::tab::{EditorTab, GitDiffTab, Tab};
 mod tab;
 
