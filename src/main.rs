@@ -19,7 +19,10 @@ use cosmic::{
     widget::{self, button, icon, nav_bar, segmented_button},
     Application, ApplicationExt, Apply, Element,
 };
-use cosmic_files::dialog::{Dialog, DialogKind, DialogMessage, DialogResult};
+use cosmic_files::{
+    dialog::{Dialog, DialogKind, DialogMessage, DialogResult},
+    mime_icon::{mime_for_path, mime_icon},
+};
 use cosmic_text::{Cursor, Edit, Family, Selection, SwashCache, SyntaxSystem, ViMode};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -48,9 +51,6 @@ use line_number::LineNumberCache;
 mod line_number;
 
 mod localize;
-
-pub use self::mime_icon::{mime_icon, FALLBACK_MIME_ICON};
-mod mime_icon;
 
 use self::menu::menu_bar;
 mod menu;
@@ -1730,7 +1730,7 @@ impl Application for App {
                     },
                     relative_path.display()
                 );
-                let icon = mime_icon(&diff.path, 16);
+                let icon = icon::icon(mime_icon(mime_for_path(&diff.path), 16)).size(16);
                 let tab = Tab::GitDiff(GitDiffTab { title, diff });
                 self.tab_model
                     .insert()

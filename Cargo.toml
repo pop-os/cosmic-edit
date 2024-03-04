@@ -49,10 +49,6 @@ features = ["multi-window", "tokio", "winit"]
 version = "0.2.1"
 features = ["serde"]
 
-#TODO: clean up and send changes upstream
-[dependencies.systemicons]
-git = "https://github.com/jackpot51/systemicons"
-
 [target.'cfg(unix)'.dependencies]
 fork = "0.1"
 

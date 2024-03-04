@@ -2,8 +2,9 @@
 
 use cosmic::{
     iced::{advanced::graphics::text::font_system, Point},
-    widget::{icon, Icon},
+    widget::icon,
 };
+use cosmic_files::mime_icon::{mime_for_path, mime_icon, FALLBACK_MIME_ICON};
 use cosmic_text::{Attrs, Buffer, Edit, Shaping, SyntaxEditor, ViEditor, Wrap};
 use notify::Watcher;
 use std::{
@@ -12,7 +13,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{fl, git::GitDiff, mime_icon, Config, FALLBACK_MIME_ICON, SYNTAX_SYSTEM};
+use crate::{fl, git::GitDiff, Config, SYNTAX_SYSTEM};
 
 pub enum Tab {
     Editor(EditorTab),
@@ -182,9 +183,9 @@ impl EditorTab {
         editor.changed()
     }
 
-    pub fn icon(&self, size: u16) -> Icon {
+    pub fn icon(&self, size: u16) -> icon::Icon {
         match &self.path_opt {
-            Some(path) => mime_icon(path, size),
+            Some(path) => icon::icon(mime_icon(mime_for_path(path), size)).size(size),
             None => icon::from_name(FALLBACK_MIME_ICON).size(size).icon(),
         }
     }
