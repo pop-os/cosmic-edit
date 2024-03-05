@@ -62,6 +62,7 @@ use self::search::ProjectSearchResult;
 mod search;
 
 mod session;
+use session::{auto_save_subscription, AutoSaveEvent, AutoSaveUpdate};
 
 use self::tab::{EditorTab, GitDiffTab, Tab};
 mod tab;
@@ -305,6 +306,7 @@ impl PartialEq for WatcherWrapper {
 #[derive(Clone, Debug)]
 pub enum Message {
     AppTheme(AppTheme),
+    AutoSaveSender(futures::channel::mpsc::Sender<AutoSaveEvent>),
     Config(Config),
     ConfigState(ConfigState),
     CloseFile,
@@ -347,6 +349,7 @@ pub enum Message {
     Quit,
     Redo,
     Save,
+    SaveAny(segmented_button::Entity),
     SaveAsDialog,
     SaveAsResult(segmented_button::Entity, DialogResult),
     SelectAll,
@@ -432,6 +435,7 @@ pub struct App {
     project_search_value: String,
     project_search_result: Option<ProjectSearchResult>,
     watcher_opt: Option<notify::RecommendedWatcher>,
+    auto_save_sender: Option<futures::channel::mpsc::Sender<AutoSaveEvent>>,
     modifiers: Modifiers,
 }
 
@@ -1275,6 +1279,7 @@ impl Application for App {
             project_search_value: String::new(),
             project_search_result: None,
             watcher_opt: None,
+            auto_save_sender: None,
             modifiers: Modifiers::empty(),
         };
 
@@ -1422,6 +1427,9 @@ impl Application for App {
             Message::AppTheme(app_theme) => {
                 self.config.app_theme = app_theme;
                 return self.save_config();
+            }
+            Message::AutoSaveSender(sender) => {
+                self.auto_save_sender = Some(sender);
             }
             Message::Config(config) => {
                 if config != self.config {
@@ -1921,6 +1929,11 @@ impl Application for App {
 
                 if let Some(title) = title_opt {
                     self.tab_model.text_set(self.tab_model.active(), title);
+                }
+            }
+            Message::SaveAny(entity) => {
+                if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                    tab.save();
                 }
             }
             Message::SaveAsDialog => {
@@ -2656,6 +2669,11 @@ impl Application for App {
                 Some(dialog) => dialog.subscription(),
                 None => subscription::Subscription::none(),
             },
+            auto_save_subscription().map(|update| match update {
+                AutoSaveEvent::Ready(sender) => Message::AutoSaveSender(sender),
+                AutoSaveEvent::Save(entity) => Message::SaveAny(entity),
+                _ => unreachable!(),
+            }),
         ])
     }
 }

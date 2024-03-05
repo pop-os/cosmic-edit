@@ -88,7 +88,7 @@ pub fn auto_save_subscription() -> Subscription<AutoSaveEvent> {
                         AutoSaveEvent::Update(timeout) => {
                             timeouts.replace(timeout);
                         }
-                        AutoSaveEvent::Remove(entity) => {
+                        AutoSaveEvent::Cancel(entity) => {
                             // TODO: Borrow
                             timeouts.remove(&AutoSaveUpdate::new(entity, 1.try_into().unwrap()));
                         }
@@ -108,30 +108,35 @@ pub fn auto_save_subscription() -> Subscription<AutoSaveEvent> {
 
 pub enum AutoSaveEvent {
     // Messages to send to application:
+    /// Auto saver is ready to register timeouts.
     Ready(mpsc::Sender<AutoSaveEvent>),
-    /// Sent when timeout is reached (file is ready to be saved)
+    /// Sent when timeout is reached (file is ready to be saved).
     Save(Entity),
 
     // Messages from application:
-
-    /// Update or insert a new entity to be saved
+    /// Update or insert a new entity to be saved.
+    ///
+    /// Tabs that are not registered are added to be saved after the timeout expires.
+    /// Updating a tab that's already being tracked refreshes the timeout.
     Update(AutoSaveUpdate),
-    /// Remove entity before timeout is reached
-    Remove(Entity),
+    /// Cancel an [`Entity`]'s timeout.
+    Cancel(Entity),
     // TODO: This can probably handle Session save timeouts too
     // Session(..)
 }
 
 pub struct AutoSaveUpdate {
     entity: Entity,
-    save_at: Pin<Box<time::Sleep>>,
+    save_in: Pin<Box<time::Sleep>>,
 }
 
 impl AutoSaveUpdate {
     pub fn new(entity: Entity, secs: NonZeroU64) -> Self {
         Self {
             entity,
-            save_at: Box::pin(time::sleep(Duration::from_secs(secs.get()))),
+            // `Sleep` doesn't implement Unpin. Box pinning is the most straightforward
+            // way to store Sleep and advance each of the timeouts with SelectAll.
+            save_in: Box::pin(time::sleep(Duration::from_secs(secs.get()))),
         }
     }
 }
@@ -155,7 +160,7 @@ impl Future for AutoSaveUpdate {
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         // let mut save_at = pin!(self.save_at);
-        match self.as_mut().save_at.poll_unpin(cx) {
+        match self.as_mut().save_in.poll_unpin(cx) {
             Poll::Ready(_) => Poll::Ready(self.entity),
             Poll::Pending => Poll::Pending,
         }
