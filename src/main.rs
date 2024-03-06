@@ -726,6 +726,25 @@ impl App {
         ])
     }
 
+    // Send a message to the auto saver if enabled
+    fn update_auto_saver(&mut self, message: AutoSaveEvent) -> Command<Message> {
+        if let Some(mut sender) = self
+            .config
+            // Auto saving is enabled if a timeout is set
+            .auto_save_secs
+            .and_then(|_| self.auto_save_sender.clone())
+        {
+            Command::perform(async move { sender.send(message).await }, |res| {
+                if let Err(e) = res {
+                    log::error!("failed to send message to auto saver: {e}");
+                }
+                message::none()
+            })
+        } else {
+            Command::none()
+        }
+    }
+
     fn about(&self) -> Element<Message> {
         let cosmic_theme::Spacing { space_xxs, .. } = self.core().system_theme().cosmic().spacing;
         let repository = "https://github.com/pop-os/cosmic-edit";
@@ -1930,6 +1949,10 @@ impl Application for App {
                 if let Some(title) = title_opt {
                     self.tab_model.text_set(self.tab_model.active(), title);
                 }
+
+                // Remove saved tab from auto saver
+                let entity = self.tab_model.active();
+                return self.update_auto_saver(AutoSaveEvent::Cancel(entity));
             }
             Message::SaveAny(entity) => {
                 if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
@@ -2040,7 +2063,16 @@ impl Application for App {
                     let mut title = tab.title();
                     //TODO: better way of adding change indicator
                     title.push_str(" \u{2022}");
+                    let has_path = tab.path_opt.is_some();
                     self.tab_model.text_set(entity, title);
+                    // Register tab with the auto saver
+                    if has_path {
+                        if let Some(secs) = self.config.auto_save_secs {
+                            return self.update_auto_saver(AutoSaveEvent::Update(
+                                AutoSaveUpdate::new(entity, secs),
+                            ));
+                        }
+                    }
                 }
             }
             Message::TabClose(entity) => {
@@ -2101,6 +2133,7 @@ impl Application for App {
                             entity,
                         ))),
                         self.update_tab(),
+                        self.update_auto_saver(AutoSaveEvent::Cancel(entity)),
                     ]);
                 }
 
@@ -2111,7 +2144,10 @@ impl Application for App {
                     // Close context menu
                     tab.context_menu = None;
                     // Run action's message
-                    return self.update(action.message());
+                    return Command::batch([
+                        self.update(action.message()),
+                        self.update_auto_saver(AutoSaveEvent::Cancel(entity)),
+                    ]);
                 }
             }
             Message::TabContextMenu(entity, position_opt) => {

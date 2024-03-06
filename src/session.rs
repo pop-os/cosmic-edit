@@ -40,9 +40,9 @@ pub fn auto_save_subscription() -> Subscription<AutoSaveEvent> {
                     state = output
                         .send(AutoSaveEvent::Ready(sender.clone()))
                         .await
-                        .inspect_err(|e| {
-                            log::error!("Auto saver failed to send message to app on init: {e}")
-                        })
+                        // .inspect_err(|e| {
+                        //     log::error!("Auto saver failed to send message to app on init: {e}")
+                        // })
                         .map(|_| State::Select)
                         .unwrap_or(State::Exit);
                 }
