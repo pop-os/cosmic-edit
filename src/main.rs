@@ -62,7 +62,7 @@ use self::search::ProjectSearchResult;
 mod search;
 
 mod session;
-use session::{auto_save_subscription, AutoSaveEvent, AutoSaveUpdate};
+use session::{auto_save_subscription, AutoSaveEvent};
 
 use self::tab::{EditorTab, GitDiffTab, Tab};
 mod tab;
@@ -2067,11 +2067,7 @@ impl Application for App {
                     self.tab_model.text_set(entity, title);
                     // Register tab with the auto saver
                     if has_path {
-                        if let Some(secs) = self.config.auto_save_secs {
-                            return self.update_auto_saver(AutoSaveEvent::Update(
-                                AutoSaveUpdate::new(entity, secs),
-                            ));
-                        }
+                        return self.update_auto_saver(AutoSaveEvent::Register(entity));
                     }
                 }
             }
@@ -2705,11 +2701,13 @@ impl Application for App {
                 Some(dialog) => dialog.subscription(),
                 None => subscription::Subscription::none(),
             },
-            auto_save_subscription().map(|update| match update {
-                AutoSaveEvent::Ready(sender) => Message::AutoSaveSender(sender),
-                AutoSaveEvent::Save(entity) => Message::SaveAny(entity),
-                _ => unreachable!(),
-            }),
+            auto_save_subscription(self.config.auto_save_secs.unwrap()).map(
+                |update| match update {
+                    AutoSaveEvent::Ready(sender) => Message::AutoSaveSender(sender),
+                    AutoSaveEvent::Save(entity) => Message::SaveAny(entity),
+                    _ => unreachable!(),
+                },
+            ),
         ])
     }
 }

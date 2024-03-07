@@ -26,13 +26,14 @@ use cosmic::{
 
 use crate::Message;
 
-pub fn auto_save_subscription() -> Subscription<AutoSaveEvent> {
+pub fn auto_save_subscription(save_secs: NonZeroU64) -> Subscription<AutoSaveEvent> {
     struct AutoSave;
 
-    subscription::channel(TypeId::of::<AutoSave>(), 100, |mut output| async move {
+    subscription::channel(TypeId::of::<AutoSave>(), 100, move |mut output| async move {
         let mut state = State::Init;
         let (sender, mut recv) = channel(100);
         let mut timeouts: HashSet<AutoSaveUpdate> = HashSet::new();
+        let mut save_secs = save_secs;
 
         loop {
             match state {
@@ -49,7 +50,7 @@ pub fn auto_save_subscription() -> Subscription<AutoSaveEvent> {
                 State::Select => {
                     // select_all panics on empty iterators hence the check
                     if timeouts.is_empty() {
-                        state = recv.next().await.map_or(State::Exit, State::UpdateTimeouts);
+                        state = recv.next().await.map_or(State::Exit, State::UpdateState);
                     } else {
                         // select_all requires IntoIter, so `timeouts` is drained here then the
                         // HashSet is rebuilt from the remaining timeouts
@@ -62,7 +63,7 @@ pub fn auto_save_subscription() -> Subscription<AutoSaveEvent> {
                                 timeouts.extend(unfinished.into_inner());
 
                                 // Update timeouts or exit (None means the channel is closed)
-                                state = message.map(State::UpdateTimeouts).unwrap_or(State::Exit);
+                                state = message.map(State::UpdateState).unwrap_or(State::Exit);
                             }
                             Either::Right(((entity, _, remaining), _)) => {
                                 state = match output.send(AutoSaveEvent::Save(entity)).await {
@@ -83,14 +84,18 @@ pub fn auto_save_subscription() -> Subscription<AutoSaveEvent> {
                         }
                     }
                 }
-                State::UpdateTimeouts(update) => {
+                State::UpdateState(update) => {
                     match update {
-                        AutoSaveEvent::Update(timeout) => {
-                            timeouts.replace(timeout);
-                        }
                         AutoSaveEvent::Cancel(entity) => {
                             // TODO: Borrow
                             timeouts.remove(&AutoSaveUpdate::new(entity, 1.try_into().unwrap()));
+                        }
+                        AutoSaveEvent::Register(entity) => {
+                            let timeout = AutoSaveUpdate::new(entity, save_secs);
+                            timeouts.replace(timeout);
+                        }
+                        AutoSaveEvent::UpdateTimeout(timeout) => {
+                            save_secs = timeout;
                         }
                         _ => unreachable!(),
                     }
@@ -114,18 +119,20 @@ pub enum AutoSaveEvent {
     Save(Entity),
 
     // Messages from application:
+    /// Cancel an [`Entity`]'s timeout.
+    Cancel(Entity),
     /// Update or insert a new entity to be saved.
     ///
     /// Tabs that are not registered are added to be saved after the timeout expires.
     /// Updating a tab that's already being tracked refreshes the timeout.
-    Update(AutoSaveUpdate),
-    /// Cancel an [`Entity`]'s timeout.
-    Cancel(Entity),
+    Register(Entity),
+    /// Update timeout after which to trigger auto saves.
+    UpdateTimeout(NonZeroU64),
     // TODO: This can probably handle Session save timeouts too
     // Session(..)
 }
 
-pub struct AutoSaveUpdate {
+struct AutoSaveUpdate {
     entity: Entity,
     save_in: Pin<Box<time::Sleep>>,
 }
@@ -159,7 +166,6 @@ impl Future for AutoSaveUpdate {
     type Output = Entity;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        // let mut save_at = pin!(self.save_at);
         match self.as_mut().save_in.poll_unpin(cx) {
             Poll::Ready(_) => Poll::Ready(self.entity),
             Poll::Pending => Poll::Pending,
@@ -171,14 +177,14 @@ impl Future for AutoSaveUpdate {
 enum State {
     Init,
     Select,
-    UpdateTimeouts(AutoSaveEvent),
+    UpdateState(AutoSaveEvent),
     Exit,
 }
 
 impl From<Result<Option<AutoSaveEvent>, TryRecvError>> for State {
     fn from(value: Result<Option<AutoSaveEvent>, TryRecvError>) -> Self {
         match value {
-            Ok(Some(event)) => State::UpdateTimeouts(event),
+            Ok(Some(event)) => State::UpdateState(event),
             Ok(None) => State::Exit,
             Err(e) => {
                 // TODO: Retry or exit?
