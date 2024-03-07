@@ -57,8 +57,7 @@ impl Default for Config {
             tab_width: 4,
             vim_bindings: false,
             word_wrap: true,
-            // TODO: Set this back to None before PR
-            auto_save_secs: Some(NonZeroU64::new(3).unwrap())
+            auto_save_secs: None
         }
     }
 }

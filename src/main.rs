@@ -26,6 +26,7 @@ use std::{
     any::TypeId,
     collections::HashMap,
     env, fs, io,
+    num::NonZeroU64,
     path::{Path, PathBuf},
     process,
     sync::{Mutex, OnceLock},
@@ -307,6 +308,7 @@ impl PartialEq for WatcherWrapper {
 pub enum Message {
     AppTheme(AppTheme),
     AutoSaveSender(futures::channel::mpsc::Sender<AutoSaveEvent>),
+    AutoSaveTimeout(Option<NonZeroU64>),
     Config(Config),
     ConfigState(ConfigState),
     CloseFile,
@@ -1148,6 +1150,11 @@ impl App {
             .font_sizes
             .iter()
             .position(|font_size| font_size == &self.config.font_size);
+        let save_seconds = self
+            .config
+            .auto_save_secs
+            .map(|secs| secs.to_string())
+            .unwrap_or_default();
         widget::settings::view_column(vec![
             widget::settings::view_section(fl!("appearance"))
                 .add(
@@ -1196,6 +1203,16 @@ impl App {
                 .add(
                     widget::settings::item::builder(fl!("enable-vim-bindings"))
                         .toggler(self.config.vim_bindings, Message::VimBindings),
+                )
+                .into(),
+            widget::settings::view_section(fl!("session"))
+                .add(
+                    widget::settings::item::builder(fl!("auto-save-secs")).control(
+                        widget::text_input(fl!("seconds"), save_seconds).on_input(|s| {
+                            let secs = s.parse().ok();
+                            Message::AutoSaveTimeout(secs)
+                        }),
+                    ),
                 )
                 .into(),
         ])
@@ -1449,6 +1466,16 @@ impl Application for App {
             }
             Message::AutoSaveSender(sender) => {
                 self.auto_save_sender = Some(sender);
+            }
+            Message::AutoSaveTimeout(timeout) => {
+                self.config.auto_save_secs = timeout;
+                if let Some(timeout) = timeout {
+                    return Command::batch([
+                        self.save_config(),
+                        self.update_auto_saver(AutoSaveEvent::UpdateTimeout(timeout)),
+                    ]);
+                }
+                return self.save_config();
             }
             Message::Config(config) => {
                 if config != self.config {
@@ -2133,7 +2160,10 @@ impl Application for App {
                     ]);
                 }
 
-                return self.update_tab();
+                return Command::batch([
+                    self.update_tab(),
+                    self.update_auto_saver(AutoSaveEvent::Cancel(entity)),
+                ]);
             }
             Message::TabContextAction(entity, action) => {
                 if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
@@ -2701,13 +2731,14 @@ impl Application for App {
                 Some(dialog) => dialog.subscription(),
                 None => subscription::Subscription::none(),
             },
-            auto_save_subscription(self.config.auto_save_secs.unwrap()).map(
-                |update| match update {
+            match self.config.auto_save_secs {
+                Some(secs) => auto_save_subscription(secs).map(|update| match update {
                     AutoSaveEvent::Ready(sender) => Message::AutoSaveSender(sender),
                     AutoSaveEvent::Save(entity) => Message::SaveAny(entity),
                     _ => unreachable!(),
-                },
-            ),
+                }),
+                None => subscription::Subscription::none(),
+            },
         ])
     }
 }
