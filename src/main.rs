@@ -63,7 +63,7 @@ use self::search::ProjectSearchResult;
 mod search;
 
 mod session;
-use session::{auto_save_subscription, AutoSaveEvent};
+use session::{auto_save_subscription, AutoSaveMessage};
 
 use self::tab::{EditorTab, GitDiffTab, Tab};
 mod tab;
@@ -307,7 +307,7 @@ impl PartialEq for WatcherWrapper {
 #[derive(Clone, Debug)]
 pub enum Message {
     AppTheme(AppTheme),
-    AutoSaveSender(futures::channel::mpsc::Sender<AutoSaveEvent>),
+    AutoSaveSender(futures::channel::mpsc::Sender<AutoSaveMessage>),
     AutoSaveTimeout(Option<NonZeroU64>),
     Config(Config),
     ConfigState(ConfigState),
@@ -437,7 +437,7 @@ pub struct App {
     project_search_value: String,
     project_search_result: Option<ProjectSearchResult>,
     watcher_opt: Option<notify::RecommendedWatcher>,
-    auto_save_sender: Option<futures::channel::mpsc::Sender<AutoSaveEvent>>,
+    auto_save_sender: Option<futures::channel::mpsc::Sender<AutoSaveMessage>>,
     modifiers: Modifiers,
 }
 
@@ -729,7 +729,7 @@ impl App {
     }
 
     // Send a message to the auto saver if enabled
-    fn update_auto_saver(&mut self, message: AutoSaveEvent) -> Command<Message> {
+    fn update_auto_saver(&mut self, message: AutoSaveMessage) -> Command<Message> {
         if let Some(mut sender) = self
             .config
             // Auto saving is enabled if a timeout is set
@@ -1470,12 +1470,32 @@ impl Application for App {
             Message::AutoSaveTimeout(timeout) => {
                 self.config.auto_save_secs = timeout;
                 if let Some(timeout) = timeout {
+                    let entities: Vec<_> = self
+                        .tab_model
+                        .iter()
+                        .filter_map(|entity| {
+                            self.tab_model.data::<Tab>(entity).map(|tab| {
+                                if let Tab::Editor(tab) = tab {
+                                    tab.changed().then_some(entity)
+                                } else {
+                                    None
+                                }
+                            })
+                        })
+                        .flatten()
+                        .collect();
+
+                    // Set new timeout and register all modified tabs.
                     return Command::batch([
                         self.save_config(),
-                        self.update_auto_saver(AutoSaveEvent::UpdateTimeout(timeout)),
+                        self.update_auto_saver(AutoSaveMessage::UpdateTimeout(timeout)),
+                        self.update_auto_saver(AutoSaveMessage::RegisterBatch(entities)),
                     ]);
                 }
-                return self.save_config();
+                return Command::batch([
+                    self.save_config(),
+                    self.update_auto_saver(AutoSaveMessage::CancelAll),
+                ]);
             }
             Message::Config(config) => {
                 if config != self.config {
@@ -1977,13 +1997,19 @@ impl Application for App {
                     self.tab_model.text_set(self.tab_model.active(), title);
                 }
 
-                // Remove saved tab from auto saver
+                // Remove saved tab from auto saver to avoid double saves
                 let entity = self.tab_model.active();
-                return self.update_auto_saver(AutoSaveEvent::Cancel(entity));
+                return self.update_auto_saver(AutoSaveMessage::Cancel(entity));
             }
             Message::SaveAny(entity) => {
+                // TODO: This variant and code should be updated to save backups instead of overwriting
+                // the open file
                 if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                    tab.save();
+                    let title = tab.title();
+                    if tab.path_opt.is_some() {
+                        tab.save();
+                        self.tab_model.text_set(entity, title);
+                    }
                 }
             }
             Message::SaveAsDialog => {
@@ -2094,7 +2120,7 @@ impl Application for App {
                     self.tab_model.text_set(entity, title);
                     // Register tab with the auto saver
                     if has_path {
-                        return self.update_auto_saver(AutoSaveEvent::Register(entity));
+                        return self.update_auto_saver(AutoSaveMessage::Register(entity));
                     }
                 }
             }
@@ -2156,13 +2182,13 @@ impl Application for App {
                             entity,
                         ))),
                         self.update_tab(),
-                        self.update_auto_saver(AutoSaveEvent::Cancel(entity)),
+                        self.update_auto_saver(AutoSaveMessage::Cancel(entity)),
                     ]);
                 }
 
                 return Command::batch([
                     self.update_tab(),
-                    self.update_auto_saver(AutoSaveEvent::Cancel(entity)),
+                    self.update_auto_saver(AutoSaveMessage::Cancel(entity)),
                 ]);
             }
             Message::TabContextAction(entity, action) => {
@@ -2172,7 +2198,7 @@ impl Application for App {
                     // Run action's message
                     return Command::batch([
                         self.update(action.message()),
-                        self.update_auto_saver(AutoSaveEvent::Cancel(entity)),
+                        self.update_auto_saver(AutoSaveMessage::Cancel(entity)),
                     ]);
                 }
             }
@@ -2731,14 +2757,18 @@ impl Application for App {
                 Some(dialog) => dialog.subscription(),
                 None => subscription::Subscription::none(),
             },
-            match self.config.auto_save_secs {
-                Some(secs) => auto_save_subscription(secs).map(|update| match update {
-                    AutoSaveEvent::Ready(sender) => Message::AutoSaveSender(sender),
-                    AutoSaveEvent::Save(entity) => Message::SaveAny(entity),
-                    _ => unreachable!(),
-                }),
-                None => subscription::Subscription::none(),
-            },
+            auto_save_subscription(
+                self.config
+                    .auto_save_secs
+                    // Autosave won't be triggered until the user enables it regardless of passing
+                    // a timeout and starting the subscription.
+                    .unwrap_or(NonZeroU64::new(1).unwrap()),
+            )
+            .map(|update| match update {
+                AutoSaveMessage::Ready(sender) => Message::AutoSaveSender(sender),
+                AutoSaveMessage::Save(entity) => Message::SaveAny(entity),
+                _ => unreachable!(),
+            }),
         ])
     }
 }
