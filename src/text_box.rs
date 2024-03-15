@@ -630,7 +630,9 @@ where
             let scaled_size = Size::new(scaled_w as f32, scaled_h as f32);
             log::debug!(
                 "text_box image {:?} scaled {:?} position {:?}",
-                image_size, scaled_size, image_position
+                image_size,
+                scaled_size,
+                image_position
             );
             image::Renderer::draw(
                 renderer,
