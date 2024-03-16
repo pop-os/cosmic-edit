@@ -6,6 +6,9 @@ edition = "2021"
 license = "GPL-3.0-only"
 rust-version = "1.71"
 
+[build-dependencies]
+vergen = { version = "8", features = ["git", "gitcl"] }
+
 [dependencies]
 dirs = "5"
 env_logger = "0.10.0"
@@ -13,6 +16,7 @@ grep = "0.3.1"
 ignore = "0.4.21"
 lexical-sort = "0.3.1"
 log = "0.4.20"
+open = "5.0.2"
 patch = "0.7.0"
 notify = "6.1.1"
 serde = { version = "1", features = ["serde_derive"] }
@@ -26,28 +30,24 @@ i18n-embed-fl = "0.7"
 rust-embed = "8"
 
 [dependencies.cosmic-files]
-git = "https://github.com/pop-os/cosmic-files"
+git = "https://github.com/pop-os/cosmic-files.git"
 default-features = false
 
 [dependencies.cosmic-syntax-theme]
-git = "https://github.com/pop-os/cosmic-syntax-theme"
+git = "https://github.com/pop-os/cosmic-syntax-theme.git"
 
 [dependencies.cosmic-text]
-git = "https://github.com/pop-os/cosmic-text"
+git = "https://github.com/pop-os/cosmic-text.git"
 features = ["syntect", "vi"]
 
 [dependencies.libcosmic]
-git = "https://github.com/pop-os/libcosmic"
+git = "https://github.com/pop-os/libcosmic.git"
 default-features = false
 features = ["multi-window", "tokio", "winit"]
 
 [dependencies.smol_str]
 version = "0.2.1"
 features = ["serde"]
-
-#TODO: clean up and send changes upstream
-[dependencies.systemicons]
-git = "https://github.com/jackpot51/systemicons"
 
 [target.'cfg(unix)'.dependencies]
 fork = "0.1"

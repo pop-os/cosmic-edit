@@ -44,6 +44,7 @@ pub struct TextBox<'a, Message> {
     click_timing: Duration,
     has_context_menu: bool,
     on_context_menu: Option<Box<dyn Fn(Option<Point>) -> Message + 'a>>,
+    highlight_current_line: bool,
     line_numbers: bool,
 }
 
@@ -61,6 +62,7 @@ where
             click_timing: Duration::from_millis(500),
             has_context_menu: false,
             on_context_menu: None,
+            highlight_current_line: false,
             line_numbers: false,
         }
     }
@@ -95,6 +97,11 @@ where
         on_context_menu: impl Fn(Option<Point>) -> Message + 'a,
     ) -> Self {
         self.on_context_menu = Some(Box::new(on_context_menu));
+        self
+    }
+
+    pub fn highlight_current_line(mut self) -> Self {
+        self.highlight_current_line = true;
         self
     }
 
@@ -311,27 +318,45 @@ where
 
         let mut editor = self.editor.lock().unwrap();
 
+        let cosmic_theme = theme.cosmic();
+        let scrollbar_w = cosmic_theme.spacing.space_xxs as i32;
+
         let view_w = cmp::min(viewport.width as i32, layout.bounds().width as i32)
-            - self.padding.horizontal() as i32;
+            - self.padding.horizontal() as i32
+            - scrollbar_w;
         let view_h = cmp::min(viewport.height as i32, layout.bounds().height as i32)
             - self.padding.vertical() as i32;
 
         let scale_factor = style.scale_factor as f32;
         let metrics = self.metrics.scale(scale_factor);
 
-        let image_w = (view_w as f32 * scale_factor) as i32;
-        let image_h = (view_h as f32 * scale_factor) as i32;
+        let calculate_image_scaled = |view: i32| -> (i32, f32) {
+            // Get smallest set of physical pixels that fit inside the logical pixels
+            let image = ((view as f32) * scale_factor).floor() as i32;
+            // Convert that back into logical pixels
+            let scaled = (image as f32) / scale_factor;
+            (image, scaled)
+        };
+        let calculate_ideal = |view_start: i32| -> (i32, f32) {
+            // Search for a perfect match within 16 pixels
+            for i in 0..16 {
+                let view = view_start - i;
+                let (image, scaled) = calculate_image_scaled(view);
+                if view == scaled as i32 {
+                    return (image, scaled);
+                }
+            }
+            let (image, scaled) = calculate_image_scaled(view_start);
+            (image, scaled)
+        };
 
-        let cosmic_theme = theme.cosmic();
-        let scrollbar_w = (cosmic_theme.spacing.space_xxs as f32 * scale_factor) as i32;
+        let (image_w, scaled_w) = calculate_ideal(view_w);
+        let (image_h, scaled_h) = calculate_ideal(view_h);
 
-        if image_w <= scrollbar_w || image_h <= 0 {
+        if image_w <= 0 || image_h <= 0 {
             // Zero sized image
             return;
         }
-
-        // Adjust image width by scrollbar width
-        let image_w = image_w - scrollbar_w;
 
         // Lock font system (used throughout)
         let mut font_system = font_system().write().unwrap();
@@ -501,6 +526,46 @@ where
                     });
                 }
 
+                if self.highlight_current_line {
+                    let line_highlight = {
+                        let convert_color = |color: syntect::highlighting::Color| {
+                            cosmic_text::Color::rgba(color.r, color.g, color.b, color.a)
+                        };
+                        let syntax_theme = editor.theme();
+                        //TODO: ideal fallback for line highlight color
+                        syntax_theme
+                            .settings
+                            .line_highlight
+                            .map_or(editor.background_color(), convert_color)
+                    };
+
+                    let cursor = editor.cursor();
+                    editor.with_buffer(|buffer| {
+                        for run in buffer.layout_runs() {
+                            if run.line_i != cursor.line {
+                                continue;
+                            }
+
+                            draw_rect(
+                                pixels,
+                                Canvas {
+                                    w: image_w,
+                                    h: image_h,
+                                },
+                                Canvas {
+                                    w: image_w - editor_offset_x,
+                                    h: metrics.line_height as i32,
+                                },
+                                Offset {
+                                    x: editor_offset_x,
+                                    y: run.line_top as i32,
+                                },
+                                line_highlight,
+                            );
+                        }
+                    });
+                }
+
                 // Draw editor
                 editor.draw(font_system.raw(), &mut swash_cache, |x, y, w, h, color| {
                     draw_rect(
@@ -540,7 +605,7 @@ where
                     let rect = Rectangle::new(
                         [image_w as f32 / scale_factor, start_y as f32 / scale_factor].into(),
                         Size::new(
-                            scrollbar_w as f32 / scale_factor,
+                            scrollbar_w as f32,
                             (end_y as f32 - start_y as f32) / scale_factor,
                         ),
                     );
@@ -562,17 +627,18 @@ where
         let image_position = layout.position() + [self.padding.left, self.padding.top].into();
         if let Some(ref handle) = *handle_opt {
             let image_size = image::Renderer::dimensions(renderer, handle);
+            let scaled_size = Size::new(scaled_w as f32, scaled_h as f32);
+            log::debug!(
+                "text_box image {:?} scaled {:?} position {:?}",
+                image_size,
+                scaled_size,
+                image_position
+            );
             image::Renderer::draw(
                 renderer,
                 handle.clone(),
                 image::FilterMethod::Nearest,
-                Rectangle::new(
-                    image_position,
-                    Size::new(
-                        image_size.width as f32 / scale_factor,
-                        image_size.height as f32 / scale_factor,
-                    ),
-                ),
+                Rectangle::new(image_position, scaled_size),
                 [0.0; 4],
             );
         }

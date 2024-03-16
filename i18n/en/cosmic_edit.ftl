@@ -1,8 +1,12 @@
+cosmic-text-editor = COSMIC Text Editor
 new-document = New document
 open-project = Open project
 todo = TODO
 
 # Context Pages
+
+## About
+git-description = Git commit {$hash} on {$date}
 
 ## Document statistics
 document-statistics = Document statistics
@@ -20,6 +24,11 @@ staged-changes = Staged changes
 
 ## Project search
 project-search = Project search
+
+## Prompt save changes
+prompt-save-changes-title = Unsaved changes
+prompt-unsaved-changes = You have unsaved changes. Save?
+discard = Discard changes
 
 ## Settings
 settings = Settings
@@ -97,4 +106,4 @@ highlight-current-line = Highlight current line
 syntax-highlighting = Syntax highlighting...
 menu-settings = Settings...
 menu-keyboard-shortcuts = Keyboard shortcuts...
-about-cosmic-text-editor = About COSMIC Text Editor
+menu-about = About COSMIC Text Editor...

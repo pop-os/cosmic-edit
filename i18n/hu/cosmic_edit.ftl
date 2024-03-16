@@ -1,8 +1,12 @@
+cosmic-text-editor = COSMIC Szövegszerkesztő
 new-document = Új dokumentum
 open-project = Projekt megnyitása
 todo = Teendők
 
 # Context Pages
+
+## About
+git-description = Git kommit {$hash} dátum: {$date}
 
 ## Document statistics
 document-statistics = Dokumentum statisztika
@@ -12,17 +16,24 @@ character-count-no-spaces = Karakterszám (szóközök nélkül)
 line-count = Sorok száma
 
 ## Git management
-git-management = Git kezelés
+git-management = Git-kezelő
+git-management-description = A Git-kezelő egy verziókezeléssel kapcsolatos feladatok elvégzésére használt fejlesztői eszköz.
+git-management-loading = Git-kezelő betöltése...
 unstaged-changes = Visszavont változtatások
 staged-changes = Jóváhagyott változtatások
 
 ## Project search
 project-search = Projekt kereső
 
+## Prompt save changes
+prompt-save-changes-title = Nem mentett változtatások
+prompt-unsaved-changes = Nem minden változtatás van elmentve. Mentés?
+discard = Változtatások elvetése
+
 ## Settings
 settings = Beállítások
 
-## Appearance
+### Appearance
 appearance = Megjelenés
 theme = Téma
 match-desktop = Asztal témájának használata
@@ -36,6 +47,14 @@ default-font-size = Alapértelmezett betűméret
 ### Keyboard shortcuts
 keyboard-shortcuts = Billentyűparancsok
 enable-vim-bindings = Vim billentyűkombinációk engedélyezése
+
+# Find
+find-placeholder = Keresés...
+find-previous = Előző találat
+find-next = Következő találat
+replace-placeholder = Lecserélés...
+replace = Lecserélés
+replace-all = Összes lecserélése
 
 # Menu
 
@@ -55,7 +74,7 @@ revert-all-changes = Összes változtatás visszavonása
 menu-document-statistics = Dokumentum statisztika...
 document-type = Dokumentum típus...
 encoding = Karakterkódolás...
-menu-git-management = Git kezelés...
+menu-git-management = Git-kezelő...
 print = Nyomtatás
 quit = Kilépés
 
@@ -68,7 +87,6 @@ copy = Másolás
 paste = Beillesztés
 select-all = Összes kijelölése
 find = Keresés
-replace = Lecserélés
 find-in-project = Keresés a projekten belül...
 spell-check = Helyesírás ellenőrzés...
 
@@ -88,4 +106,4 @@ highlight-current-line = Aktuális sor kiemelése
 syntax-highlighting = Szintaxis kiemelés...
 menu-settings = Beállítások...
 menu-keyboard-shortcuts = Billentyűparancsok...
-about-cosmic-text-editor = Információ a COSMIC Szövegszerkesztőről
+menu-about = Információ a COSMIC Szövegszerkesztőről...

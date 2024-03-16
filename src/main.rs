@@ -14,11 +14,15 @@ use cosmic::{
         widget::text,
         window, Alignment, Background, Color, Length, Limits, Point,
     },
+    prelude::CollectionWidget,
     style, theme,
-    widget::{self, button, icon, nav_bar, segmented_button, view_switcher},
+    widget::{self, button, icon, nav_bar, segmented_button},
     Application, ApplicationExt, Apply, Element,
 };
-use cosmic_files::dialog::{Dialog, DialogKind, DialogMessage, DialogResult};
+use cosmic_files::{
+    dialog::{Dialog, DialogKind, DialogMessage, DialogResult},
+    mime_icon::{mime_for_path, mime_icon},
+};
 use cosmic_text::{Cursor, Edit, Family, Selection, SwashCache, SyntaxSystem, ViMode};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -31,7 +35,7 @@ use std::{
 };
 use tokio::time;
 
-use config::{AppTheme, Config, CONFIG_VERSION};
+use config::{AppTheme, Config, ConfigState, CONFIG_VERSION};
 mod config;
 
 use git::{GitDiff, GitDiffLine, GitRepository, GitStatus, GitStatusKind};
@@ -47,9 +51,6 @@ use line_number::LineNumberCache;
 mod line_number;
 
 mod localize;
-
-pub use self::mime_icon::{mime_icon, FALLBACK_MIME_ICON};
-mod mime_icon;
 
 use self::menu::menu_bar;
 mod menu;
@@ -146,6 +147,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    let (config_state_handler, config_state) =
+        match cosmic_config::Config::new_state(App::APP_ID, CONFIG_VERSION) {
+            Ok(config_state_handler) => {
+                let config_state = ConfigState::get_entry(&config_state_handler).unwrap_or_else(
+                    |(errs, config_state)| {
+                        log::info!("errors loading config_state: {:?}", errs);
+                        config_state
+                    },
+                );
+                (Some(config_state_handler), config_state)
+            }
+            Err(err) => {
+                log::error!("failed to create config_state handler: {}", err);
+                (None, ConfigState::default())
+            }
+        };
+
     let mut settings = Settings::default();
     settings = settings.theme(config.app_theme.theme());
     settings = settings.size_limits(Limits::NONE.min_width(360.0).min_height(180.0));
@@ -153,6 +171,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let flags = Flags {
         config_handler,
         config,
+        config_state_handler,
+        config_state,
     };
     cosmic::app::run::<App>(settings, flags)?;
 
@@ -162,6 +182,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Action {
     Todo,
+    About,
     CloseFile,
     CloseProject(usize),
     Copy,
@@ -195,6 +216,7 @@ pub enum Action {
     ToggleAutoIndent,
     ToggleDocumentStatistics,
     ToggleGitManagement,
+    ToggleHighlightCurrentLine,
     ToggleLineNumbers,
     ToggleProjectSearch,
     ToggleSettingsPage,
@@ -206,6 +228,7 @@ impl Action {
     pub fn message(&self) -> Message {
         match self {
             Self::Todo => Message::Todo,
+            Self::About => Message::ToggleContextPage(ContextPage::About),
             Self::CloseFile => Message::CloseFile,
             Self::CloseProject(project_i) => Message::CloseProject(*project_i),
             Self::Copy => Message::Copy,
@@ -241,6 +264,7 @@ impl Action {
                 Message::ToggleContextPage(ContextPage::DocumentStatistics)
             }
             Self::ToggleGitManagement => Message::ToggleContextPage(ContextPage::GitManagement),
+            Self::ToggleHighlightCurrentLine => Message::ToggleHighlightCurrentLine,
             Self::ToggleLineNumbers => Message::ToggleLineNumbers,
             Self::ToggleProjectSearch => Message::ToggleContextPage(ContextPage::ProjectSearch),
             Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
@@ -254,6 +278,8 @@ impl Action {
 pub struct Flags {
     config_handler: Option<cosmic_config::Config>,
     config: Config,
+    config_state_handler: Option<cosmic_config::Config>,
+    config_state: ConfigState,
 }
 
 #[derive(Debug)]
@@ -278,6 +304,7 @@ impl PartialEq for WatcherWrapper {
 pub enum Message {
     AppTheme(AppTheme),
     Config(Config),
+    ConfigState(ConfigState),
     CloseFile,
     CloseProject(usize),
     Copy,
@@ -294,6 +321,7 @@ pub enum Message {
     FindSearchValueChanged(String),
     GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
     Key(Modifiers, keyboard::Key),
+    LaunchUrl(String),
     Modifiers(Modifiers),
     NewFile,
     NewWindow,
@@ -326,6 +354,7 @@ pub enum Message {
     TabActivateJump(usize),
     TabChanged(segmented_button::Entity),
     TabClose(segmented_button::Entity),
+    TabCloseForce(segmented_button::Entity),
     TabContextAction(segmented_button::Entity, Action),
     TabContextMenu(segmented_button::Entity, Option<Point>),
     TabNext,
@@ -335,6 +364,7 @@ pub enum Message {
     Todo,
     ToggleAutoIndent,
     ToggleContextPage(ContextPage),
+    ToggleHighlightCurrentLine,
     ToggleLineNumbers,
     ToggleWordWrap,
     Undo,
@@ -343,19 +373,23 @@ pub enum Message {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ContextPage {
+    About,
     DocumentStatistics,
     GitManagement,
     //TODO: Move search to pop-up
     ProjectSearch,
+    PromptSaveChanges(segmented_button::Entity),
     Settings,
 }
 
 impl ContextPage {
     fn title(&self) -> String {
         match self {
+            Self::About => String::new(),
             Self::DocumentStatistics => fl!("document-statistics"),
             Self::GitManagement => fl!("git-management"),
             Self::ProjectSearch => fl!("project-search"),
+            Self::PromptSaveChanges(_) => fl!("prompt-save-changes-title"),
             Self::Settings => fl!("settings"),
         }
     }
@@ -374,6 +408,8 @@ pub struct App {
     tab_model: segmented_button::SingleSelectModel,
     config_handler: Option<cosmic_config::Config>,
     config: Config,
+    config_state_handler: Option<cosmic_config::Config>,
+    config_state: ConfigState,
     key_binds: HashMap<KeyBind, Action>,
     app_themes: Vec<String>,
     font_names: Vec<String>,
@@ -474,7 +510,7 @@ impl App {
                         *open = true;
                         *root = true;
 
-                        for (project_name, project_path) in self.projects.iter() {
+                        for (_project_name, project_path) in self.projects.iter() {
                             if project_path == path {
                                 // Project already open
                                 return;
@@ -485,10 +521,12 @@ impl App {
                         self.projects.push((name.to_string(), path.to_path_buf()));
 
                         // Add to recent projects, ensuring only one entry
-                        self.config.recent_projects.retain(|x| x != path);
-                        self.config.recent_projects.push_front(path.to_path_buf());
-                        self.config.recent_projects.truncate(10);
-                        self.save_config_no_update();
+                        self.config_state.recent_projects.retain(|x| x != path);
+                        self.config_state
+                            .recent_projects
+                            .push_front(path.to_path_buf());
+                        self.config_state.recent_projects.truncate(10);
+                        self.save_config_state();
                     }
                     _ => {
                         log::error!("failed to open project {:?}: not a directory", path);
@@ -543,10 +581,12 @@ impl App {
                 }
 
                 // Add to recent files, ensuring only one entry
-                self.config.recent_files.retain(|x| x != &canonical);
-                self.config.recent_files.push_front(canonical.to_path_buf());
-                self.config.recent_files.truncate(10);
-                self.save_config_no_update();
+                self.config_state.recent_files.retain(|x| x != &canonical);
+                self.config_state
+                    .recent_files
+                    .push_front(canonical.to_path_buf());
+                self.config_state.recent_files.truncate(10);
+                self.save_config_state();
 
                 let mut tab = EditorTab::new(&self.config);
                 tab.open(canonical);
@@ -580,14 +620,18 @@ impl App {
     }
 
     fn save_config(&mut self) -> Command<Message> {
-        self.save_config_no_update();
-        self.update_config()
-    }
-
-    fn save_config_no_update(&mut self) {
         if let Some(ref config_handler) = self.config_handler {
             if let Err(err) = self.config.write_entry(config_handler) {
                 log::error!("failed to save config: {}", err);
+            }
+        }
+        self.update_config()
+    }
+
+    fn save_config_state(&mut self) {
+        if let Some(ref config_state_handler) = self.config_state_handler {
+            if let Err(err) = self.config_state.write_entry(config_state_handler) {
+                log::error!("failed to save config_state: {}", err);
             }
         }
     }
@@ -669,11 +713,43 @@ impl App {
             None => "No Open File".to_string(),
         };
 
-        let window_title = format!("{title} - COSMIC Text Editor");
+        let window_title = format!("{title} - {}", fl!("cosmic-text-editor"));
         Command::batch([
             self.set_window_title(window_title, self.main_window_id()),
             self.update_focus(),
         ])
+    }
+
+    fn about(&self) -> Element<Message> {
+        let cosmic_theme::Spacing { space_xxs, .. } = self.core().system_theme().cosmic().spacing;
+        let repository = "https://github.com/pop-os/cosmic-edit";
+        let hash = env!("VERGEN_GIT_SHA");
+        let short_hash: String = hash.chars().take(7).collect();
+        let date = env!("VERGEN_GIT_COMMIT_DATE");
+        widget::column::with_children(vec![
+                widget::svg(widget::svg::Handle::from_memory(
+                    &include_bytes!(
+                        "../res/icons/hicolor/128x128/apps/com.system76.CosmicEdit.svg"
+                    )[..],
+                ))
+                .into(),
+                widget::text::title3(fl!("cosmic-text-editor")).into(),
+                widget::button::link(repository)
+                    .on_press(Message::LaunchUrl(repository.to_string()))
+                    .padding(0)
+                    .into(),
+                widget::button::link(fl!(
+                    "git-description",
+                    hash = short_hash.as_str(),
+                    date = date
+                ))
+                    .on_press(Message::LaunchUrl(format!("{}/commits/{}", repository, hash)))
+                    .padding(0)
+                .into(),
+            ])
+        .align_items(Alignment::Center)
+        .spacing(space_xxs)
+        .into()
     }
 
     fn document_statistics(&self) -> Element<Message> {
@@ -973,6 +1049,55 @@ impl App {
             .into()
     }
 
+    fn prompt_save_changes(&self, entity: segmented_button::Entity) -> Element<Message> {
+        let (spacing, warning_color) = {
+            let theme = self.core().system_theme().cosmic();
+            (theme.spacing, theme.warning_text_color())
+        };
+
+        // "Save" is displayed regardless if the file was already saved because the message handles
+        // "Save As" if necessary
+        let save = fl!("save");
+        let save_button = widget::button::suggested(save)
+            .on_press(Message::Save)
+            .width(Length::Fill);
+
+        // "Save As" is only shown if the file has been saved previously
+        // Rationale: The user may want to save the modified buffer as a new file
+        let save_as_button = match self.tab_model.data(entity) {
+            Some(Tab::Editor(tab)) if tab.path_opt.is_some() => {
+                let save_as = fl!("save-as");
+                let save_as_button = widget::button::suggested(save_as)
+                    .on_press(Message::SaveAsDialog)
+                    .width(Length::Fill);
+                Some(save_as_button)
+            }
+            _ => None,
+        };
+
+        // TODO: Maybe a button to show diffs in a split?
+        // And more info, such as the path if any?
+        // let diff = widget::text(fl!("diff"));
+        // let diff_button = widget::button(diff.into());
+
+        // Discards unsaved changes
+        let discard = fl!("discard");
+        let discard_button = widget::button::destructive(discard)
+            .on_press(Message::TabCloseForce(entity))
+            .width(Length::Fill);
+
+        widget::column::with_capacity(3)
+            .push(
+                widget::text(fl!("prompt-unsaved-changes"))
+                    .style(theme::Text::Color(warning_color.into())),
+            )
+            .push(save_button)
+            .push_maybe(save_as_button)
+            .push(discard_button)
+            .spacing(spacing.space_s)
+            .into()
+    }
+
     fn settings(&self) -> Element<Message> {
         let app_theme_selected = match self.config.app_theme {
             AppTheme::Dark => 1,
@@ -1126,6 +1251,8 @@ impl Application for App {
             tab_model: segmented_button::Model::builder().build(),
             config_handler: flags.config_handler,
             config: flags.config,
+            config_state_handler: flags.config_state_handler,
+            config_state: flags.config_state,
             key_binds: key_binds(),
             app_themes,
             font_names,
@@ -1198,13 +1325,13 @@ impl Application for App {
             .button_spacing(space_xxxs)
             .on_activate(|entity| message::cosmic(cosmic::app::cosmic::Message::NavBar(entity)))
             .spacing(space_none)
-            .style(theme::SegmentedButton::ViewSwitcher)
+            .style(theme::SegmentedButton::TabBar)
             .apply(widget::container)
             .padding(space_s)
             .width(Length::Fill);
 
         if !self.core().is_condensed() {
-            nav = nav.max_width(300);
+            nav = nav.max_width(280);
         }
 
         Some(
@@ -1300,6 +1427,12 @@ impl Application for App {
                     //TODO: update syntax theme by clearing tabs, only if needed
                     self.config = config;
                     return self.update_config();
+                }
+            }
+            Message::ConfigState(config_state) => {
+                if config_state != self.config_state {
+                    log::info!("update config state");
+                    self.config_state = config_state;
                 }
             }
             Message::CloseFile => {
@@ -1475,6 +1608,12 @@ impl Application for App {
                     }
                 }
             }
+            Message::LaunchUrl(url) => match open::that_detached(&url) {
+                Ok(()) => {}
+                Err(err) => {
+                    log::warn!("failed to open {:?}: {}", url, err);
+                }
+            },
             Message::Modifiers(modifiers) => {
                 self.modifiers = modifiers;
             }
@@ -1591,7 +1730,7 @@ impl Application for App {
                     },
                     relative_path.display()
                 );
-                let icon = mime_icon(&diff.path, 16);
+                let icon = icon::icon(mime_icon(mime_for_path(&diff.path), 16)).size(16);
                 let tab = Tab::GitDiff(GitDiffTab { title, diff });
                 self.tab_model
                     .insert()
@@ -1626,13 +1765,13 @@ impl Application for App {
                 }
             }
             Message::OpenRecentFile(index) => {
-                if let Some(path) = self.config.recent_files.get(index).cloned() {
+                if let Some(path) = self.config_state.recent_files.get(index).cloned() {
                     self.open_tab(Some(path));
                     return self.update_tab();
                 }
             }
             Message::OpenRecentProject(index) => {
-                if let Some(path) = self.config.recent_projects.get(index).cloned() {
+                if let Some(path) = self.config_state.recent_projects.get(index).cloned() {
                     self.open_project(path);
                 }
             }
@@ -1786,9 +1925,19 @@ impl Application for App {
                 if self.dialog_opt.is_none() {
                     let entity = self.tab_model.active();
                     if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                        let (filename, path_opt) = match &tab.path_opt {
+                            Some(path) => (
+                                path.file_name()
+                                    .and_then(|x| x.to_str())
+                                    .map(|x| x.to_string())
+                                    .unwrap_or(String::new()),
+                                path.parent().map(|x| x.to_path_buf()),
+                            ),
+                            None => (String::new(), None),
+                        };
                         let (dialog, command) = Dialog::new(
-                            DialogKind::SaveFile,
-                            tab.path_opt.clone(),
+                            DialogKind::SaveFile { filename },
+                            path_opt,
                             Message::DialogMessage,
                             move |result| Message::SaveAsResult(entity, result),
                         );
@@ -1811,6 +1960,10 @@ impl Application for App {
                             }
                             if let Some(title) = title_opt {
                                 self.tab_model.text_set(entity, title);
+                            }
+                            // Close save changes prompt only if the dialog succeeded
+                            if let ContextPage::PromptSaveChanges(_) = self.context_page {
+                                self.core_mut().window.show_context = false;
                             }
                         }
                     }
@@ -1876,6 +2029,37 @@ impl Application for App {
                 }
             }
             Message::TabClose(entity) => {
+                match self.tab_model.data_mut::<Tab>(entity) {
+                    // Only match a changed editor tab...
+                    Some(Tab::Editor(tab)) if tab.changed() => {
+                        // * The save prompt shouldn't be closed if `TabClose` is emitted again
+                        // * Prompt should be opened if no pages are open
+                        // * Prompt should replace a different page (e.g. Settings)
+                        //
+                        // `PromptSaveChanges` for a different tab other than `entity` counts as
+                        // a different page
+                        // Ex. If tab 2 and 3 both have unsaved changes and `PromptSaveChanges` is
+                        // open for tab 2, closing tab 3 should open the page for tab 3
+                        if !self.core().window.show_context
+                            || self.context_page != ContextPage::PromptSaveChanges(entity)
+                        {
+                            // Focus the tab in case the user is closing an unfocussed tab
+                            // Otherwise, closing an unfocussed tab would be very confusing
+                            return Command::batch([
+                                self.update(Message::TabActivate(entity)),
+                                self.update(Message::ToggleContextPage(
+                                    ContextPage::PromptSaveChanges(entity),
+                                )),
+                            ]);
+                        }
+                    }
+                    // ...or else just close it
+                    _ => {
+                        return self.update(Message::TabCloseForce(entity));
+                    }
+                }
+            }
+            Message::TabCloseForce(entity) => {
                 // Activate closest item
                 if let Some(position) = self.tab_model.position(entity) {
                     if position > 0 {
@@ -1891,6 +2075,18 @@ impl Application for App {
                 // If that was the last tab, make a new empty one
                 if self.tab_model.iter().next().is_none() {
                     self.open_tab(None);
+                }
+
+                // Close PromptSaveChanges page if open for this entity
+                if self.core().window.show_context
+                    && matches!(self.context_page, ContextPage::PromptSaveChanges(_))
+                {
+                    return Command::batch([
+                        self.update(Message::ToggleContextPage(ContextPage::PromptSaveChanges(
+                            entity,
+                        ))),
+                        self.update_tab(),
+                    ]);
                 }
 
                 return self.update_tab();
@@ -2014,6 +2210,20 @@ impl Application for App {
                 // Ensure focus of correct input
                 return self.update_focus();
             }
+            Message::ToggleHighlightCurrentLine => {
+                self.config.highlight_current_line = !self.config.highlight_current_line;
+
+                // This forces a redraw of all buffers
+                let entities: Vec<_> = self.tab_model.iter().collect();
+                for entity in entities {
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                        let mut editor = tab.editor.lock().unwrap();
+                        editor.set_redraw(true);
+                    }
+                }
+
+                return self.save_config();
+            }
             Message::ToggleLineNumbers => {
                 self.config.line_numbers = !self.config.line_numbers;
 
@@ -2053,15 +2263,22 @@ impl Application for App {
         }
 
         Some(match self.context_page {
+            ContextPage::About => self.about(),
             ContextPage::DocumentStatistics => self.document_statistics(),
             ContextPage::GitManagement => self.git_management(),
             ContextPage::ProjectSearch => self.project_search(),
+            ContextPage::PromptSaveChanges(entity) => self.prompt_save_changes(entity),
             ContextPage::Settings => self.settings(),
         })
     }
 
     fn header_start(&self) -> Vec<Element<Message>> {
-        vec![menu_bar(&self.config, &self.key_binds, &self.projects)]
+        vec![menu_bar(
+            &self.config,
+            &self.config_state,
+            &self.key_binds,
+            &self.projects,
+        )]
     }
 
     fn view(&self) -> Element<Message> {
@@ -2077,7 +2294,7 @@ impl Application for App {
             widget::row::with_capacity(2)
                 .align_items(Alignment::Center)
                 .push(
-                    view_switcher::horizontal(&self.tab_model)
+                    widget::tab_bar::horizontal(&self.tab_model)
                         .button_height(32)
                         .button_spacing(space_xxs)
                         .close_icon(icon_cache_get("window-close-symbolic", 16))
@@ -2134,15 +2351,18 @@ impl Application for App {
                     .on_context_menu(move |position_opt| {
                         Message::TabContextMenu(tab_id, position_opt)
                     });
+                if self.config.highlight_current_line {
+                    text_box = text_box.highlight_current_line();
+                }
                 if self.config.line_numbers {
                     text_box = text_box.line_numbers();
                 }
-                let mut popover =
-                    widget::popover(text_box, menu::context_menu(&self.key_binds, tab_id));
-                popover = match tab.context_menu {
-                    Some(position) => popover.position(position),
-                    None => popover.show_popup(false),
-                };
+                let mut popover = widget::popover(text_box);
+                if let Some(point) = tab.context_menu {
+                    popover = popover
+                        .popup(menu::context_menu(&self.key_binds, tab_id))
+                        .position(widget::popover::Position::Point(point));
+                }
                 tab_column = tab_column.push(popover);
                 if !status.is_empty() {
                     tab_column = tab_column.push(text(status).font(Font::MONOSPACE));
@@ -2319,6 +2539,7 @@ impl Application for App {
     fn subscription(&self) -> subscription::Subscription<Message> {
         struct WatcherSubscription;
         struct ConfigSubscription;
+        struct ConfigStateSubscription;
         struct ThemeSubscription;
 
         subscription::Subscription::batch([
@@ -2404,6 +2625,18 @@ impl Application for App {
                 }
 
                 Message::Config(update.config)
+            }),
+            cosmic_config::config_state_subscription(
+                TypeId::of::<ConfigStateSubscription>(),
+                Self::APP_ID.into(),
+                CONFIG_VERSION,
+            )
+            .map(|update| {
+                for error in update.errors {
+                    log::error!("error loading config: {error:?}");
+                }
+
+                Message::ConfigState(update.config)
             }),
             cosmic_config::config_subscription::<_, cosmic_theme::ThemeMode>(
                 TypeId::of::<ThemeSubscription>(),

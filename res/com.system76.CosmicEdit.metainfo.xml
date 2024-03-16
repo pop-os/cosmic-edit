@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.system76.CosmicEdit</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <project_group>COSMIC</project_group>
+  <developer_name>System76</developer_name>
+  <update_contact>jeremy@system76.com</update_contact>
+  <url type="homepage">https://github.com/pop-os/cosmic-edit</url>
+  <url type="bugtracker">https://github.com/pop-os/cosmic-edit</url>
+  <name>COSMIC Text Editor</name>
+  <summary>Text editor for the COSMIC desktop</summary>
+  <description>
+    <p>Text editor that provides advanced features with high performance</p>
+    <ul>
+        <li>Written in Rust for performance and safety</li>
+        <li>Syntax highlighting built in for most languages</li>
+        <li>Provides project-based editing</li>
+        <li>Integrated git management</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">com.system76.CosmicEdit.desktop</launchable>
+  <icon type="remote" height="256" width="256">https://raw.githubusercontent.com/pop-os/cosmic-edit/master/res/icons/hicolor/256x256/apps/com.system76.CosmicEdit.svg</icon>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://media.githubusercontent.com/media/pop-os/cosmic-edit/master/res/screenshots/screenshot-1.png</image>
+    </screenshot>
+  </screenshots>
+  <provides>
+    <mimetypes>
+      <mimetype>text/plain</mimetype>
+    </mimetypes>
+    <binaries>
+      <binary>cosmic-edit</binary>
+    </binaries>
+  </provides>
+</component>

@@ -1,5 +1,7 @@
-# COSMIC Edit
-COSMIC Text Editor
+# COSMIC Text Editor
+Text editor for the COSMIC desktop
+
+![Screenshot](res/screenshots/screenshot-1.png)
 
 Currently an incomplete **pre-alpha**, this project is a work in progress - issues are expected.
 
