@@ -1,8 +1,12 @@
+cosmic-text-editor = COSMICテキストデータ
 new-document = 新しいドキュメント
 open-project = プロジェクトを開く...
 todo = 今後追加
 
 # Context Pages
+
+## About
+git-description = {$date}の{$hash}というGitコミット
 
 ## Document statistics
 document-statistics = 統計
@@ -21,6 +25,11 @@ staged-changes = コミットされる変更
 ## Project search
 project-search = プロジェクトの検索
 
+## Prompt save changes
+prompt-save-changes-title = 未保存の変更
+prompt-unsaved-changes = 保存を保存しませんでした。保存しますか？
+discard = 保存しない
+
 ## Settings
 settings = 設定
 
@@ -38,6 +47,14 @@ default-font-size = デフォルトのフォントサイズ
 ### Keyboard shortcuts
 keyboard-shortcuts = キーボードショートカット
 enable-vim-bindings = Vimのキーバインドを有効にする
+
+# Find
+find-placeholder = 検索...
+find-previous = 前を検索
+find-next = 次を検索
+replace-placeholder = 置き換える...
+replace = 置き換える
+replace-all = すべてを置き換える
 
 # Menu
 
@@ -70,7 +87,6 @@ copy = コピー
 paste = 貼り付け
 select-all = すべて選択
 find = 検索
-replace = 置換
 find-in-project = プロジェクト内を検索...
 spell-check = スペルチェック...
 
