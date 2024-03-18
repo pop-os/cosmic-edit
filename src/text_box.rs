@@ -25,7 +25,9 @@ use cosmic::{
     theme::Theme,
     Renderer,
 };
-use cosmic_text::{Action, Edit, Metrics, Motion, Scroll, ViEditor};
+use cosmic_text::{
+    Action, BorrowedWithFontSystem, Edit, Metrics, Motion, Scroll, Selection, ViEditor,
+};
 use std::{
     cell::Cell,
     cmp,
@@ -757,6 +759,40 @@ where
         let mut font_system = font_system().write().unwrap();
         let mut editor = editor.borrow_with(font_system.raw());
 
+        // Adjust motions based on Ctrl and Shift
+        fn motion_modifiers(
+            editor: &mut BorrowedWithFontSystem<'_, ViEditor<'static, 'static>>,
+            original_motion: Motion,
+            modifiers: Modifiers,
+        ) {
+            let motion = if modifiers.control() {
+                match original_motion {
+                    Motion::Left => Motion::LeftWord,
+                    Motion::Right => Motion::RightWord,
+                    Motion::Home => Motion::BufferStart,
+                    Motion::End => Motion::BufferEnd,
+                    _ => original_motion,
+                }
+            } else {
+                original_motion
+            };
+            let cursor = editor.cursor();
+            match editor.selection() {
+                Selection::None => {
+                    if modifiers.shift() {
+                        //TODO: Selection::Word if ctrl held?
+                        editor.set_selection(Selection::Normal(cursor));
+                    }
+                }
+                _ => {
+                    if !modifiers.shift() {
+                        editor.set_selection(Selection::None)
+                    }
+                }
+            }
+            editor.action(Action::Motion(motion));
+        }
+
         let mut status = Status::Ignored;
         match event {
             Event::Keyboard(KeyEvent::KeyPressed {
@@ -765,35 +801,35 @@ where
                 ..
             }) if state.is_focused && !matches!(key, Named::Space) => match key {
                 Named::ArrowLeft => {
-                    editor.action(Action::Motion(Motion::Left));
+                    motion_modifiers(&mut editor, Motion::Left, modifiers);
                     status = Status::Captured;
                 }
                 Named::ArrowRight => {
-                    editor.action(Action::Motion(Motion::Right));
+                    motion_modifiers(&mut editor, Motion::Right, modifiers);
                     status = Status::Captured;
                 }
                 Named::ArrowUp => {
-                    editor.action(Action::Motion(Motion::Up));
+                    motion_modifiers(&mut editor, Motion::Up, modifiers);
                     status = Status::Captured;
                 }
                 Named::ArrowDown => {
-                    editor.action(Action::Motion(Motion::Down));
+                    motion_modifiers(&mut editor, Motion::Down, modifiers);
                     status = Status::Captured;
                 }
                 Named::Home => {
-                    editor.action(Action::Motion(Motion::Home));
+                    motion_modifiers(&mut editor, Motion::Home, modifiers);
                     status = Status::Captured;
                 }
                 Named::End => {
-                    editor.action(Action::Motion(Motion::End));
+                    motion_modifiers(&mut editor, Motion::End, modifiers);
                     status = Status::Captured;
                 }
                 Named::PageUp => {
-                    editor.action(Action::Motion(Motion::PageUp));
+                    motion_modifiers(&mut editor, Motion::PageUp, modifiers);
                     status = Status::Captured;
                 }
                 Named::PageDown => {
-                    editor.action(Action::Motion(Motion::PageDown));
+                    motion_modifiers(&mut editor, Motion::PageDown, modifiers);
                     status = Status::Captured;
                 }
                 Named::Escape => {
