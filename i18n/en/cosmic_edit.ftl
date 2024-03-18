@@ -30,6 +30,11 @@ prompt-save-changes-title = Unsaved changes
 prompt-unsaved-changes = You have unsaved changes. Save?
 discard = Discard changes
 
+## Session
+session = Session
+seconds = seconds
+auto-save-secs = Auto save (seconds)
+
 ## Settings
 settings = Settings
 

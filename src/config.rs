@@ -6,7 +6,7 @@ use cosmic::{
 };
 use cosmic_text::Metrics;
 use serde::{Deserialize, Serialize};
-use std::{collections::VecDeque, path::PathBuf};
+use std::{collections::VecDeque, path::PathBuf, num::NonZeroU64};
 
 pub const CONFIG_VERSION: u64 = 1;
 
@@ -40,6 +40,7 @@ pub struct Config {
     pub tab_width: u16,
     pub vim_bindings: bool,
     pub word_wrap: bool,
+    pub auto_save_secs: Option<NonZeroU64>
 }
 
 impl Default for Config {
@@ -56,6 +57,7 @@ impl Default for Config {
             tab_width: 4,
             vim_bindings: false,
             word_wrap: true,
+            auto_save_secs: None
         }
     }
 }
