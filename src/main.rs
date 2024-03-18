@@ -527,6 +527,9 @@ impl App {
                             .push_front(path.to_path_buf());
                         self.config_state.recent_projects.truncate(10);
                         self.save_config_state();
+
+                        // Open nav bar
+                        self.core.nav_bar_set_toggled(true);
                     }
                     _ => {
                         log::error!("failed to open project {:?}: not a directory", path);
@@ -1276,6 +1279,8 @@ impl Application for App {
             modifiers: Modifiers::empty(),
         };
 
+        // Do not show nav bar by default. Will be opened by open_project if needed
+        app.core.nav_bar_set_toggled(false);
         for arg in env::args().skip(1) {
             let path = PathBuf::from(arg);
             if path.is_dir() {
@@ -1287,7 +1292,6 @@ impl Application for App {
 
         // Show nav bar only if project is provided
         if app.core.nav_bar_active() != app.nav_model.iter().next().is_some() {
-            app.core.nav_bar_toggle();
             app.nav_model
                 .insert()
                 .icon(icon_cache_get("folder-open-symbolic", 16))
@@ -2418,8 +2422,7 @@ impl Application for App {
                     diff_widget = diff_widget.push(hunk_widget);
                 }
                 tab_column = tab_column.push(widget::scrollable(
-                    widget::cosmic_container::container(diff_widget)
-                        .layer(cosmic_theme::Layer::Primary),
+                    widget::layer_container(diff_widget).layer(cosmic_theme::Layer::Primary),
                 ));
             }
             None => {}
@@ -2517,9 +2520,8 @@ impl Application for App {
                 column = column.push(replace_widget);
             }
 
-            tab_column = tab_column.push(
-                widget::cosmic_container::container(column).layer(cosmic_theme::Layer::Primary),
-            );
+            tab_column = tab_column
+                .push(widget::layer_container(column).layer(cosmic_theme::Layer::Primary));
         }
 
         let content: Element<_> = tab_column.into();
