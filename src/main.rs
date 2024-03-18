@@ -1290,8 +1290,8 @@ impl Application for App {
             }
         }
 
-        // Show nav bar only if project is provided
-        if app.core.nav_bar_active() != app.nav_model.iter().next().is_some() {
+        // Add button to open a project if none provided
+        if app.nav_model.iter().next().is_none() {
             app.nav_model
                 .insert()
                 .icon(icon_cache_get("folder-open-symbolic", 16))
