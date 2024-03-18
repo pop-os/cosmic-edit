@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
+use cosmic::widget::menu::action::MenuAction;
+use cosmic::widget::menu::key_bind::KeyBind;
+use cosmic::widget::segmented_button::Entity;
 use cosmic::{
     app::{message, Command, Core, Settings},
     cosmic_config::{self, CosmicConfigEntry},
@@ -44,7 +47,7 @@ mod git;
 use icon_cache::IconCache;
 mod icon_cache;
 
-use key_bind::{key_binds, KeyBind};
+use key_bind::key_binds;
 mod key_bind;
 
 use line_number::LineNumberCache;
@@ -224,8 +227,9 @@ pub enum Action {
     Undo,
 }
 
-impl Action {
-    pub fn message(&self) -> Message {
+impl MenuAction for Action {
+    type Message = Message;
+    fn message(&self, _entity: Option<Entity>) -> Message {
         match self {
             Self::Todo => Message::Todo,
             Self::About => Message::ToggleContextPage(ContextPage::About),
@@ -1604,7 +1608,7 @@ impl Application for App {
             Message::Key(modifiers, key) => {
                 for (key_bind, action) in self.key_binds.iter() {
                     if key_bind.matches(modifiers, &key) {
-                        return self.update(action.message());
+                        return self.update(action.message(None));
                     }
                 }
             }
@@ -2096,7 +2100,7 @@ impl Application for App {
                     // Close context menu
                     tab.context_menu = None;
                     // Run action's message
-                    return self.update(action.message());
+                    return self.update(action.message(None));
                 }
             }
             Message::TabContextMenu(entity, position_opt) => {
@@ -2418,8 +2422,7 @@ impl Application for App {
                     diff_widget = diff_widget.push(hunk_widget);
                 }
                 tab_column = tab_column.push(widget::scrollable(
-                    widget::cosmic_container::container(diff_widget)
-                        .layer(cosmic_theme::Layer::Primary),
+                    widget::layer_container(diff_widget).layer(cosmic_theme::Layer::Primary),
                 ));
             }
             None => {}
@@ -2517,9 +2520,8 @@ impl Application for App {
                 column = column.push(replace_widget);
             }
 
-            tab_column = tab_column.push(
-                widget::cosmic_container::container(column).layer(cosmic_theme::Layer::Primary),
-            );
+            tab_column = tab_column
+                .push(widget::layer_container(column).layer(cosmic_theme::Layer::Primary));
         }
 
         let content: Element<_> = tab_column.into();
