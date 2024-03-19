@@ -3,7 +3,7 @@
 use cosmic::widget::menu::key_bind::KeyBind;
 use cosmic::widget::menu::menu_tree::{menu_items, menu_root, MenuItem};
 use cosmic::{
-    iced::{widget::column, Alignment, Background, Length},
+    iced::{widget::column, widget::horizontal_rule, Alignment, Background, Length},
     iced_core::Border,
     menu_button, theme,
     widget::{
