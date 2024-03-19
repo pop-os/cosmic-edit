@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
+use cosmic::widget::menu::action::MenuAction;
+use cosmic::widget::menu::key_bind::KeyBind;
+use cosmic::widget::segmented_button::Entity;
 use cosmic::{
     app::{message, Command, Core, Settings},
     cosmic_config::{self, CosmicConfigEntry},
@@ -44,7 +47,7 @@ mod git;
 use icon_cache::IconCache;
 mod icon_cache;
 
-use key_bind::{key_binds, KeyBind};
+use key_bind::key_binds;
 mod key_bind;
 
 use line_number::LineNumberCache;
@@ -224,8 +227,9 @@ pub enum Action {
     Undo,
 }
 
-impl Action {
-    pub fn message(&self) -> Message {
+impl MenuAction for Action {
+    type Message = Message;
+    fn message(&self, _entity: Option<Entity>) -> Message {
         match self {
             Self::Todo => Message::Todo,
             Self::About => Message::ToggleContextPage(ContextPage::About),
@@ -1608,7 +1612,7 @@ impl Application for App {
             Message::Key(modifiers, key) => {
                 for (key_bind, action) in self.key_binds.iter() {
                     if key_bind.matches(modifiers, &key) {
-                        return self.update(action.message());
+                        return self.update(action.message(None));
                     }
                 }
             }
@@ -2100,7 +2104,7 @@ impl Application for App {
                     // Close context menu
                     tab.context_menu = None;
                     // Run action's message
-                    return self.update(action.message());
+                    return self.update(action.message(None));
                 }
             }
             Message::TabContextMenu(entity, position_opt) => {

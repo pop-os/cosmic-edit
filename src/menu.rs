@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
+use cosmic::widget::menu::key_bind::KeyBind;
+use cosmic::widget::menu::menu_tree::{menu_items, menu_root, MenuItem};
 use cosmic::{
-    //TODO: export in cosmic::widget
-    iced::{
-        widget::{column, horizontal_rule},
-        Alignment, Background, Length,
-    },
+    iced::{widget::column, widget::horizontal_rule, Alignment, Background, Length},
     iced_core::Border,
-    theme,
+    menu_button, theme,
     widget::{
         self, horizontal_space,
         menu::{ItemHeight, ItemWidth, MenuBar, MenuTree},
@@ -17,22 +15,7 @@ use cosmic::{
 };
 use std::{collections::HashMap, path::PathBuf};
 
-use crate::{fl, icon_cache_get, Action, Config, ConfigState, KeyBind, Message};
-
-macro_rules! menu_button {
-    ($($x:expr),+ $(,)?) => (
-        widget::button(
-            widget::Row::with_children(
-                vec![$(Element::from($x)),+]
-            )
-            .align_items(Alignment::Center)
-        )
-        .height(Length::Fixed(32.0))
-        .padding([4, 16])
-        .width(Length::Fill)
-        .style(theme::Button::MenuItem)
-    );
-}
+use crate::{fl, Action, Config, ConfigState, Message};
 
 pub fn context_menu<'a>(
     key_binds: &HashMap<KeyBind, Action>,
@@ -91,61 +74,8 @@ pub fn menu_bar<'a>(
     projects: &Vec<(String, PathBuf)>,
 ) -> Element<'a, Message> {
     //TODO: port to libcosmic
-    let menu_root = |label| {
-        widget::button(widget::text(label))
-            .padding([4, 12])
-            .style(theme::Button::MenuRoot)
-    };
-
-    let menu_folder =
-        |label| menu_button!(widget::text(label), horizontal_space(Length::Fill), ">");
-
-    let find_key = |action: &Action| -> String {
-        for (key_bind, key_action) in key_binds.iter() {
-            if action == key_action {
-                return key_bind.to_string();
-            }
-        }
-        if action == &Action::Todo {
-            return fl!("todo");
-        }
-        String::new()
-    };
-
-    let menu_item = |label, action| {
-        let key = find_key(&action);
-        MenuTree::new(
-            menu_button!(
-                widget::text(label),
-                horizontal_space(Length::Fill),
-                widget::text(key)
-            )
-            .on_press(action.message()),
-        )
-    };
-
-    //TODO: support key lookup?
-    let menu_checkbox = |label, value, action| {
-        let check: Element<_> = if value {
-            icon_cache_get("object-select-symbolic", 16).into()
-        } else {
-            widget::Space::with_width(Length::Fixed(16.0)).into()
-        };
-        let key = find_key(&action);
-        MenuTree::new(
-            menu_button!(
-                check,
-                widget::Space::with_width(Length::Fixed(8.0)),
-                widget::text(label),
-                horizontal_space(Length::Fill),
-                widget::text(key)
-            )
-            .on_press(action.message()),
-        )
-    };
-
     let menu_tab_width = |tab_width: u16| {
-        menu_checkbox(
+        MenuItem::CheckBox(
             fl!("tab-width", tab_width = tab_width),
             config.tab_width == tab_width,
             Action::TabWidth(tab_width),
@@ -164,114 +94,132 @@ pub fn menu_bar<'a>(
 
     let mut recent_files = Vec::with_capacity(config_state.recent_files.len());
     for (i, path) in config_state.recent_files.iter().enumerate() {
-        recent_files.push(menu_item(format_path(path), Action::OpenRecentFile(i)));
+        recent_files.push(MenuItem::Button(
+            format_path(path),
+            Action::OpenRecentFile(i),
+        ));
     }
 
     let mut recent_projects = Vec::with_capacity(config_state.recent_projects.len());
     for (i, path) in config_state.recent_projects.iter().enumerate() {
-        recent_projects.push(menu_item(format_path(path), Action::OpenRecentProject(i)));
+        recent_projects.push(MenuItem::Button(
+            format_path(path),
+            Action::OpenRecentProject(i),
+        ));
     }
 
     let mut close_projects = Vec::with_capacity(projects.len());
     for (project_i, (name, _path)) in projects.iter().enumerate() {
-        close_projects.push(menu_item(name.clone(), Action::CloseProject(project_i)));
+        close_projects.push(MenuItem::Button(
+            name.clone(),
+            Action::CloseProject(project_i),
+        ));
     }
 
     MenuBar::new(vec![
         MenuTree::with_children(
             menu_root(fl!("file")),
-            vec![
-                menu_item(fl!("new-file"), Action::NewFile),
-                menu_item(fl!("new-window"), Action::NewWindow),
-                MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("open-file"), Action::OpenFileDialog),
-                MenuTree::with_children(menu_folder(fl!("open-recent-file")), recent_files),
-                menu_item(fl!("close-file"), Action::CloseFile),
-                MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("menu-open-project"), Action::OpenProjectDialog),
-                MenuTree::with_children(menu_folder(fl!("open-recent-project")), recent_projects),
-                MenuTree::with_children(menu_folder(fl!("close-project")), close_projects),
-                MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("save"), Action::Save),
-                menu_item(fl!("save-as"), Action::SaveAsDialog),
-                MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("revert-all-changes"), Action::Todo),
-                MenuTree::new(horizontal_rule(1)),
-                menu_item(
-                    fl!("menu-document-statistics"),
-                    Action::ToggleDocumentStatistics,
-                ),
-                //TODO menu_item(fl!("document-type"), Action::Todo),
-                //TODO menu_item(fl!("encoding"), Action::Todo),
-                menu_item(fl!("menu-git-management"), Action::ToggleGitManagement),
-                //TODO menu_item(fl!("print"), Action::Todo),
-                MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("quit"), Action::Quit),
-            ],
+            menu_items(
+                key_binds,
+                vec![
+                    MenuItem::Button(fl!("new-file"), Action::NewFile),
+                    MenuItem::Button(fl!("new-window"), Action::NewWindow),
+                    MenuItem::Divider,
+                    MenuItem::Button(fl!("open-file"), Action::OpenFileDialog),
+                    MenuItem::Folder(fl!("open-recent-file"), recent_files),
+                    MenuItem::Button(fl!("close-file"), Action::CloseFile),
+                    MenuItem::Divider,
+                    MenuItem::Button(fl!("menu-open-project"), Action::OpenProjectDialog),
+                    MenuItem::Folder(fl!("open-recent-project"), recent_projects),
+                    MenuItem::Folder(fl!("close-project"), close_projects),
+                    MenuItem::Divider,
+                    MenuItem::Button(fl!("save"), Action::Save),
+                    MenuItem::Button(fl!("save-as"), Action::SaveAsDialog),
+                    MenuItem::Divider,
+                    MenuItem::Button(fl!("revert-all-changes"), Action::Todo),
+                    MenuItem::Divider,
+                    MenuItem::Button(
+                        fl!("menu-document-statistics"),
+                        Action::ToggleDocumentStatistics,
+                    ),
+                    //TODO MenuItem::Button(fl!("document-type"), Action::Todo),
+                    //TODO MenuItem::Button(fl!("encoding"), Action::Todo),
+                    MenuItem::Button(fl!("menu-git-management"), Action::ToggleGitManagement),
+                    //TODO MenuItem::Button(fl!("print"), Action::Todo),
+                    MenuItem::Divider,
+                    MenuItem::Button(fl!("quit"), Action::Quit),
+                ],
+            ),
         ),
         MenuTree::with_children(
             menu_root(fl!("edit")),
-            vec![
-                menu_item(fl!("undo"), Action::Undo),
-                menu_item(fl!("redo"), Action::Redo),
-                MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("cut"), Action::Cut),
-                menu_item(fl!("copy"), Action::Copy),
-                menu_item(fl!("paste"), Action::Paste),
-                menu_item(fl!("select-all"), Action::SelectAll),
-                MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("find"), Action::Find),
-                menu_item(fl!("replace"), Action::FindAndReplace),
-                menu_item(fl!("find-in-project"), Action::ToggleProjectSearch),
-                MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("spell-check"), Action::Todo),
-            ],
+            menu_items(
+                key_binds,
+                vec![
+                    MenuItem::Button(fl!("undo"), Action::Undo),
+                    MenuItem::Button(fl!("redo"), Action::Redo),
+                    MenuItem::Divider,
+                    MenuItem::Button(fl!("cut"), Action::Cut),
+                    MenuItem::Button(fl!("copy"), Action::Copy),
+                    MenuItem::Button(fl!("paste"), Action::Paste),
+                    MenuItem::Button(fl!("select-all"), Action::SelectAll),
+                    MenuItem::Divider,
+                    MenuItem::Button(fl!("find"), Action::Find),
+                    MenuItem::Button(fl!("replace"), Action::FindAndReplace),
+                    MenuItem::Button(fl!("find-in-project"), Action::ToggleProjectSearch),
+                    MenuItem::Divider,
+                    MenuItem::Button(fl!("spell-check"), Action::Todo),
+                ],
+            ),
         ),
         MenuTree::with_children(
             menu_root(fl!("view")),
-            vec![
-                MenuTree::with_children(
-                    menu_folder(fl!("indentation")),
-                    vec![
-                        menu_checkbox(
-                            fl!("automatic-indentation"),
-                            config.auto_indent,
-                            Action::ToggleAutoIndent,
-                        ),
-                        MenuTree::new(horizontal_rule(1)),
-                        menu_tab_width(1),
-                        menu_tab_width(2),
-                        menu_tab_width(3),
-                        menu_tab_width(4),
-                        menu_tab_width(5),
-                        menu_tab_width(6),
-                        menu_tab_width(7),
-                        menu_tab_width(8),
-                        //TODO MenuTree::new(horizontal_rule(1)),
-                        //TODO menu_item(fl!("convert-indentation-to-spaces"), Action::Todo),
-                        //TODO menu_item(fl!("convert-indentation-to-tabs"), Action::Todo),
-                    ],
-                ),
-                MenuTree::new(horizontal_rule(1)),
-                menu_checkbox(fl!("word-wrap"), config.word_wrap, Action::ToggleWordWrap),
-                menu_checkbox(
-                    fl!("show-line-numbers"),
-                    config.line_numbers,
-                    Action::ToggleLineNumbers,
-                ),
-                menu_checkbox(
-                    fl!("highlight-current-line"),
-                    config.highlight_current_line,
-                    Action::ToggleHighlightCurrentLine,
-                ),
-                //TODO: menu_item(fl!("syntax-highlighting"), Action::Todo),
-                MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("menu-settings"), Action::ToggleSettingsPage),
-                //TODO MenuTree::new(horizontal_rule(1)),
-                //TODO menu_item(fl!("menu-keyboard-shortcuts"), Action::Todo),
-                MenuTree::new(horizontal_rule(1)),
-                menu_item(fl!("menu-about"), Action::About),
-            ],
+            menu_items(
+                key_binds,
+                vec![
+                    MenuItem::Folder(
+                        fl!("indentation"),
+                        vec![
+                            MenuItem::CheckBox(
+                                fl!("automatic-indentation"),
+                                config.auto_indent,
+                                Action::ToggleAutoIndent,
+                            ),
+                            MenuItem::Divider,
+                            menu_tab_width(1),
+                            menu_tab_width(2),
+                            menu_tab_width(3),
+                            menu_tab_width(4),
+                            menu_tab_width(5),
+                            menu_tab_width(6),
+                            menu_tab_width(7),
+                            menu_tab_width(8),
+                            //TODO MenuItem::Divider,
+                            //TODO MenuItem::Button(fl!("convert-indentation-to-spaces"), Action::Todo),
+                            //TODO MenuItem::Button(fl!("convert-indentation-to-tabs"), Action::Todo),
+                        ],
+                    ),
+                    MenuItem::Divider,
+                    MenuItem::CheckBox(fl!("word-wrap"), config.word_wrap, Action::ToggleWordWrap),
+                    MenuItem::CheckBox(
+                        fl!("show-line-numbers"),
+                        config.line_numbers,
+                        Action::ToggleLineNumbers,
+                    ),
+                    MenuItem::CheckBox(
+                        fl!("highlight-current-line"),
+                        config.highlight_current_line,
+                        Action::ToggleHighlightCurrentLine,
+                    ),
+                    //TODO: MenuItem::CheckBox(fl!("syntax-highlighting"), Action::Todo),
+                    MenuItem::Divider,
+                    MenuItem::Button(fl!("menu-settings"), Action::ToggleSettingsPage),
+                    //TODO MenuItem::Divider,
+                    //TODO MenuItem::Button(fl!("menu-keyboard-shortcuts"), Action::Todo),
+                    MenuItem::Divider,
+                    MenuItem::Button(fl!("menu-about"), Action::About),
+                ],
+            ),
         ),
     ])
     .item_height(ItemHeight::Dynamic(40))
