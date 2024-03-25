@@ -7,6 +7,7 @@ use cosmic::{
 use cosmic_files::mime_icon::{mime_for_path, mime_icon, FALLBACK_MIME_ICON};
 use cosmic_text::{Attrs, Buffer, Edit, Shaping, SyntaxEditor, ViEditor, Wrap};
 use notify::Watcher;
+use regex::Regex;
 use std::{
     fs,
     path::PathBuf,
@@ -208,18 +209,17 @@ impl EditorTab {
         }
     }
 
-    pub fn replace(&self, value: &str, replace: &str) -> bool {
+    pub fn replace(&self, regex: &Regex, replace: &str) -> bool {
         let mut editor = self.editor.lock().unwrap();
         let mut cursor = editor.cursor();
         let start_line = cursor.line;
         while cursor.line < editor.with_buffer(|buffer| buffer.lines.len()) {
-            if let Some(index) = editor.with_buffer(|buffer| {
-                buffer.lines[cursor.line]
-                    .text()
-                    .match_indices(value)
-                    .filter_map(|(i, _)| {
-                        if cursor.line != start_line || i >= cursor.index {
-                            Some(i)
+            if let Some((index, len)) = editor.with_buffer(|buffer| {
+                regex
+                    .find_iter(buffer.lines[cursor.line].text())
+                    .filter_map(|m| {
+                        if cursor.line != start_line || m.start() >= cursor.index {
+                            Some((m.start(), m.len()))
                         } else {
                             None
                         }
@@ -228,7 +228,7 @@ impl EditorTab {
             }) {
                 cursor.index = index;
                 let mut end = cursor;
-                end.index = index + value.len();
+                end.index = index + len;
 
                 editor.start_change();
                 editor.delete_range(cursor, end);
@@ -245,19 +245,18 @@ impl EditorTab {
     }
 
     // Code adapted from cosmic-text ViEditor search
-    pub fn search(&self, value: &str, forwards: bool) -> bool {
+    pub fn search(&self, regex: &Regex, forwards: bool) -> bool {
         let mut editor = self.editor.lock().unwrap();
         let mut cursor = editor.cursor();
         let start_line = cursor.line;
         if forwards {
             while cursor.line < editor.with_buffer(|buffer| buffer.lines.len()) {
                 if let Some(index) = editor.with_buffer(|buffer| {
-                    buffer.lines[cursor.line]
-                        .text()
-                        .match_indices(value)
-                        .filter_map(|(i, _)| {
-                            if cursor.line != start_line || i > cursor.index {
-                                Some(i)
+                    regex
+                        .find_iter(buffer.lines[cursor.line].text())
+                        .filter_map(|m| {
+                            if cursor.line != start_line || m.start() > cursor.index {
+                                Some(m.start())
                             } else {
                                 None
                             }
@@ -277,17 +276,16 @@ impl EditorTab {
                 cursor.line -= 1;
 
                 if let Some(index) = editor.with_buffer(|buffer| {
-                    buffer.lines[cursor.line]
-                        .text()
-                        .rmatch_indices(value)
-                        .filter_map(|(i, _)| {
-                            if cursor.line != start_line || i < cursor.index {
-                                Some(i)
+                    regex
+                        .find_iter(buffer.lines[cursor.line].text())
+                        .filter_map(|m| {
+                            if cursor.line != start_line || m.start() < cursor.index {
+                                Some(m.start())
                             } else {
                                 None
                             }
                         })
-                        .next()
+                        .last()
                 }) {
                     cursor.index = index;
                     editor.set_cursor(cursor);

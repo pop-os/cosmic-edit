@@ -55,6 +55,8 @@ find-next = Find next
 replace-placeholder = Replace...
 replace = Replace
 replace-all = Replace all
+case-sensitive = Case sensitive
+use-regex = Use regex
 
 # Menu
 

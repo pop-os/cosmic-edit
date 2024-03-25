@@ -31,6 +31,8 @@ impl AppTheme {
 pub struct Config {
     pub app_theme: AppTheme,
     pub auto_indent: bool,
+    pub find_case_sensitive: bool,
+    pub find_use_regex: bool,
     pub font_name: String,
     pub font_size: u16,
     pub highlight_current_line: bool,
@@ -47,6 +49,8 @@ impl Default for Config {
         Self {
             app_theme: AppTheme::System,
             auto_indent: true,
+            find_case_sensitive: false,
+            find_use_regex: false,
             font_name: "Fira Mono".to_string(),
             font_size: 14,
             highlight_current_line: true,
@@ -61,6 +65,16 @@ impl Default for Config {
 }
 
 impl Config {
+    pub fn find_regex(&self, pattern: &str) -> Result<regex::Regex, regex::Error> {
+        let mut builder = if self.find_use_regex {
+            regex::RegexBuilder::new(pattern)
+        } else {
+            regex::RegexBuilder::new(&regex::escape(pattern))
+        };
+        builder.case_insensitive(!self.find_case_sensitive);
+        builder.build()
+    }
+
     // Calculate metrics from font size
     pub fn metrics(&self) -> Metrics {
         let font_size = self.font_size.max(1) as f32;

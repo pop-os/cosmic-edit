@@ -16,9 +16,10 @@ grep = "0.3.1"
 ignore = "0.4.21"
 lexical-sort = "0.3.1"
 log = "0.4.20"
+notify = "6.1.1"
 open = "5.0.2"
 patch = "0.7.0"
-notify = "6.1.1"
+regex = "1.10"
 serde = { version = "1", features = ["serde_derive"] }
 tokio = { version = "1", features = ["process", "time"] }
 # Extra syntax highlighting
