@@ -2549,9 +2549,12 @@ impl Application for App {
         struct ThemeSubscription;
 
         subscription::Subscription::batch([
-            event::listen_with(|event, _status| match event {
+            event::listen_with(|event, status| match event {
                 event::Event::Keyboard(keyboard::Event::KeyPressed { modifiers, key, .. }) => {
-                    Some(Message::Key(modifiers, key))
+                    match status {
+                        event::Status::Ignored => Some(Message::Key(modifiers, key)),
+                        event::Status::Captured => None,
+                    }
                 }
                 event::Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
                     Some(Message::Modifiers(modifiers))
