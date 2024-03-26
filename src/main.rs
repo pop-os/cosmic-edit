@@ -1487,13 +1487,19 @@ impl Application for App {
             }
             Message::Cut => {
                 if let Some(Tab::Editor(tab)) = self.active_tab() {
-                    let mut editor = tab.editor.lock().unwrap();
-                    let selection_opt = editor.copy_selection();
-                    editor.start_change();
-                    editor.delete_selection();
-                    editor.finish_change();
+                    let selection_opt = {
+                        let mut editor = tab.editor.lock().unwrap();
+                        let selection_opt = editor.copy_selection();
+                        editor.start_change();
+                        editor.delete_selection();
+                        editor.finish_change();
+                        selection_opt
+                    };
                     if let Some(selection) = selection_opt {
-                        return clipboard::write(selection);
+                        return Command::batch([
+                            clipboard::write(selection),
+                            self.update(Message::TabChanged(self.tab_model.active())),
+                        ]);
                     }
                 }
             }
@@ -1616,6 +1622,7 @@ impl Application for App {
                             Ok(regex) => {
                                 //TODO: support captures
                                 tab.replace(&regex, &self.find_replace_value);
+                                return self.update(Message::TabChanged(self.tab_model.active()));
                             }
                             Err(err) => {
                                 //TODO: put regex error in find box
@@ -1644,6 +1651,7 @@ impl Application for App {
                                     editor.set_cursor(cosmic_text::Cursor::new(0, 0));
                                 }
                                 while tab.replace(&regex, &self.find_replace_value) {}
+                                return self.update(Message::TabChanged(self.tab_model.active()));
                             }
                             Err(err) => {
                                 //TODO: put regex error in find box
@@ -1892,10 +1900,13 @@ impl Application for App {
             }
             Message::PasteValue(value) => {
                 if let Some(Tab::Editor(tab)) = self.active_tab() {
-                    let mut editor = tab.editor.lock().unwrap();
-                    editor.start_change();
-                    editor.insert_string(&value, None);
-                    editor.finish_change();
+                    {
+                        let mut editor = tab.editor.lock().unwrap();
+                        editor.start_change();
+                        editor.insert_string(&value, None);
+                        editor.finish_change();
+                    }
+                    return self.update(Message::TabChanged(self.tab_model.active()));
                 }
             }
             Message::PrepareGitDiff(project_path, path, staged) => {
@@ -1974,8 +1985,12 @@ impl Application for App {
             }
             Message::Redo => {
                 if let Some(Tab::Editor(tab)) = self.active_tab() {
-                    let mut editor = tab.editor.lock().unwrap();
-                    editor.redo();
+                    {
+                        let mut editor = tab.editor.lock().unwrap();
+                        editor.redo();
+                    }
+
+                    return self.update(Message::TabChanged(self.tab_model.active()));
                 }
             }
             Message::Save => {
@@ -2096,7 +2111,9 @@ impl Application for App {
                 if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
                     let mut title = tab.title();
                     //TODO: better way of adding change indicator
-                    title.push_str(" \u{2022}");
+                    if tab.changed() {
+                        title.push_str(" \u{2022}");
+                    }
                     self.tab_model.text_set(entity, title);
                 }
             }
@@ -2316,8 +2333,12 @@ impl Application for App {
             }
             Message::Undo => {
                 if let Some(Tab::Editor(tab)) = self.active_tab() {
-                    let mut editor = tab.editor.lock().unwrap();
-                    editor.undo();
+                    {
+                        let mut editor = tab.editor.lock().unwrap();
+                        editor.undo();
+                    }
+
+                    return self.update(Message::TabChanged(self.tab_model.active()));
                 }
             }
             Message::VimBindings(vim_bindings) => {

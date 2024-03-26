@@ -152,7 +152,7 @@ impl EditorTab {
             });
             match fs::write(path, text) {
                 Ok(()) => {
-                    editor.set_changed(false);
+                    editor.save_point();
                     log::info!("saved {:?}", path);
                 }
                 Err(err) => {
