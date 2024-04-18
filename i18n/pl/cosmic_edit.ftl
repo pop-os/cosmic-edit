@@ -1,8 +1,12 @@
+cosmic-text-editor = Edytor Tekstu COSMIC
 new-document = Nowy dokument
 open-project = Otwórz projekt
 todo = TODO
 
 # Context Pages
+
+## About
+git-description = Git commit {$hash} z {$date}
 
 ## Document statistics
 document-statistics = Statystyki dokumentu
@@ -12,12 +16,19 @@ character-count-no-spaces = Znaki (bez spacji)
 line-count = Linie
 
 ## Git management
-git-management = Zarządzanie Git
+git-management = Zarządzanie git
+git-management-description = Zarządzanie git jest narzędziem programistycznym używanym do kontroli werji oprogramowania.
+git-management-loading = Ładuje zarządzanie git...
 unstaged-changes = Nieprzemieszczone zmiany
 staged-changes = Przemieszczone zmiany
 
 ## Project search
 project-search = Wyszukiwanie w Projekcie
+
+## Prompt save changes
+prompt-save-changes-title = Niezapisane zmiany
+prompt-unsaved-changes = Masz niezapisane zmiany. Zapisać?
+discard = Odrzuć zmiany
 
 ## Settings
 settings = Ustawienia
@@ -44,6 +55,8 @@ find-next = Szukaj następny
 replace-placeholder = Zastąp...
 replace = Zastąp
 replace-all = Zastąp wszystkie
+case-sensitive = Uwzględnienie wielkości liter
+use-regex = Użyj wyrażenia regularnego
 
 # Menu
 
