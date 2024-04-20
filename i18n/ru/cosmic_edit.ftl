@@ -1,8 +1,12 @@
+cosmic-text-editor = Текстовый редактор COSMIC
 new-document = Новый документ
 open-project = Открыть проект
 todo = TODO
 
 # Context Pages
+
+## About
+git-description = Git-коммит {$hash} от {$date}
 
 ## Document statistics
 document-statistics = Статистика документа
@@ -13,11 +17,18 @@ line-count = Строк
 
 ## Git management
 git-management = Управление Git
+git-management-description = Управление Git - это инструмент разработчика, используемый для контроля версий.
+git-management-loading = Загружается Управление Git...
 unstaged-changes = Не проиндексированные изменения
 staged-changes = Проиндексированные изменения
 
 ## Project search
 project-search = Поиск проекта
+
+## Prompt save changes
+prompt-save-changes-title = Несохраненные изменения
+prompt-unsaved-changes = У вас есть несохраненные изменения. Сохранить их?
+discard = Отменить изменения
 
 ## Settings
 settings = Параметры
@@ -44,6 +55,8 @@ find-next = Найти далее
 replace-placeholder = Заменить...
 replace = Заменить
 replace-all = Заменить все
+case-sensitive = Учитывать регистр
+use-regex = Регулярные выражения
 
 # Menu
 
