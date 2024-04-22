@@ -55,6 +55,8 @@ find-next = Localizar seguinte
 replace-placeholder = Substituir...
 replace = Substituir
 replace-all = Substituir tudo
+case-sensitive = Maiúsculas/Minúsculas
+use-regex = Usar expressão regular
 
 # Menu
 
