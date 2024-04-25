@@ -17,7 +17,6 @@ use cosmic::{
         widget::text,
         window, Alignment, Background, Color, Length, Limits, Point,
     },
-    prelude::CollectionWidget,
     style, theme,
     widget::{self, button, icon, nav_bar, segmented_button},
     Application, ApplicationExt, Apply, Element,
@@ -348,6 +347,7 @@ pub enum Message {
     ProjectSearchResult(ProjectSearchResult),
     ProjectSearchSubmit,
     ProjectSearchValue(String),
+    PromptSaveChanges(segmented_button::Entity),
     Quit,
     Redo,
     Save,
@@ -384,7 +384,6 @@ pub enum ContextPage {
     GitManagement,
     //TODO: Move search to pop-up
     ProjectSearch,
-    PromptSaveChanges(segmented_button::Entity),
     Settings,
 }
 
@@ -395,10 +394,14 @@ impl ContextPage {
             Self::DocumentStatistics => fl!("document-statistics"),
             Self::GitManagement => fl!("git-management"),
             Self::ProjectSearch => fl!("project-search"),
-            Self::PromptSaveChanges(_) => fl!("prompt-save-changes-title"),
             Self::Settings => fl!("settings"),
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum DialogPage {
+    PromptSave(segmented_button::Entity),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -425,6 +428,7 @@ pub struct App {
     context_page: ContextPage,
     text_box_id: widget::Id,
     dialog_opt: Option<Dialog<Message>>,
+    dialog_page_opt: Option<DialogPage>,
     find_opt: Option<bool>,
     find_replace_id: widget::Id,
     find_replace_value: String,
@@ -1058,55 +1062,6 @@ impl App {
             .into()
     }
 
-    fn prompt_save_changes(&self, entity: segmented_button::Entity) -> Element<Message> {
-        let (spacing, warning_color) = {
-            let theme = self.core().system_theme().cosmic();
-            (theme.spacing, theme.warning_text_color())
-        };
-
-        // "Save" is displayed regardless if the file was already saved because the message handles
-        // "Save As" if necessary
-        let save = fl!("save");
-        let save_button = widget::button::suggested(save)
-            .on_press(Message::Save)
-            .width(Length::Fill);
-
-        // "Save As" is only shown if the file has been saved previously
-        // Rationale: The user may want to save the modified buffer as a new file
-        let save_as_button = match self.tab_model.data(entity) {
-            Some(Tab::Editor(tab)) if tab.path_opt.is_some() => {
-                let save_as = fl!("save-as");
-                let save_as_button = widget::button::suggested(save_as)
-                    .on_press(Message::SaveAsDialog)
-                    .width(Length::Fill);
-                Some(save_as_button)
-            }
-            _ => None,
-        };
-
-        // TODO: Maybe a button to show diffs in a split?
-        // And more info, such as the path if any?
-        // let diff = widget::text(fl!("diff"));
-        // let diff_button = widget::button(diff.into());
-
-        // Discards unsaved changes
-        let discard = fl!("discard");
-        let discard_button = widget::button::destructive(discard)
-            .on_press(Message::TabCloseForce(entity))
-            .width(Length::Fill);
-
-        widget::column::with_capacity(3)
-            .push(
-                widget::text(fl!("prompt-unsaved-changes"))
-                    .style(theme::Text::Color(warning_color.into())),
-            )
-            .push(save_button)
-            .push_maybe(save_as_button)
-            .push(discard_button)
-            .spacing(spacing.space_s)
-            .into()
-    }
-
     fn settings(&self) -> Element<Message> {
         let app_theme_selected = match self.config.app_theme {
             AppTheme::Dark => 1,
@@ -1271,6 +1226,7 @@ impl Application for App {
             context_page: ContextPage::Settings,
             text_box_id: widget::Id::unique(),
             dialog_opt: None,
+            dialog_page_opt: None,
             find_opt: None,
             find_replace_id: widget::Id::unique(),
             find_replace_value: String::new(),
@@ -1421,6 +1377,52 @@ impl Application for App {
             None => {
                 // Open project
                 self.update(Message::OpenProjectDialog)
+            }
+        }
+    }
+
+    fn dialog(&self) -> Option<Element<Self::Message>> {
+        let Some(dialog) = self.dialog_page_opt else {
+            return None;
+        };
+
+        match dialog {
+            DialogPage::PromptSave(entity) => {
+                // "Save" is displayed regardless if the file was already saved because the message handles
+                // "Save As" if necessary
+                let save = fl!("save");
+                let save_button = widget::button::suggested(save).on_press(Message::Save);
+
+                // "Save As" is only shown if the file has been saved previously
+                // Rationale: The user may want to save the modified buffer as a new file
+                let save_as_button = match self.tab_model.data(entity) {
+                    Some(Tab::Editor(tab)) if tab.path_opt.is_some() => {
+                        let save_as = fl!("save-as");
+                        let save_as_button =
+                            widget::button::suggested(save_as).on_press(Message::SaveAsDialog);
+                        Some(save_as_button)
+                    }
+                    _ => None,
+                };
+
+                // Discards unsaved changes
+                let discard = fl!("discard");
+                let discard_button =
+                    widget::button::destructive(discard).on_press(Message::TabCloseForce(entity));
+
+                let mut dialog = widget::dialog(fl!("prompt-save-changes-title"))
+                    .body(fl!("prompt-unsaved-changes"))
+                    .icon(icon::from_name("dialog-warning-symbolic").size(64))
+                    .primary_action(save_button);
+                dialog = if let Some(save_as_button) = save_as_button {
+                    dialog
+                        .secondary_action(save_as_button)
+                        .tertiary_action(discard_button)
+                } else {
+                    dialog.secondary_action(discard_button)
+                };
+
+                Some(dialog.into())
             }
         }
     }
@@ -1979,6 +1981,9 @@ impl Application for App {
             Message::ProjectSearchValue(value) => {
                 self.project_search_value = value;
             }
+            Message::PromptSaveChanges(entity) => {
+                self.dialog_page_opt = Some(DialogPage::PromptSave(entity));
+            }
             Message::Quit => {
                 //TODO: prompt for save?
                 return window::close(window::Id::MAIN);
@@ -2049,8 +2054,8 @@ impl Application for App {
                                 self.tab_model.text_set(entity, title);
                             }
                             // Close save changes prompt only if the dialog succeeded
-                            if let ContextPage::PromptSaveChanges(_) = self.context_page {
-                                self.core_mut().window.show_context = false;
+                            if self.dialog_page_opt == Some(DialogPage::PromptSave(entity)) {
+                                self.dialog_page_opt = None;
                             }
                         }
                     }
@@ -2089,6 +2094,11 @@ impl Application for App {
                 }
             },
             Message::TabActivate(entity) => {
+                // Close save changes dialog if switching to a different tab for consistency
+                if self.dialog_page_opt != Some(DialogPage::PromptSave(entity)) {
+                    self.dialog_page_opt = None;
+                }
+
                 self.tab_model.activate(entity);
                 return self.update_tab();
             }
@@ -2121,26 +2131,20 @@ impl Application for App {
                 match self.tab_model.data_mut::<Tab>(entity) {
                     // Only match a changed editor tab...
                     Some(Tab::Editor(tab)) if tab.changed() => {
-                        // * The save prompt shouldn't be closed if `TabClose` is emitted again
-                        // * Prompt should be opened if no pages are open
-                        // * Prompt should replace a different page (e.g. Settings)
+                        // The save prompt shouldn't be closed if `TabClose` is emitted again for
+                        // the same tab.
                         //
-                        // `PromptSaveChanges` for a different tab other than `entity` counts as
-                        // a different page
-                        // Ex. If tab 2 and 3 both have unsaved changes and `PromptSaveChanges` is
-                        // open for tab 2, closing tab 3 should open the page for tab 3
-                        if !self.core().window.show_context
-                            || self.context_page != ContextPage::PromptSaveChanges(entity)
-                        {
+                        // `PromptSave` for a different tab other than `entity` counts as
+                        // a different dialog
+                        // Ex. If tab 2 and 3 both have unsaved changes and `PromptSave` is
+                        // emitted for tab 2, closing tab 3 should open the dialog for tab 3 in
+                        // order for `Message::Save` to save the correct tab.
+                        return Command::batch([
                             // Focus the tab in case the user is closing an unfocussed tab
                             // Otherwise, closing an unfocussed tab would be very confusing
-                            return Command::batch([
-                                self.update(Message::TabActivate(entity)),
-                                self.update(Message::ToggleContextPage(
-                                    ContextPage::PromptSaveChanges(entity),
-                                )),
-                            ]);
-                        }
+                            self.update(Message::TabActivate(entity)),
+                            self.update(Message::PromptSaveChanges(entity)),
+                        ]);
                     }
                     // ...or else just close it
                     _ => {
@@ -2166,16 +2170,9 @@ impl Application for App {
                     self.open_tab(None);
                 }
 
-                // Close PromptSaveChanges page if open for this entity
-                if self.core().window.show_context
-                    && matches!(self.context_page, ContextPage::PromptSaveChanges(_))
-                {
-                    return Command::batch([
-                        self.update(Message::ToggleContextPage(ContextPage::PromptSaveChanges(
-                            entity,
-                        ))),
-                        self.update_tab(),
-                    ]);
+                // Close PromptSave dialog if open for this entity
+                if self.dialog_page_opt == Some(DialogPage::PromptSave(entity)) {
+                    self.dialog_page_opt = None;
                 }
 
                 return self.update_tab();
@@ -2360,7 +2357,6 @@ impl Application for App {
             ContextPage::DocumentStatistics => self.document_statistics(),
             ContextPage::GitManagement => self.git_management(),
             ContextPage::ProjectSearch => self.project_search(),
-            ContextPage::PromptSaveChanges(entity) => self.prompt_save_changes(entity),
             ContextPage::Settings => self.settings(),
         })
     }
