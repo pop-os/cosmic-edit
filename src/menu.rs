@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::widget::menu::key_bind::KeyBind;
-use cosmic::widget::menu::menu_tree::{menu_items, menu_root, MenuItem};
+use cosmic::widget::menu::{items as menu_items, root as menu_root, Item as MenuItem};
 use cosmic::{
     iced::{widget::column, widget::horizontal_rule, Alignment, Background, Length},
     iced_core::Border,
     menu_button, theme,
     widget::{
         self, horizontal_space,
-        menu::{ItemHeight, ItemWidth, MenuBar, MenuTree},
+        menu::{ItemHeight, ItemWidth, MenuBar, Tree as MenuTree},
         segmented_button,
     },
     Element,
