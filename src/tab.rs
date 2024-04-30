@@ -147,7 +147,7 @@ impl EditorTab {
             editor.with_buffer(|buffer| {
                 for line in buffer.lines.iter() {
                     text.push_str(line.text());
-                    text.push('\n');
+                    text.push_str(line.ending().as_str());
                 }
             });
             match fs::write(path, text) {
