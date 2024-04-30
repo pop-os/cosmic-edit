@@ -1,5 +1,6 @@
 use cosmic_text::{
-    Align, Attrs, AttrsList, BufferLine, Family, FontSystem, LayoutLine, ShapeBuffer, Shaping, Wrap,
+    Align, Attrs, AttrsList, BufferLine, Family, FontSystem, LayoutLine, LineEnding, ShapeBuffer,
+    Shaping, Wrap,
 };
 use std::collections::HashMap;
 
@@ -32,7 +33,12 @@ impl LineNumberCache {
             //TODO: do not repeat, used in App::init
             let attrs = Attrs::new().family(Family::Monospace);
             let text = format!("{:width$}", key.number, width = key.width);
-            let mut buffer_line = BufferLine::new(text, AttrsList::new(attrs), Shaping::Advanced);
+            let mut buffer_line = BufferLine::new(
+                text,
+                LineEnding::default(),
+                AttrsList::new(attrs),
+                Shaping::Advanced,
+            );
             buffer_line.set_align(Some(Align::Left));
             buffer_line
                 .layout_in_buffer(
