@@ -324,6 +324,7 @@ pub enum Message {
     FindReplaceValueChanged(String),
     FindSearchValueChanged(String),
     FindUseRegex(bool),
+    Focus,
     GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
     Key(Modifiers, keyboard::Key),
     LaunchUrl(String),
@@ -2342,6 +2343,12 @@ impl Application for App {
                 self.config.vim_bindings = vim_bindings;
                 return self.save_config();
             }
+            Message::Focus => {
+                // focus the text box if context page is not shown
+                if !self.core.window.show_context {
+                    return self.update_focus();
+                }
+            }
         }
 
         Command::none()
@@ -2659,6 +2666,9 @@ impl Application for App {
                 }
                 event::Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
                     Some(Message::Modifiers(modifiers))
+                }
+                event::Event::Window(id, window::Event::Focused) if id == window::Id::MAIN => {
+                    Some(Message::Focus)
                 }
                 _ => None,
             }),
