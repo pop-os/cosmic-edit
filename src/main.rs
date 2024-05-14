@@ -326,6 +326,8 @@ pub enum Message {
     FindUseRegex(bool),
     Focus,
     GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
+    GitStage(PathBuf, PathBuf),
+    GitUnstage(PathBuf, PathBuf),
     Key(Modifiers, keyboard::Key),
     LaunchUrl(String),
     Modifiers(Modifiers),
@@ -375,6 +377,7 @@ pub enum Message {
     ToggleLineNumbers,
     ToggleWordWrap,
     Undo,
+    UpdateGitProjectStatus,
     VimBindings(bool),
 }
 
@@ -896,7 +899,15 @@ impl App {
                                 widget::row::with_children(vec![
                                     icon.into(),
                                     widget::text(text.clone()).into(),
+                                    widget::horizontal_space(Length::Fill).into(),
+                                    widget::button::standard(fl!("stage"))
+                                        .on_press(Message::GitStage(
+                                            project_path.clone(),
+                                            item.path.clone(),
+                                        ))
+                                        .into(),
                                 ])
+                                .align_items(Alignment::Center)
                                 .spacing(spacing.space_xs),
                             )
                             .on_press(Message::PrepareGitDiff(
@@ -929,7 +940,15 @@ impl App {
                                 widget::row::with_children(vec![
                                     icon.into(),
                                     widget::text(text.clone()).into(),
+                                    widget::horizontal_space(Length::Fill).into(),
+                                    widget::button::standard(fl!("unstage"))
+                                        .on_press(Message::GitUnstage(
+                                            project_path.clone(),
+                                            item.path.clone(),
+                                        ))
+                                        .into(),
                                 ])
+                                .align_items(Alignment::Center)
                                 .spacing(spacing.space_xs),
                             )
                             .on_press(Message::PrepareGitDiff(
@@ -1684,6 +1703,68 @@ impl Application for App {
             Message::GitProjectStatus(project_status) => {
                 self.git_project_status = Some(project_status);
             }
+            Message::GitStage(project_path, path) => {
+                return Command::perform(
+                    async move {
+                        //TODO: send errors to UI
+                        match GitRepository::new(&project_path) {
+                            Ok(repo) => match repo.stage(&path).await {
+                                Ok(()) => {
+                                    return message::app(Message::UpdateGitProjectStatus);
+                                }
+                                Err(err) => {
+                                    log::error!(
+                                        "failed to stage {:?} in {:?}: {}",
+                                        path,
+                                        project_path,
+                                        err
+                                    );
+                                }
+                            },
+                            Err(err) => {
+                                log::error!(
+                                    "failed to open repository {:?}: {}",
+                                    project_path,
+                                    err
+                                );
+                            }
+                        }
+                        message::none()
+                    },
+                    |x| x,
+                );
+            }
+            Message::GitUnstage(project_path, path) => {
+                return Command::perform(
+                    async move {
+                        //TODO: send errors to UI
+                        match GitRepository::new(&project_path) {
+                            Ok(repo) => match repo.unstage(&path).await {
+                                Ok(()) => {
+                                    return message::app(Message::UpdateGitProjectStatus);
+                                }
+                                Err(err) => {
+                                    log::error!(
+                                        "failed to unstage {:?} in {:?}: {}",
+                                        path,
+                                        project_path,
+                                        err
+                                    );
+                                }
+                            },
+                            Err(err) => {
+                                log::error!(
+                                    "failed to open repository {:?}: {}",
+                                    project_path,
+                                    err
+                                );
+                            }
+                        }
+                        message::none()
+                    },
+                    |x| x,
+                );
+            }
             Message::Key(modifiers, key) => {
                 for (key_bind, action) in self.key_binds.iter() {
                     if key_bind.matches(modifiers, &key) {
@@ -2253,45 +2334,7 @@ impl Application for App {
                 // Execute commands for specific pages
                 if self.core.window.show_context && self.context_page == ContextPage::GitManagement
                 {
-                    self.git_project_status = None;
-                    let projects = self.projects.clone();
-                    return Command::perform(
-                        async move {
-                            let mut project_status = Vec::new();
-                            for (project_name, project_path) in projects.iter() {
-                                //TODO: send errors to UI
-                                match GitRepository::new(project_path) {
-                                    Ok(repo) => match repo.status().await {
-                                        Ok(status) => {
-                                            if !status.is_empty() {
-                                                project_status.push((
-                                                    project_name.clone(),
-                                                    project_path.clone(),
-                                                    status,
-                                                ));
-                                            }
-                                        }
-                                        Err(err) => {
-                                            log::error!(
-                                                "failed to get status of {:?}: {}",
-                                                project_path,
-                                                err
-                                            );
-                                        }
-                                    },
-                                    Err(err) => {
-                                        log::error!(
-                                            "failed to open repository {:?}: {}",
-                                            project_path,
-                                            err
-                                        );
-                                    }
-                                }
-                            }
-                            message::app(Message::GitProjectStatus(project_status))
-                        },
-                        |x| x,
-                    );
+                    return self.update(Message::UpdateGitProjectStatus);
                 }
 
                 // Ensure focus of correct input
@@ -2338,6 +2381,47 @@ impl Application for App {
 
                     return self.update(Message::TabChanged(self.tab_model.active()));
                 }
+            }
+            Message::UpdateGitProjectStatus => {
+                self.git_project_status = None;
+                let projects = self.projects.clone();
+                return Command::perform(
+                    async move {
+                        let mut project_status = Vec::new();
+                        for (project_name, project_path) in projects.iter() {
+                            //TODO: send errors to UI
+                            match GitRepository::new(project_path) {
+                                Ok(repo) => match repo.status().await {
+                                    Ok(status) => {
+                                        if !status.is_empty() {
+                                            project_status.push((
+                                                project_name.clone(),
+                                                project_path.clone(),
+                                                status,
+                                            ));
+                                        }
+                                    }
+                                    Err(err) => {
+                                        log::error!(
+                                            "failed to get status of {:?}: {}",
+                                            project_path,
+                                            err
+                                        );
+                                    }
+                                },
+                                Err(err) => {
+                                    log::error!(
+                                        "failed to open repository {:?}: {}",
+                                        project_path,
+                                        err
+                                    );
+                                }
+                            }
+                        }
+                        message::app(Message::GitProjectStatus(project_status))
+                    },
+                    |x| x,
+                );
             }
             Message::VimBindings(vim_bindings) => {
                 self.config.vim_bindings = vim_bindings;

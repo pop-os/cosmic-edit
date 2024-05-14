@@ -262,4 +262,23 @@ impl GitRepository {
 
         Ok(status)
     }
+
+    pub async fn stage<P: AsRef<Path>>(&self, path: P) -> io::Result<()> {
+        let path = path.as_ref();
+        let mut command = self.command();
+        command.arg("stage");
+        command.arg("--").arg(path);
+        Self::command_stdout(command).await?;
+        Ok(())
+    }
+
+    pub async fn unstage<P: AsRef<Path>>(&self, path: P) -> io::Result<()> {
+        let path = path.as_ref();
+        let mut command = self.command();
+        command.arg("restore");
+        command.arg("--staged");
+        command.arg("--").arg(path);
+        Self::command_stdout(command).await?;
+        Ok(())
+    }
 }
