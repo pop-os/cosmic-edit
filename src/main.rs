@@ -169,6 +169,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut settings = Settings::default();
     settings = settings.theme(config.app_theme.theme());
     settings = settings.size_limits(Limits::NONE.min_width(360.0).min_height(180.0));
+    settings = settings.exit_on_close(false);
 
     let flags = Flags {
         config_handler,
@@ -228,7 +229,7 @@ pub enum Action {
 
 impl MenuAction for Action {
     type Message = Message;
-    fn message(&self, _entity: Option<Entity>) -> Message {
+    fn message(&self, entity_opt: Option<Entity>) -> Message {
         match self {
             Self::Todo => Message::Todo,
             Self::About => Message::ToggleContextPage(ContextPage::About),
@@ -247,8 +248,8 @@ impl MenuAction for Action {
             Self::Paste => Message::Paste,
             Self::Quit => Message::Quit,
             Self::Redo => Message::Redo,
-            Self::Save => Message::Save,
-            Self::SaveAsDialog => Message::SaveAsDialog,
+            Self::Save => Message::Save(entity_opt),
+            Self::SaveAsDialog => Message::SaveAsDialog(entity_opt),
             Self::SelectAll => Message::SelectAll,
             Self::TabActivate0 => Message::TabActivateJump(0),
             Self::TabActivate1 => Message::TabActivateJump(1),
@@ -352,9 +353,11 @@ pub enum Message {
     ProjectSearchValue(String),
     PromptSaveChanges(segmented_button::Entity),
     Quit,
+    QuitForce,
     Redo,
-    Save,
-    SaveAsDialog,
+    Save(Option<segmented_button::Entity>),
+    SaveAll,
+    SaveAsDialog(Option<segmented_button::Entity>),
     SaveAsResult(segmented_button::Entity, DialogResult),
     SelectAll,
     SystemThemeModeChange(cosmic_theme::ThemeMode),
@@ -403,9 +406,10 @@ impl ContextPage {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 enum DialogPage {
-    PromptSave(segmented_button::Entity),
+    PromptSaveClose(segmented_button::Entity),
+    PromptSaveQuit(Vec<segmented_button::Entity>),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -651,6 +655,41 @@ impl App {
                 log::error!("failed to save config_state: {}", err);
             }
         }
+    }
+
+    fn update_dialogs(&mut self) -> Command<Message> {
+        match self.dialog_page_opt {
+            Some(DialogPage::PromptSaveClose(entity)) => {
+                if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                    if !tab.changed() {
+                        // Tab has been saved, close it (which also closes this dialog)
+                        return self.update(Message::TabCloseForce(entity));
+                    }
+                } else {
+                    // Tab no longer found, close dialog
+                    self.dialog_page_opt = None;
+                }
+            }
+            Some(DialogPage::PromptSaveQuit(ref _entities)) => {
+                let mut unsaved = Vec::new();
+                for entity in self.tab_model.iter() {
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                        if tab.changed() {
+                            unsaved.push(entity);
+                        }
+                    }
+                }
+                if unsaved.is_empty() {
+                    // All tabs have been saved, we can exit
+                    return self.update(Message::QuitForce);
+                } else {
+                    // Update dialog
+                    self.dialog_page_opt = Some(DialogPage::PromptSaveQuit(unsaved));
+                }
+            }
+            None => {}
+        }
+        Command::none()
     }
 
     fn update_focus(&self) -> Command<Message> {
@@ -1333,6 +1372,10 @@ impl Application for App {
         Some(&self.nav_model)
     }
 
+    fn on_app_exit(&mut self) -> Option<Message> {
+        Some(Message::Quit)
+    }
+
     fn on_context_drawer(&mut self) -> Command<Message> {
         // Focus correct widget
         self.update_focus()
@@ -1402,24 +1445,27 @@ impl Application for App {
     }
 
     fn dialog(&self) -> Option<Element<Self::Message>> {
-        let Some(dialog) = self.dialog_page_opt else {
+        let Some(ref dialog) = self.dialog_page_opt else {
             return None;
         };
 
+        let cosmic_theme::Spacing { space_xxs, .. } = self.core().system_theme().cosmic().spacing;
+
         match dialog {
-            DialogPage::PromptSave(entity) => {
+            DialogPage::PromptSaveClose(entity) => {
                 // "Save" is displayed regardless if the file was already saved because the message handles
                 // "Save As" if necessary
                 let save = fl!("save");
-                let save_button = widget::button::suggested(save).on_press(Message::Save);
+                let save_button =
+                    widget::button::suggested(save).on_press(Message::Save(Some(*entity)));
 
                 // "Save As" is only shown if the file has been saved previously
                 // Rationale: The user may want to save the modified buffer as a new file
-                let save_as_button = match self.tab_model.data(entity) {
+                let save_as_button = match self.tab_model.data(*entity) {
                     Some(Tab::Editor(tab)) if tab.path_opt.is_some() => {
                         let save_as = fl!("save-as");
-                        let save_as_button =
-                            widget::button::suggested(save_as).on_press(Message::SaveAsDialog);
+                        let save_as_button = widget::button::suggested(save_as)
+                            .on_press(Message::SaveAsDialog(Some(*entity)));
                         Some(save_as_button)
                     }
                     _ => None,
@@ -1428,7 +1474,7 @@ impl Application for App {
                 // Discards unsaved changes
                 let discard = fl!("discard");
                 let discard_button =
-                    widget::button::destructive(discard).on_press(Message::TabCloseForce(entity));
+                    widget::button::destructive(discard).on_press(Message::TabCloseForce(*entity));
 
                 let mut dialog = widget::dialog(fl!("prompt-save-changes-title"))
                     .body(fl!("prompt-unsaved-changes"))
@@ -1441,6 +1487,47 @@ impl Application for App {
                 } else {
                     dialog.secondary_action(discard_button)
                 };
+
+                Some(dialog.into())
+            }
+            DialogPage::PromptSaveQuit(entities) => {
+                let mut can_save_all = true;
+                let mut column = widget::column::with_capacity(entities.len()).spacing(space_xxs);
+                for entity in entities.iter() {
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(*entity) {
+                        let mut row = widget::row::with_capacity(3).align_items(Alignment::Center);
+                        row = row.push(widget::text(tab.title()));
+                        row = row.push(widget::horizontal_space(Length::Fill));
+                        if let Some(path) = &tab.path_opt {
+                            row = row.push(
+                                widget::button::standard(fl!("save"))
+                                    .on_press(Message::Save(Some(*entity))),
+                            );
+                            //TODO row = row.push(widget::text(format!("{}", path.display())));
+                        } else {
+                            row = row.push(
+                                widget::button::standard(fl!("save-as"))
+                                    .on_press(Message::SaveAsDialog(Some(*entity))),
+                            );
+                            can_save_all = false;
+                        }
+
+                        column = column.push(row);
+                    }
+                }
+
+                let mut save_button = widget::button::suggested(fl!("save-all"));
+                if can_save_all {
+                    save_button = save_button.on_press(Message::SaveAll);
+                }
+                let discard_button =
+                    widget::button::destructive(fl!("discard")).on_press(Message::QuitForce);
+                let dialog = widget::dialog(fl!("prompt-save-changes-title"))
+                    .body(fl!("prompt-unsaved-changes"))
+                    .icon(icon::from_name("dialog-warning-symbolic").size(64))
+                    .control(column)
+                    .primary_action(save_button)
+                    .secondary_action(discard_button);
 
                 Some(dialog.into())
             }
@@ -2064,11 +2151,16 @@ impl Application for App {
                 self.project_search_value = value;
             }
             Message::PromptSaveChanges(entity) => {
-                self.dialog_page_opt = Some(DialogPage::PromptSave(entity));
+                self.dialog_page_opt = Some(DialogPage::PromptSaveClose(entity));
             }
             Message::Quit => {
-                //TODO: prompt for save?
-                return window::close(window::Id::MAIN);
+                // Create empty dialog
+                self.dialog_page_opt = Some(DialogPage::PromptSaveQuit(Vec::new()));
+                // This update will get the actual list of unsaved tabs
+                return self.update_dialogs();
+            }
+            Message::QuitForce => {
+                process::exit(0);
             }
             Message::Redo => {
                 if let Some(Tab::Editor(tab)) = self.active_tab() {
@@ -2080,24 +2172,37 @@ impl Application for App {
                     return self.update(Message::TabChanged(self.tab_model.active()));
                 }
             }
-            Message::Save => {
+            Message::Save(entity_opt) => {
                 let mut title_opt = None;
 
-                if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
+                let entity = entity_opt.unwrap_or_else(|| self.tab_model.active());
+                if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
                     if tab.path_opt.is_none() {
-                        return self.update(Message::SaveAsDialog);
+                        return self.update(Message::SaveAsDialog(Some(entity)));
                     }
                     title_opt = Some(tab.title());
                     tab.save();
                 }
-
                 if let Some(title) = title_opt {
                     self.tab_model.text_set(self.tab_model.active(), title);
                 }
+                return self.update_dialogs();
             }
-            Message::SaveAsDialog => {
+            Message::SaveAll => {
+                let entities: Vec<_> = self.tab_model.iter().collect();
+                for entity in entities {
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                        if tab.path_opt.is_none() {
+                            log::warn!("{} has no path when doing save all", tab.title());
+                        }
+                        tab.save();
+                    }
+                }
+                return self.update_dialogs();
+            }
+            Message::SaveAsDialog(entity_opt) => {
                 if self.dialog_opt.is_none() {
-                    let entity = self.tab_model.active();
+                    let entity = entity_opt.unwrap_or_else(|| self.tab_model.active());
                     if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
                         let (filename, path_opt) = match &tab.path_opt {
                             Some(path) => (
@@ -2135,10 +2240,7 @@ impl Application for App {
                             if let Some(title) = title_opt {
                                 self.tab_model.text_set(entity, title);
                             }
-                            // Close save changes prompt only if the dialog succeeded
-                            if self.dialog_page_opt == Some(DialogPage::PromptSave(entity)) {
-                                self.dialog_page_opt = None;
-                            }
+                            return self.update_dialogs();
                         }
                     }
                 }
@@ -2177,7 +2279,7 @@ impl Application for App {
             },
             Message::TabActivate(entity) => {
                 // Close save changes dialog if switching to a different tab for consistency
-                if self.dialog_page_opt != Some(DialogPage::PromptSave(entity)) {
+                if self.dialog_page_opt != Some(DialogPage::PromptSaveClose(entity)) {
                     self.dialog_page_opt = None;
                 }
 
@@ -2216,9 +2318,9 @@ impl Application for App {
                         // The save prompt shouldn't be closed if `TabClose` is emitted again for
                         // the same tab.
                         //
-                        // `PromptSave` for a different tab other than `entity` counts as
+                        // `PromptSaveClose` for a different tab other than `entity` counts as
                         // a different dialog
-                        // Ex. If tab 2 and 3 both have unsaved changes and `PromptSave` is
+                        // Ex. If tab 2 and 3 both have unsaved changes and `PromptSaveClose` is
                         // emitted for tab 2, closing tab 3 should open the dialog for tab 3 in
                         // order for `Message::Save` to save the correct tab.
                         return Command::batch([
@@ -2252,8 +2354,8 @@ impl Application for App {
                     self.open_tab(None);
                 }
 
-                // Close PromptSave dialog if open for this entity
-                if self.dialog_page_opt == Some(DialogPage::PromptSave(entity)) {
+                // Close PromptSaveClose dialog if open for this entity
+                if self.dialog_page_opt == Some(DialogPage::PromptSaveClose(entity)) {
                     self.dialog_page_opt = None;
                 }
 
@@ -2753,6 +2855,11 @@ impl Application for App {
                 }
                 event::Event::Window(id, window::Event::Focused) if id == window::Id::MAIN => {
                     Some(Message::Focus)
+                }
+                event::Event::Window(id, window::Event::CloseRequested)
+                    if id == window::Id::MAIN =>
+                {
+                    Some(Message::Quit)
                 }
                 _ => None,
             }),

@@ -31,6 +31,7 @@ project-search = Project search
 prompt-save-changes-title = Unsaved changes
 prompt-unsaved-changes = You have unsaved changes. Save?
 discard = Discard changes
+save-all = Save all
 
 ## Settings
 settings = Settings
