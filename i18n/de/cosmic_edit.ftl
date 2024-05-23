@@ -93,7 +93,7 @@ find-in-project = In Projekt suchen...
 spell-check = Rechtschreibprüfung...
 
 ## View
-view = Ansehen
+view = Ansicht
 indentation = Einrückung
 
 ### Indentation
