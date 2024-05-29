@@ -227,8 +227,7 @@ pub enum Action {
     Undo,
 }
 
-impl MenuAction for Action {
-    type Message = Message;
+impl Action {
     fn message(&self, entity_opt: Option<Entity>) -> Message {
         match self {
             Self::Todo => Message::Todo,
@@ -275,6 +274,13 @@ impl MenuAction for Action {
             Self::ToggleWordWrap => Message::ToggleWordWrap,
             Self::Undo => Message::Undo,
         }
+    }
+}
+
+impl MenuAction for Action {
+    type Message = Message;
+    fn message(&self) -> Message {
+        self.message(None)
     }
 }
 
@@ -1498,7 +1504,7 @@ impl Application for App {
                         let mut row = widget::row::with_capacity(3).align_items(Alignment::Center);
                         row = row.push(widget::text(tab.title()));
                         row = row.push(widget::horizontal_space(Length::Fill));
-                        if let Some(path) = &tab.path_opt {
+                        if let Some(_path) = &tab.path_opt {
                             row = row.push(
                                 widget::button::standard(fl!("save"))
                                     .on_press(Message::Save(Some(*entity))),
