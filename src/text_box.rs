@@ -622,17 +622,17 @@ where
                     );
                     state.scrollbar_v_rect.set(rect);
 
-                    if (image_w as f32) < max_line_width {
+                    let (buffer_w, buffer_h) = buffer.size();
+                    let scrollbar_h_width = image_w as f32 / scale_factor - scrollbar_w as f32;
+                    if buffer_w < max_line_width {
                         let rect = Rectangle::new(
                             [
-                                (scroll_x as f32 / max_line_width as f32) * image_w as f32
-                                    / scale_factor,
-                                image_h as f32 / scale_factor - scrollbar_w as f32,
+                                (buffer.scroll().horizontal / max_line_width) * scrollbar_h_width,
+                                buffer_h / scale_factor - scrollbar_w as f32,
                             ]
                             .into(),
                             Size::new(
-                                (image_w as f32 / max_line_width as f32) * image_w as f32
-                                    / scale_factor,
+                                (buffer_w / max_line_width) * scrollbar_h_width,
                                 scrollbar_w as f32,
                             ),
                         );
@@ -765,6 +765,7 @@ where
         // Draw horizontal scrollbar
         //TODO: reduce repitition
         if let Some(scrollbar_h_rect) = state.scrollbar_h_rect.get() {
+            /*TODO: horizontal scrollbar track?
             // neutral_3, 0.7
             let track_color = cosmic_theme
                 .palette
@@ -777,7 +778,10 @@ where
                 Quad {
                     bounds: Rectangle::new(
                         Point::new(image_position.x, image_position.y + scrollbar_h_rect.y),
-                        Size::new(layout.bounds().width, scrollbar_h_rect.height),
+                        Size::new(
+                            layout.bounds().width - scrollbar_w as f32,
+                            scrollbar_h_rect.height,
+                        ),
                     ),
                     border: Border {
                         radius: (scrollbar_h_rect.height / 2.0).into(),
@@ -788,6 +792,7 @@ where
                 },
                 Color::from(track_color),
             );
+            */
 
             let pressed = matches!(&state.dragging, Some(Dragging::ScrollbarH { .. }));
 
