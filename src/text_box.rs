@@ -569,7 +569,12 @@ where
                 }
 
                 // Draw editor
+                let scroll_x = editor.with_buffer(|buffer| buffer.scroll().horizontal as i32);
                 editor.draw(font_system.raw(), &mut swash_cache, |x, y, w, h, color| {
+                    if x < scroll_x {
+                        //TODO: modify width?
+                        return;
+                    }
                     draw_rect(
                         pixels,
                         Canvas {
@@ -581,7 +586,7 @@ where
                             h: h as i32,
                         },
                         Offset {
-                            x: editor_offset_x + x,
+                            x: editor_offset_x + x - scroll_x,
                             y,
                         },
                         color,
@@ -921,12 +926,11 @@ where
                             && x_logical < (scrollbar_rect.x + scrollbar_rect.width)
                         {
                             editor.with_buffer_mut(|buffer| {
+                                let mut scroll = buffer.scroll();
                                 let scroll_line =
                                     ((y / buffer.size().1) * buffer.lines.len() as f32) as i32;
-                                buffer.set_scroll(Scroll::new(
-                                    scroll_line.try_into().unwrap_or_default(),
-                                    0,
-                                ));
+                                scroll.line = scroll_line.try_into().unwrap_or_default();
+                                buffer.set_scroll(scroll);
                                 state.dragging = Some(Dragging::Scrollbar {
                                     start_y: y,
                                     start_scroll: buffer.scroll(),
@@ -973,15 +977,14 @@ where
                                 start_scroll,
                             } => {
                                 editor.with_buffer_mut(|buffer| {
+                                    let mut scroll = buffer.scroll();
                                     let scroll_offset = (((y - start_y) / buffer.size().1)
                                         * buffer.lines.len() as f32)
                                         as i32;
-                                    buffer.set_scroll(Scroll::new(
-                                        (start_scroll.line as i32 + scroll_offset)
-                                            .try_into()
-                                            .unwrap_or_default(),
-                                        0,
-                                    ));
+                                    scroll.line = (start_scroll.line as i32 + scroll_offset)
+                                        .try_into()
+                                        .unwrap_or_default();
+                                    buffer.set_scroll(scroll);
                                 });
                             }
                         }
