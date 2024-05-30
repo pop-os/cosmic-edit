@@ -5,10 +5,10 @@ use cosmic::widget::menu::{items as menu_items, root as menu_root, Item as MenuI
 use cosmic::{
     iced::{widget::column, widget::horizontal_rule, Alignment, Background, Length},
     iced_core::Border,
-    menu_button, theme,
+    theme,
     widget::{
         self, horizontal_space,
-        menu::{ItemHeight, ItemWidth, MenuBar, Tree as MenuTree},
+        menu::{menu_button, ItemHeight, ItemWidth, MenuBar, Tree as MenuTree},
         segmented_button,
     },
     Element,
@@ -29,11 +29,11 @@ pub fn context_menu<'a>(
                 break;
             }
         }
-        menu_button!(
-            widget::text(menu_label),
-            horizontal_space(Length::Fill),
-            widget::text(key)
-        )
+        menu_button(vec![
+            widget::text(menu_label).into(),
+            horizontal_space(Length::Fill).into(),
+            widget::text(key).into(),
+        ])
         .on_press(Message::TabContextAction(entity, menu_action))
     };
 
