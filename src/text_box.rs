@@ -282,7 +282,7 @@ where
     ) -> mouse::Interaction {
         let state = tree.state.downcast_ref::<State>();
 
-        if let Some(Dragging::Scrollbar { .. }) = &state.dragging {
+        if let Some(Dragging::ScrollbarV { .. }) = &state.dragging {
             return mouse::Interaction::Idle;
         }
 
@@ -597,10 +597,14 @@ where
                 editor.with_buffer(|buffer| {
                     let mut start_line_opt = None;
                     let mut end_line = 0;
+                    let mut max_line_width = 0.0;
                     for run in buffer.layout_runs() {
                         end_line = run.line_i;
                         if start_line_opt.is_none() {
                             start_line_opt = Some(end_line);
+                        }
+                        if run.line_w > max_line_width {
+                            max_line_width = run.line_w;
                         }
                     }
 
@@ -616,7 +620,26 @@ where
                             (end_y as f32 - start_y as f32) / scale_factor,
                         ),
                     );
-                    state.scrollbar_rect.set(rect);
+                    state.scrollbar_v_rect.set(rect);
+
+                    if (image_w as f32) < max_line_width {
+                        let rect = Rectangle::new(
+                            [
+                                (scroll_x as f32 / max_line_width as f32) * image_w as f32
+                                    / scale_factor,
+                                image_h as f32 / scale_factor,
+                            ]
+                            .into(),
+                            Size::new(
+                                (image_w as f32 / max_line_width as f32) * image_w as f32
+                                    / scale_factor,
+                                scrollbar_w as f32,
+                            ),
+                        );
+                        state.scrollbar_h_rect.set(Some(rect));
+                    } else {
+                        state.scrollbar_h_rect.set(None);
+                    }
                 });
             }
 
@@ -650,9 +673,9 @@ where
             );
         }
 
-        // Draw scrollbar
+        // Draw vertical scrollbar
         {
-            let scrollbar_rect = state.scrollbar_rect.get();
+            let scrollbar_v_rect = state.scrollbar_v_rect.get();
 
             // neutral_3, 0.7
             let track_color = cosmic_theme
@@ -665,11 +688,11 @@ where
             renderer.fill_quad(
                 Quad {
                     bounds: Rectangle::new(
-                        Point::new(image_position.x + scrollbar_rect.x, image_position.y),
-                        Size::new(scrollbar_rect.width, layout.bounds().height),
+                        Point::new(image_position.x + scrollbar_v_rect.x, image_position.y),
+                        Size::new(scrollbar_v_rect.width, layout.bounds().height),
                     ),
                     border: Border {
-                        radius: (scrollbar_rect.width / 2.0).into(),
+                        radius: (scrollbar_v_rect.width / 2.0).into(),
                         width: 0.0,
                         color: Color::TRANSPARENT,
                     },
@@ -678,18 +701,18 @@ where
                 Color::from(track_color),
             );
 
-            let pressed = matches!(&state.dragging, Some(Dragging::Scrollbar { .. }));
+            let pressed = matches!(&state.dragging, Some(Dragging::ScrollbarV { .. }));
 
             let mut hover = false;
             if let Some(p) = cursor_position.position_in(layout.bounds()) {
                 let x = p.x - self.padding.left;
-                if x >= scrollbar_rect.x && x < (scrollbar_rect.x + scrollbar_rect.width) {
+                if x >= scrollbar_v_rect.x && x < (scrollbar_v_rect.x + scrollbar_v_rect.width) {
                     hover = true;
                 }
             }
 
             let mut scrollbar_draw =
-                scrollbar_rect + Vector::new(image_position.x, image_position.y);
+                scrollbar_v_rect + Vector::new(image_position.x, image_position.y);
             if !hover && !pressed {
                 // Decrease draw width and keep centered when not hovered or pressed
                 scrollbar_draw.width /= 2.0;
@@ -739,6 +762,94 @@ where
             );
         }
 
+        // Draw horizontal scrollbar
+        //TODO: reduce repitition
+        if let Some(scrollbar_h_rect) = state.scrollbar_h_rect.get() {
+            // neutral_3, 0.7
+            let track_color = cosmic_theme
+                .palette
+                .neutral_3
+                .without_alpha()
+                .with_alpha(0.7);
+
+            // Draw track quad
+            renderer.fill_quad(
+                Quad {
+                    bounds: Rectangle::new(
+                        Point::new(image_position.x, image_position.y + scrollbar_h_rect.y),
+                        Size::new(layout.bounds().width, scrollbar_h_rect.height),
+                    ),
+                    border: Border {
+                        radius: (scrollbar_h_rect.height / 2.0).into(),
+                        width: 0.0,
+                        color: Color::TRANSPARENT,
+                    },
+                    ..Default::default()
+                },
+                Color::from(track_color),
+            );
+
+            let pressed = matches!(&state.dragging, Some(Dragging::ScrollbarH { .. }));
+
+            let mut hover = false;
+            if let Some(p) = cursor_position.position_in(layout.bounds()) {
+                let y = p.y - self.padding.top;
+                if y >= scrollbar_h_rect.y && y < (scrollbar_h_rect.y + scrollbar_h_rect.height) {
+                    hover = true;
+                }
+            }
+
+            let mut scrollbar_draw =
+                scrollbar_h_rect + Vector::new(image_position.x, image_position.y);
+            if !hover && !pressed {
+                // Decrease draw width and keep centered when not hovered or pressed
+                scrollbar_draw.height /= 2.0;
+                scrollbar_draw.y += scrollbar_draw.height / 2.0;
+            }
+
+            // neutral_6, 0.7
+            let base_color = cosmic_theme
+                .palette
+                .neutral_6
+                .without_alpha()
+                .with_alpha(0.7);
+            let scrollbar_color = if pressed {
+                // pressed_state_color, 0.5
+                cosmic_theme
+                    .background
+                    .component
+                    .pressed
+                    .without_alpha()
+                    .with_alpha(0.5)
+                    .over(base_color)
+            } else if hover {
+                // hover_state_color, 0.2
+                cosmic_theme
+                    .background
+                    .component
+                    .hover
+                    .without_alpha()
+                    .with_alpha(0.2)
+                    .over(base_color)
+            } else {
+                base_color
+            };
+
+            // Draw scrollbar quad
+            renderer.fill_quad(
+                Quad {
+                    bounds: scrollbar_draw,
+                    border: Border {
+                        radius: (scrollbar_draw.height / 2.0).into(),
+                        width: 0.0,
+                        color: Color::TRANSPARENT,
+                    },
+                    ..Default::default()
+                },
+                Color::from(scrollbar_color),
+            );
+        }
+
         let duration = instant.elapsed();
         log::debug!("redraw {}, {}: {:?}", view_w, view_h, duration);
     }
@@ -757,9 +868,10 @@ where
         let state = tree.state.downcast_mut::<State>();
         let editor_offset_x = state.editor_offset_x.get();
         let scale_factor = state.scale_factor.get();
-        let scrollbar_rect = state.scrollbar_rect.get();
+        let scrollbar_v_rect = state.scrollbar_v_rect.get();
         let mut editor = self.editor.lock().unwrap();
-        let buffer_size = editor.with_buffer(|buffer| buffer.size());
+        let (buffer_size, buffer_scroll) =
+            editor.with_buffer(|buffer| (buffer.size(), buffer.scroll()));
         let last_changed = editor.changed();
         let mut font_system = font_system().write().unwrap();
         let mut editor = editor.borrow_with(font_system.raw());
@@ -884,9 +996,10 @@ where
                     if let Button::Left = button {
                         let x_logical = p.x - self.padding.left;
                         let y_logical = p.y - self.padding.top;
-                        let x = x_logical * scale_factor - editor_offset_x as f32;
+                        let mut x = x_logical * scale_factor - editor_offset_x as f32;
                         let y = y_logical * scale_factor;
                         if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
+                            x += buffer_scroll.horizontal;
                             let click_kind =
                                 if let Some((click_kind, click_time)) = state.click.take() {
                                     if click_time.elapsed() < self.click_timing {
@@ -917,13 +1030,13 @@ where
                             }
                             state.click = Some((click_kind, Instant::now()));
                             state.dragging = Some(Dragging::Buffer);
-                        } else if scrollbar_rect.contains(Point::new(x_logical, y_logical)) {
-                            state.dragging = Some(Dragging::Scrollbar {
+                        } else if scrollbar_v_rect.contains(Point::new(x_logical, y_logical)) {
+                            state.dragging = Some(Dragging::ScrollbarV {
                                 start_y: y,
                                 start_scroll: editor.with_buffer(|buffer| buffer.scroll()),
                             });
-                        } else if x_logical >= scrollbar_rect.x
-                            && x_logical < (scrollbar_rect.x + scrollbar_rect.width)
+                        } else if x_logical >= scrollbar_v_rect.x
+                            && x_logical < (scrollbar_v_rect.x + scrollbar_v_rect.width)
                         {
                             editor.with_buffer_mut(|buffer| {
                                 let mut scroll = buffer.scroll();
@@ -931,7 +1044,7 @@ where
                                     ((y / buffer.size().1) * buffer.lines.len() as f32) as i32;
                                 scroll.line = scroll_line.try_into().unwrap_or_default();
                                 buffer.set_scroll(scroll);
-                                state.dragging = Some(Dragging::Scrollbar {
+                                state.dragging = Some(Dragging::ScrollbarV {
                                     start_y: y,
                                     start_scroll: buffer.scroll(),
                                 });
@@ -963,16 +1076,17 @@ where
                     if let Some(p) = cursor_position.position() {
                         let x_logical = (p.x - layout.bounds().x) - self.padding.left;
                         let y_logical = (p.y - layout.bounds().y) - self.padding.top;
-                        let x = x_logical * scale_factor - editor_offset_x as f32;
+                        let mut x = x_logical * scale_factor - editor_offset_x as f32;
                         let y = y_logical * scale_factor;
                         match dragging {
                             Dragging::Buffer => {
+                                x += buffer_scroll.horizontal;
                                 editor.action(Action::Drag {
                                     x: x as i32,
                                     y: y as i32,
                                 });
                             }
-                            Dragging::Scrollbar {
+                            Dragging::ScrollbarV {
                                 start_y,
                                 start_scroll,
                             } => {
@@ -986,6 +1100,12 @@ where
                                         .unwrap_or_default();
                                     buffer.set_scroll(scroll);
                                 });
+                            }
+                            Dragging::ScrollbarH {
+                                start_x,
+                                start_scroll,
+                            } => {
+                                //TODO: horizontal scrollbar drag
                             }
                         }
                     }
@@ -1055,7 +1175,8 @@ enum ClickKind {
 
 enum Dragging {
     Buffer,
-    Scrollbar { start_y: f32, start_scroll: Scroll },
+    ScrollbarV { start_y: f32, start_scroll: Scroll },
+    ScrollbarH { start_x: f32, start_scroll: Scroll },
 }
 
 pub struct State {
@@ -1066,7 +1187,8 @@ pub struct State {
     is_focused: bool,
     scale_factor: Cell<f32>,
     scroll_pixels: f32,
-    scrollbar_rect: Cell<Rectangle<f32>>,
+    scrollbar_v_rect: Cell<Rectangle<f32>>,
+    scrollbar_h_rect: Cell<Option<Rectangle<f32>>>,
     handle_opt: Mutex<Option<image::Handle>>,
 }
 
@@ -1081,7 +1203,8 @@ impl State {
             is_focused: false,
             scale_factor: Cell::new(1.0),
             scroll_pixels: 0.0,
-            scrollbar_rect: Cell::new(Rectangle::default()),
+            scrollbar_v_rect: Cell::new(Rectangle::default()),
+            scrollbar_h_rect: Cell::new(None),
             handle_opt: Mutex::new(None),
         }
     }
