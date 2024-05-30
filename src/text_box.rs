@@ -627,7 +627,7 @@ where
                             [
                                 (scroll_x as f32 / max_line_width as f32) * image_w as f32
                                     / scale_factor,
-                                image_h as f32 / scale_factor,
+                                image_h as f32 / scale_factor - scrollbar_w as f32,
                             ]
                             .into(),
                             Size::new(
