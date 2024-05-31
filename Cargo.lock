@@ -1158,7 +1158,7 @@ dependencies = [
 [[package]]
 name = "cosmic-files"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/cosmic-files.git#7a3f9d56666a203b02f217cde6f464f0db422e93"
+source = "git+https://github.com/pop-os/cosmic-files.git#591b10d919cf0118fa72c9263f8880e38d9e1ae8"
 dependencies = [
  "chrono",
  "dirs",
