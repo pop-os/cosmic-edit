@@ -1003,7 +1003,21 @@ where
                         let y_logical = p.y - self.padding.top;
                         let mut x = x_logical * scale_factor - editor_offset_x as f32;
                         let y = y_logical * scale_factor;
-                        if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
+
+                        // Do this first as the horizontal scrollbar is on top of the buffer
+                        if let Some(scrollbar_h_rect) = state.scrollbar_h_rect.get() {
+                            if scrollbar_h_rect.contains(Point::new(x_logical, y_logical)) {
+                                state.dragging = Some(Dragging::ScrollbarH {
+                                    start_x: x,
+                                    start_scroll: editor.with_buffer(|buffer| buffer.scroll()),
+                                });
+                            }
+                        }
+
+                        if matches!(state.dragging, Some(Dragging::ScrollbarH { .. })) {
+                            // The horizontal scrollbar is on top of the buffer,
+                            // so we need to ignore clicks when it is being dragged
+                        } else if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
                             x += buffer_scroll.horizontal;
                             let click_kind =
                                 if let Some((click_kind, click_time)) = state.click.take() {
@@ -1110,7 +1124,23 @@ where
                                 start_x,
                                 start_scroll,
                             } => {
-                                //TODO: horizontal scrollbar drag
+                                editor.with_buffer_mut(|buffer| {
+                                    //TODO: store this in state?
+                                    let mut max_line_width = 0.0;
+                                    for run in buffer.layout_runs() {
+                                        if run.line_w > max_line_width {
+                                            max_line_width = run.line_w;
+                                        }
+                                    }
+
+                                    let buffer_w = buffer.size().0;
+                                    let mut scroll = buffer.scroll();
+                                    scroll.horizontal = (((x - start_x) / buffer_w)
+                                        * max_line_width)
+                                        .max(0.0)
+                                        .min(max_line_width - buffer_w);
+                                    buffer.set_scroll(scroll);
+                                });
                             }
                         }
                     }
