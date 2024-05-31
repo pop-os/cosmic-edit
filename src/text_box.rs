@@ -1007,10 +1007,7 @@ where
                         // Do this first as the horizontal scrollbar is on top of the buffer
                         if let Some(scrollbar_h_rect) = state.scrollbar_h_rect.get() {
                             if scrollbar_h_rect.contains(Point::new(x_logical, y_logical)) {
-                                state.dragging = Some(Dragging::ScrollbarH {
-                                    start_x: x,
-                                    start_scroll: editor.with_buffer(|buffer| buffer.scroll()),
-                                });
+                                state.dragging = Some(Dragging::ScrollbarH { start_x: x });
                             }
                         }
 
@@ -1120,10 +1117,7 @@ where
                                     buffer.set_scroll(scroll);
                                 });
                             }
-                            Dragging::ScrollbarH {
-                                start_x,
-                                start_scroll,
-                            } => {
+                            Dragging::ScrollbarH { start_x } => {
                                 editor.with_buffer_mut(|buffer| {
                                     //TODO: store this in state?
                                     let mut max_line_width = 0.0;
@@ -1211,7 +1205,7 @@ enum ClickKind {
 enum Dragging {
     Buffer,
     ScrollbarV { start_y: f32, start_scroll: Scroll },
-    ScrollbarH { start_x: f32, start_scroll: Scroll },
+    ScrollbarH { start_x: f32 },
 }
 
 pub struct State {

@@ -321,6 +321,7 @@ pub enum Message {
     Cut,
     DefaultFont(usize),
     DefaultFontSize(usize),
+    DialogCancel,
     DialogMessage(DialogMessage),
     Find(Option<bool>),
     FindCaseSensitive(bool),
@@ -1459,41 +1460,18 @@ impl Application for App {
 
         match dialog {
             DialogPage::PromptSaveClose(entity) => {
-                // "Save" is displayed regardless if the file was already saved because the message handles
-                // "Save As" if necessary
-                let save = fl!("save");
                 let save_button =
-                    widget::button::suggested(save).on_press(Message::Save(Some(*entity)));
-
-                // "Save As" is only shown if the file has been saved previously
-                // Rationale: The user may want to save the modified buffer as a new file
-                let save_as_button = match self.tab_model.data(*entity) {
-                    Some(Tab::Editor(tab)) if tab.path_opt.is_some() => {
-                        let save_as = fl!("save-as");
-                        let save_as_button = widget::button::suggested(save_as)
-                            .on_press(Message::SaveAsDialog(Some(*entity)));
-                        Some(save_as_button)
-                    }
-                    _ => None,
-                };
-
-                // Discards unsaved changes
-                let discard = fl!("discard");
-                let discard_button =
-                    widget::button::destructive(discard).on_press(Message::TabCloseForce(*entity));
-
-                let mut dialog = widget::dialog(fl!("prompt-save-changes-title"))
+                    widget::button::suggested(fl!("save")).on_press(Message::Save(Some(*entity)));
+                let discard_button = widget::button::destructive(fl!("discard"))
+                    .on_press(Message::TabCloseForce(*entity));
+                let cancel_button =
+                    widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel);
+                let dialog = widget::dialog(fl!("prompt-save-changes-title"))
                     .body(fl!("prompt-unsaved-changes"))
                     .icon(icon::from_name("dialog-warning-symbolic").size(64))
-                    .primary_action(save_button);
-                dialog = if let Some(save_as_button) = save_as_button {
-                    dialog
-                        .secondary_action(save_as_button)
-                        .tertiary_action(discard_button)
-                } else {
-                    dialog.secondary_action(discard_button)
-                };
-
+                    .primary_action(save_button)
+                    .secondary_action(discard_button)
+                    .tertiary_action(cancel_button);
                 Some(dialog.into())
             }
             DialogPage::PromptSaveQuit(entities) => {
@@ -1528,12 +1506,15 @@ impl Application for App {
                 }
                 let discard_button =
                     widget::button::destructive(fl!("discard")).on_press(Message::QuitForce);
+                let cancel_button =
+                    widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel);
                 let dialog = widget::dialog(fl!("prompt-save-changes-title"))
                     .body(fl!("prompt-unsaved-changes"))
                     .icon(icon::from_name("dialog-warning-symbolic").size(64))
                     .control(column)
                     .primary_action(save_button)
-                    .secondary_action(discard_button);
+                    .secondary_action(discard_button)
+                    .tertiary_action(cancel_button);
 
                 Some(dialog.into())
             }
@@ -1668,6 +1649,9 @@ impl Application for App {
                     log::warn!("failed to find font with index {}", index);
                 }
             },
+            Message::DialogCancel => {
+                self.dialog_page_opt = None;
+            }
             Message::DialogMessage(dialog_message) => {
                 if let Some(dialog) = &mut self.dialog_opt {
                     return dialog.update(dialog_message);
