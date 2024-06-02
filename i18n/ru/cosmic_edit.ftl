@@ -19,7 +19,9 @@ line-count = Строк
 git-management = Управление Git
 git-management-description = Управление Git - это инструмент разработчика, используемый для контроля версий.
 git-management-loading = Загружается Управление Git...
+stage = Проиндексировать
 unstaged-changes = Не проиндексированные изменения
+unstage = Отменить индексацию
 staged-changes = Проиндексированные изменения
 
 ## Project search
@@ -28,7 +30,9 @@ project-search = Поиск проекта
 ## Prompt save changes
 prompt-save-changes-title = Несохраненные изменения
 prompt-unsaved-changes = У вас есть несохраненные изменения. Сохранить их?
+cancel = Отмена
 discard = Отменить изменения
+save-all = Сохранить все
 
 ## Settings
 settings = Параметры
