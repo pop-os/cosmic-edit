@@ -19,8 +19,10 @@ line-count = Linie
 git-management = Zarządzanie git
 git-management-description = Zarządzanie git jest narzędziem programistycznym używanym do kontroli werji oprogramowania.
 git-management-loading = Ładuje zarządzanie git...
-unstaged-changes = Nieprzemieszczone zmiany
+stage = Przemieść
 staged-changes = Przemieszczone zmiany
+unstage = Nie przemieszczaj
+unstaged-changes = Nieprzemieszczone zmiany
 
 ## Project search
 project-search = Wyszukiwanie w Projekcie
@@ -28,7 +30,9 @@ project-search = Wyszukiwanie w Projekcie
 ## Prompt save changes
 prompt-save-changes-title = Niezapisane zmiany
 prompt-unsaved-changes = Masz niezapisane zmiany. Zapisać?
+cancel = Anuluj
 discard = Odrzuć zmiany
+save-all = Zapisz wszystko
 
 ## Settings
 settings = Ustawienia
