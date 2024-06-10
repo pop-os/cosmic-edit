@@ -48,6 +48,7 @@ impl LineNumberCache {
                     1000.0, /* dummy width */
                     Wrap::None,
                     None,
+                    8, /* default tab width */
                 )
                 .to_vec()
         })
