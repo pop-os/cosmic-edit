@@ -1255,7 +1255,9 @@ impl Application for App {
                         .families
                         .first()
                         .map_or_else(|| face.post_script_name.to_string(), |x| x.0.to_string());
-                    font_names.push(font_name);
+                    if !font_names.contains(&font_name) {
+                        font_names.push(font_name);
+                    }
                 }
             }
             font_names.sort();
