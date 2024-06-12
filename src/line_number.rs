@@ -44,8 +44,8 @@ impl LineNumberCache {
                 .layout_in_buffer(
                     &mut self.scratch,
                     font_system,
-                    1.0,    /* font size adjusted later */
-                    1000.0, /* dummy width */
+                    1.0, /* font size adjusted later */
+                    None,
                     Wrap::None,
                     None,
                     8, /* default tab width */
