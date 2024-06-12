@@ -296,7 +296,11 @@ where
             let y_logical = p.y - self.padding.top;
             let x = x_logical * scale_factor - editor_offset_x as f32;
             let y = y_logical * scale_factor;
-            if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
+            if x >= 0.0
+                && x < buffer_size.0.unwrap_or(0.0)
+                && y >= 0.0
+                && y < buffer_size.1.unwrap_or(0.0)
+            {
                 return mouse::Interaction::Text;
             }
         }
@@ -410,8 +414,8 @@ where
             buffer.set_metrics_and_size(
                 font_system.raw(),
                 metrics,
-                (image_w - editor_offset_x) as f32,
-                image_h as f32,
+                Some((image_w - editor_offset_x) as f32),
+                Some(image_h as f32),
             )
         });
 
@@ -622,7 +626,9 @@ where
                     );
                     state.scrollbar_v_rect.set(rect);
 
-                    let (buffer_w, buffer_h) = buffer.size();
+                    let (buffer_w_opt, buffer_h_opt) = buffer.size();
+                    let buffer_w = buffer_w_opt.unwrap_or(0.0);
+                    let buffer_h = buffer_h_opt.unwrap_or(0.0);
                     let scrollbar_h_width = image_w as f32 / scale_factor - scrollbar_w as f32;
                     if buffer_w < max_line_width {
                         let rect = Rectangle::new(
@@ -1014,7 +1020,11 @@ where
                         if matches!(state.dragging, Some(Dragging::ScrollbarH { .. })) {
                             // The horizontal scrollbar is on top of the buffer,
                             // so we need to ignore clicks when it is being dragged
-                        } else if x >= 0.0 && x < buffer_size.0 && y >= 0.0 && y < buffer_size.1 {
+                        } else if x >= 0.0
+                            && x < buffer_size.0.unwrap_or(0.0)
+                            && y >= 0.0
+                            && y < buffer_size.1.unwrap_or(0.0)
+                        {
                             x += buffer_scroll.horizontal;
                             let click_kind =
                                 if let Some((click_kind, click_time)) = state.click.take() {
@@ -1056,8 +1066,10 @@ where
                         {
                             editor.with_buffer_mut(|buffer| {
                                 let mut scroll = buffer.scroll();
-                                let scroll_line =
-                                    ((y / buffer.size().1) * buffer.lines.len() as f32) as i32;
+                                //TODO: if buffer height is undefined, what should this do?
+                                let scroll_line = ((y / buffer.size().1.unwrap_or(1.0))
+                                    * buffer.lines.len() as f32)
+                                    as i32;
                                 scroll.line = scroll_line.try_into().unwrap_or_default();
                                 buffer.set_scroll(scroll);
                                 state.dragging = Some(Dragging::ScrollbarV {
@@ -1108,7 +1120,9 @@ where
                             } => {
                                 editor.with_buffer_mut(|buffer| {
                                     let mut scroll = buffer.scroll();
-                                    let scroll_offset = (((y - start_y) / buffer.size().1)
+                                    //TODO: if buffer size is undefined, what should this do?
+                                    let scroll_offset = (((y - start_y)
+                                        / buffer.size().1.unwrap_or(1.0))
                                         * buffer.lines.len() as f32)
                                         as i32;
                                     scroll.line = (start_scroll.line as i32 + scroll_offset)
@@ -1127,7 +1141,7 @@ where
                                         }
                                     }
 
-                                    let buffer_w = buffer.size().0;
+                                    let buffer_w = buffer.size().0.unwrap_or(0.0);
                                     let mut scroll = buffer.scroll();
                                     scroll.horizontal = (((x - start_x) / buffer_w)
                                         * max_line_width)

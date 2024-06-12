@@ -80,6 +80,16 @@ pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(all(unix, not(target_os = "redox")))]
+    match fork::daemon(true, true) {
+        Ok(fork::Fork::Child) => (),
+        Ok(fork::Fork::Parent(_child_pid)) => process::exit(0),
+        Err(err) => {
+            eprintln!("failed to daemonize: {:?}", err);
+            process::exit(1);
+        }
+    }
+
     ICON_CACHE.get_or_init(|| Mutex::new(IconCache::new()));
     LINE_NUMBER_CACHE.get_or_init(|| Mutex::new(LineNumberCache::new()));
     SWASH_CACHE.get_or_init(|| Mutex::new(SwashCache::new()));
@@ -120,16 +130,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             theme_set,
         }
     });
-
-    #[cfg(all(unix, not(target_os = "redox")))]
-    match fork::daemon(true, true) {
-        Ok(fork::Fork::Child) => (),
-        Ok(fork::Fork::Parent(_child_pid)) => process::exit(0),
-        Err(err) => {
-            eprintln!("failed to daemonize: {:?}", err);
-            process::exit(1);
-        }
-    }
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
 
