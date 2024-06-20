@@ -19,16 +19,20 @@ line-count = 行数
 git-management = Gitの操作
 git-management-description = Gitの操作はバージョンコントロールための開発ツールです。
 git-management-loading = Gitの操作を読み込んでいます...
-unstaged-changes = コミットされない変更
+stage = 変更をステージ
 staged-changes = コミットされる変更
+unstage = 変更をアンステージ
+unstaged-changes = コミットされない変更
 
 ## Project search
 project-search = プロジェクトの検索
 
 ## Prompt save changes
 prompt-save-changes-title = 未保存の変更
-prompt-unsaved-changes = 保存を保存しませんでした。保存しますか？
+prompt-unsaved-changes = 未保存の変更があります。保存しますか？
+cancel = キャンセル
 discard = 保存しない
+save-all = すべてを保存
 
 ## Settings
 settings = 設定
@@ -55,6 +59,8 @@ find-next = 次を検索
 replace-placeholder = 置き換える...
 replace = 置き換える
 replace-all = すべてを置き換える
+case-sensitive = 大文字と小文字を区別
+use-regex = 正規表現を使用
 
 # Menu
 
