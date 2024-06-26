@@ -8,6 +8,6 @@ Type=Application
 StartupNotify=true
 MimeType=text/plain;
 Icon=com.system76.CosmicEdit
-Categories=COSMIC;Utility;TextEditor;
+Categories=X-COSMIC;Utility;TextEditor;
 Keywords=Text;Editor;
 Keywords[pl]=Edytor;Tekstu;
