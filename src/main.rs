@@ -309,6 +309,11 @@ impl PartialEq for WatcherWrapper {
     }
 }
 
+enum NewTab {
+    Tab(EditorTab),
+    Exists(Entity),
+}
+
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub enum Message {
@@ -583,7 +588,46 @@ impl App {
     }
 
     pub fn open_tab(&mut self, path_opt: Option<PathBuf>) -> Option<segmented_button::Entity> {
-        let tab = match path_opt {
+        match self.new_tab(path_opt)? {
+            NewTab::Exists(entity) => Some(entity),
+            NewTab::Tab(tab) => Some(
+                self.tab_model
+                    .insert()
+                    .text(tab.title())
+                    .icon(tab.icon(16))
+                    .data::<Tab>(Tab::Editor(tab))
+                    .closable()
+                    .activate()
+                    .id(),
+            ),
+        }
+    }
+
+    /// Replace existing tab, `entity`, with contents loaded from `path`
+    pub fn replace_tab(
+        &mut self,
+        path: PathBuf,
+        entity: Entity,
+    ) -> Option<segmented_button::Entity> {
+        match self.new_tab(Some(path))? {
+            NewTab::Exists(existing) => {
+                // Swap to existing tab and remove tab keyed by `entity`
+                self.tab_model.remove(entity);
+                Some(existing)
+            }
+            NewTab::Tab(tab) => {
+                // Replace existing tab in place
+                self.tab_model.text_set(entity, tab.title());
+                self.tab_model.icon_set(entity, tab.icon(16));
+                self.tab_model.data_set::<Tab>(entity, Tab::Editor(tab));
+                self.tab_model.activate(entity);
+                Some(entity)
+            }
+        }
+    }
+
+    fn new_tab(&mut self, path_opt: Option<PathBuf>) -> Option<NewTab> {
+        match path_opt {
             Some(path) => {
                 let canonical = match fs::canonicalize(&path) {
                     Ok(ok) => ok,
@@ -605,7 +649,7 @@ impl App {
                 }
                 if let Some(entity) = activate_opt {
                     self.tab_model.activate(entity);
-                    return Some(entity);
+                    return Some(NewTab::Exists(entity));
                 }
 
                 // Add to recent files, ensuring only one entry
@@ -619,21 +663,10 @@ impl App {
                 let mut tab = EditorTab::new(&self.config);
                 tab.open(canonical);
                 tab.watch(&mut self.watcher_opt);
-                tab
+                Some(NewTab::Tab(tab))
             }
-            None => EditorTab::new(&self.config),
-        };
-
-        Some(
-            self.tab_model
-                .insert()
-                .text(tab.title())
-                .icon(tab.icon(16))
-                .data::<Tab>(Tab::Editor(tab))
-                .closable()
-                .activate()
-                .id(),
-        )
+            None => Some(NewTab::Tab(EditorTab::new(&self.config))),
+        }
     }
 
     fn update_config(&mut self) -> Command<Message> {
@@ -1945,7 +1978,23 @@ impl Application for App {
                     DialogResult::Cancel => {}
                     DialogResult::Open(paths) => {
                         for path in paths {
-                            self.open_tab(Some(path));
+                            match self.active_tab_mut() {
+                                // Replace the current tab if it was never saved nor is currently modified
+                                // * A tab with a loaded file is not replaced
+                                // * Empty or new tabs are replaced
+                                // * Tabs that are "undone" to being empty and NOT associated with
+                                // a file are replaced
+                                Some(Tab::Editor(tab))
+                                    if tab.path_opt.is_none()
+                                        && !tab.editor.lock().unwrap().changed() =>
+                                {
+                                    self.replace_tab(path, self.tab_model.active());
+                                }
+
+                                _ => {
+                                    self.open_tab(Some(path));
+                                }
+                            }
                         }
                         return self.update_tab();
                     }
