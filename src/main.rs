@@ -1467,7 +1467,7 @@ impl Application for App {
                 let discard_button = widget::button::destructive(fl!("discard"))
                     .on_press(Message::TabCloseForce(*entity));
                 let cancel_button =
-                    widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel);
+                    widget::button::standard(fl!("cancel")).style(theme::Button::Link).on_press(Message::DialogCancel);
                 let dialog = widget::dialog(fl!("prompt-save-changes-title"))
                     .body(fl!("prompt-unsaved-changes"))
                     .icon(icon::from_name("dialog-warning-symbolic").size(64))
@@ -1509,7 +1509,7 @@ impl Application for App {
                 let discard_button =
                     widget::button::destructive(fl!("discard")).on_press(Message::QuitForce);
                 let cancel_button =
-                    widget::button::standard(fl!("cancel")).on_press(Message::DialogCancel);
+                    widget::button::standard(fl!("cancel")).style(theme::Button::Link).on_press(Message::DialogCancel);
                 let dialog = widget::dialog(fl!("prompt-save-changes-title"))
                     .body(fl!("prompt-unsaved-changes"))
                     .icon(icon::from_name("dialog-warning-symbolic").size(64))
