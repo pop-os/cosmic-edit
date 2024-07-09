@@ -89,7 +89,7 @@ impl Ord for ProjectNode {
                 }
             }
         }
-        lexical_sort::natural_lexical_cmp(self.name(), other.name())
+        crate::localize::sorter().compare(self.name(), other.name())
     }
 }
 

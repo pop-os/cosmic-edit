@@ -14,7 +14,6 @@ dirs = "5"
 env_logger = "0.10.0"
 grep = "0.3.1"
 ignore = "0.4.21"
-lexical-sort = "0.3.1"
 log = "0.4.20"
 notify = "6.1.1"
 open = "5.0.2"
@@ -26,6 +25,8 @@ tokio = { version = "1", features = ["process", "time"] }
 syntect = "5.1.0"
 two-face = "0.3.0"
 # Internationalization
+icu_collator = "1.5"
+icu_provider = { version = "1.5", features = ["sync"] }
 i18n-embed = { version = "0.14", features = ["fluent-system", "desktop-requester"] }
 i18n-embed-fl = "0.7"
 rust-embed = "8"
