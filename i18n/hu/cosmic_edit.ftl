@@ -19,8 +19,10 @@ line-count = Sorok száma
 git-management = Git-kezelő
 git-management-description = A Git-kezelő egy verziókezeléssel kapcsolatos feladatok elvégzésére használt fejlesztői eszköz.
 git-management-loading = Git-kezelő betöltése...
-unstaged-changes = Visszavont változtatások
-staged-changes = Jóváhagyott változtatások
+stage = Változtatások előkészítése
+staged-changes = Előkészített változtatások
+unstage = Változtatások visszavonása előkészítésből
+unstaged-changes = Előkészítésből visszavont változtatások
 
 ## Project search
 project-search = Projekt kereső
@@ -28,7 +30,9 @@ project-search = Projekt kereső
 ## Prompt save changes
 prompt-save-changes-title = Nem mentett változtatások
 prompt-unsaved-changes = Nem minden változtatás van elmentve. Mentés?
+cancel = Megszakítás
 discard = Változtatások elvetése
+save-all = Összes mentése
 
 ## Settings
 settings = Beállítások
@@ -55,6 +59,8 @@ find-next = Következő találat
 replace-placeholder = Lecserélés...
 replace = Lecserélés
 replace-all = Összes lecserélése
+case-sensitive = Kis és -nagybetűk figyelembevétele
+use-regex = Regex használata
 
 # Menu
 
