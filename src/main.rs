@@ -1466,7 +1466,7 @@ impl Application for App {
                     widget::button::suggested(fl!("save")).on_press(Message::Save(Some(*entity)));
                 let discard_button = widget::button::destructive(fl!("discard"))
                     .on_press(Message::TabCloseForce(*entity));
-                let cancel_button = 
+                let cancel_button =
                     widget::button::text(fl!("cancel")).on_press(Message::DialogCancel);
                 let dialog = widget::dialog(fl!("prompt-save-changes-title"))
                     .body(fl!("prompt-unsaved-changes"))
@@ -1508,7 +1508,7 @@ impl Application for App {
                 }
                 let discard_button =
                     widget::button::destructive(fl!("discard")).on_press(Message::QuitForce);
-                let cancel_button = 
+                let cancel_button =
                     widget::button::text(fl!("cancel")).on_press(Message::DialogCancel);
                 let dialog = widget::dialog(fl!("prompt-save-changes-title"))
                     .body(fl!("prompt-unsaved-changes"))
