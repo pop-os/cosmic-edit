@@ -1,23 +1,38 @@
+cosmic-text-editor = Текстовий редактор COSMIC
 new-document = Новий документ
 open-project = Відкрити проєкт
 todo = ЗРОБИТИ
 
 # Context Pages
 
+## About
+git-description = Git commit {$hash} за {$date}
+
 ## Document statistics
 document-statistics = Статистика документа
 word-count = Кількість слів
 character-count = Символів
-character-count-no-spaces = Символів (без пробілів)
+character-count-no-spaces = Символів (без пропусків)
 line-count = Рядків
 
 ## Git management
 git-management = Керування Git
-unstaged-changes = Неіндексовані зміни
+git-management-description = Керування Git — це інструмент розробника для керування версіями.
+git-management-loading = Завантажується керування Git...
+stage = Додати до індексу
 staged-changes = Індексовані зміни
+unstage = Прибрати з індексу
+unstaged-changes = Неіндексовані зміни
 
 ## Project search
-project-search = Пошук в проєкті
+project-search = Пошук у проєкті
+
+## Prompt save changes
+prompt-save-changes-title = Незбережені зміни
+prompt-unsaved-changes = У вас є незбережені зміни. Зберегти їх?
+cancel = Скасувати
+discard = Відкинути зміни
+save-all = Зберегти всі
 
 ## Settings
 settings = Налаштування
@@ -31,19 +46,21 @@ light = Світла
 syntax-dark = Синтаксис темної теми
 syntax-light = Синтаксис світлої теми
 default-font = Типовий шрифт
-default-font-size = Розмір шрифту
+default-font-size = Типовий розмір шрифту
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Клавіатурні скорочення
 enable-vim-bindings = Увімкнути режим Vim
 
 # Find
-find-placeholder = Пошук...
-find-previous = Знайти попереднє
-find-next = Знайти наступне
-replace-placeholder = Заміна...
+find-placeholder = Знайти...
+find-previous = Знайти попередній
+find-next = Знайти наступний
+replace-placeholder = Замінити...
 replace = Замінити
-replace-all = Замінити все
+replace-all = Замінити всі
+case-sensitive = З урахуванням регістру
+use-regex = Використовувати регулярні вирази
 
 # Menu
 
@@ -68,7 +85,7 @@ print = Друк
 quit = Вийти
 
 ## Edit
-edit = Редагувати
+edit = Зміни
 undo = Скасувати
 redo = Повторити
 cut = Вирізати
@@ -76,7 +93,7 @@ copy = Копіювати
 paste = Вставити
 select-all = Вибрати все
 find = Пошук
-find-in-project = Пошук в проєкті...
+find-in-project = Пошук у проєкті...
 spell-check = Перевірка орфографії...
 
 ## View
@@ -86,7 +103,7 @@ indentation = Відступ
 ### Indentation
 automatic-indentation = Автоматичні відступи
 tab-width = Ширина табуляції: {$tab_width}
-convert-indentation-to-spaces = Перетворити відступи на пробіли
+convert-indentation-to-spaces = Перетворити відступи на пропуски
 convert-indentation-to-tabs = Перетворити відступи на табуляцію
 
 word-wrap = Перенесення слів
