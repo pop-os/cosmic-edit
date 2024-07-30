@@ -1,11 +1,15 @@
+cosmic-text-editor = COSMIC Metin Düzenleyici
 new-document = Yeni belge
 open-project = Proje aç
 todo = TODO
 
 # Context Pages
 
+## About
+git-description = {$date} tarihli {$hash} numaralı git işlemesi
+
 ## Document statistics
-document-statistics = Belge istatistikleri
+document-statistics = Belge istatikleri
 word-count = Sözcük sayısı
 character-count = Karakterler
 character-count-no-spaces = Karakterler (boşluksuz)
@@ -13,30 +17,40 @@ line-count = Satırlar
 
 ## Git management
 git-management = Git yönetimi
-unstaged-changes = Hazırlanmış değişiklikler
-staged-changes = Hazırlanmamış değişiklikler
+git-management-description = Git, sürüm denetimi işlemlerinin yönetimi için kullanılan bir geliştirici aracıdır.
+git-management-loading = Git yönetimi yükleniyor...
+stage = Hazırla
+staged-changes = Hazırlanmış değişiklikler
+unstage = Hazırlıktan çıkar
+unstaged-changes = Hazırlanmamış değişiklikler
 
 ## Project search
 project-search = Proje arama
 
+## Prompt save changes
+prompt-save-changes-title = Değişiklikler Kaydedilmedi
+prompt-unsaved-changes = Kaydedilmemiş değişiklikler var, kaydedilsin mi?
+cancel = İptal
+discard = Gözden çıkar
+save-all = Tümünü kaydet
+
 ## Settings
 settings = Ayarlar
 
-## Appearance
-appearance = Görünüş
+### Appearance
+appearance = Görünüm
 theme = Tema
-match-desktop = Masaüstüyle eşle
-dark = Karanlık
-light = Aydınlık
-syntax-dark = Karanlık sentaks
-syntax-light = Aydınlık sentaks
-default-font = Varsayılan yazıtipi
-default-font-size = Varsayılan yazıtipi boyutu
+match-desktop = Masaüstüne eşle
+dark = Koyu
+light = Açık
+syntax-dark = Koyu söz dizimi
+syntax-light = Açık söz dizimi
+default-font = Öntanımlı yazı tipi
+default-font-size = Öntanımlı yazı tipi boyutu
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Klavye kısayolları
-enable-vim-bindings = Vim bağlayıcılarını etkinleştir
-
+enable-vim-bindings = Vim tuşlarını kullan
 
 # Find
 find-placeholder = Bul...
@@ -44,7 +58,9 @@ find-previous = Öncekini bul
 find-next = Sonrakini bul
 replace-placeholder = Değiştir...
 replace = Değiştir
-replace-all = Hepsini değiştir
+replace-all = Tümünü değiştir
+case-sensitive = Büyük/küçük harfe duyarlı
+use-regex = Regex düzenli ifadelerini kullan
 
 # Menu
 
@@ -61,38 +77,39 @@ close-project = Projeyi kapat
 save = Kaydet
 save-as = Farklı kaydet...
 revert-all-changes = Bütün değişiklikleri geri al
-menu-document-statistics = Belge istatistikleri
+menu-document-statistics = Belge istatistikleri...
 document-type = Belge türü...
 encoding = Kodlama...
+menu-git-management = Git yönetimi...
 print = Yazdır
 quit = Çık
 
 ## Edit
 edit = Düzenle
 undo = Geri al
-redo = İleri al
+redo = Yinele
 cut = Kes
 copy = Kopyala
 paste = Yapıştır
-select-all = Hepsini Seç
+select-all = Tümünü seç
 find = Bul
 find-in-project = Projede bul...
 spell-check = Yazım denetimi...
 
 ## View
 view = Görünüm
-indentation = Girinti
+indentation = Girintileme
 
 ### Indentation
-automatic-indentation = Kendiliğinden Girinti
+automatic-indentation = Kendiliğinden girintile
 tab-width = Sekme genişliği: {$tab_width}
-convert-indentation-to-spaces = Girintileri boşluğa çevir
-convert-indentation-to-tabs = Girintileri sekmeye çevir
+convert-indentation-to-spaces = Girintileri boşluklara çevir
+convert-indentation-to-tabs = Girintileri sekmelere çevir
 
 word-wrap = Sözcük kaydırma
 show-line-numbers = Satır numaralarını göster
-highlight-current-line = Mevcut satırı vurgula
-syntax-highlighting = Sentaks vurgulama...
+highlight-current-line = Geçerli satırı vurgula
+syntax-highlighting = Söz dizimi vurgulama...
 menu-settings = Ayarlar...
 menu-keyboard-shortcuts = Klavye kısayolları...
-menu-about = COSMIC Metin Düzenleyicisi Hakkında
+menu-about = COSMIC Metin Düzenleyici Hakkında ...
