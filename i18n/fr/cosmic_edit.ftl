@@ -19,8 +19,10 @@ line-count = Lignes
 git-management = Gestion de Git
 git-management-description = Git est un outil de développement utilisé pour les opérations de gestion de versions.
 git-management-loading = Chargement de Git...
-unstaged-changes = Modifications non indexées
+stage = Indexer
 staged-changes = Modifications indexées
+unstage = Désindexer
+unstaged-changes = Modifications non indexées
 
 ## Project search
 project-search = Recherche de projets
@@ -28,7 +30,9 @@ project-search = Recherche de projets
 ## Prompt save changes
 prompt-save-changes-title = Modifications non sauvegardées
 prompt-unsaved-changes = Vous avez des modifications non sauvegardées. Sauvegarder ?
+cancel = Annuler
 discard = Abandonner les modifications
+save-all = Tout enregistrer
 
 ## Settings
 settings = Paramètres
