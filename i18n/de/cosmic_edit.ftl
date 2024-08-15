@@ -3,37 +3,41 @@ new-document = Neues Dokument
 open-project = Projekt öffnen
 todo = TODO
 
-# Context Pages
+# Kontextseiten
 
-## About
+## Über
 git-description = Git-Commit {$hash} am {$date}
 
-## Document statistics
+## Dokument-Statistiken
 document-statistics = Dokument-Statistiken
 word-count = Wörter
 character-count = Zeichen
 character-count-no-spaces = Zeichen (ohne Leerzeichen)
 line-count = Zeilen
 
-## Git management
+## Git-Verwaltung
 git-management = Git-Verwaltung
 git-management-description = Git-Verwaltung ist ein Entwicklerwerkzeug für die Versionskontrolle.
-git-management-loading = Git-Verwaltung laden...
-unstaged-changes = Unstaged Changes
-staged-changes = Staged Changes
+git-management-loading = Git-Verwaltung wird geladen...
+stage = Vormerken
+staged-changes = Vorgemerkte Änderungen
+unstage = Nicht vormerken
+unstaged-changes = Nicht vorgemerkte Änderungen
 
-## Project search
-project-search = Project search
+## Projektsuche
+project-search = Projektsuche
 
-## Prompt save changes
+## Aufforderung zum Speichern von Änderungen
 prompt-save-changes-title = Ungespeicherte Änderungen
 prompt-unsaved-changes = Es existieren ungespeicherte Änderungen. Speichern?
+cancel = Abbrechen
 discard = Änderungen verwerfen
+save-all = Alles speichern
 
-## Settings
+## Einstellungen
 settings = Einstellungen
 
-## Appearance
+## Aussehen
 appearance = Aussehen
 theme = Thema
 match-desktop = An Desktop anpassen
@@ -44,31 +48,31 @@ syntax-light = Syntax Hell
 default-font = Standard-Schriftart
 default-font-size = Standard-Schriftgröße
 
-### Keyboard shortcuts
+### Tastenkombinationen
 keyboard-shortcuts = Tastenkombinationen
-enable-vim-bindings = Nutze Vim-Kombinationen
+enable-vim-bindings = Vim-Kombinationen aktivieren
 
-# Find
+# Suchen
 find-placeholder = Suchen...
-find-previous = Finde letzte
-find-next = Finde nächste
+find-previous = Vorherigen suchen
+find-next = Nächsten suchen
 replace-placeholder = Ersetzen...
 replace = Ersetzen
 replace-all = Alles ersetzen
-case-sensitive = Großschreibung beachten
-use-regex = Nutze regulären Ausdruck
+case-sensitive = Groß-/Kleinschreibung beachten
+use-regex = Reguläre Ausdrücke verwenden
 
-# Menu
+# Menü
 
-## File
+## Datei
 file = Datei
 new-file = Neue Datei
 new-window = Neues Fenster
 open-file = Datei öffnen...
-open-recent-file = Kürzlich geöffnet
+open-recent-file = Letzte Datei öffnen
 close-file = Datei schließen
 menu-open-project = Projekt öffnen...
-open-recent-project = Kürzlich geöffnete Projekte
+open-recent-project = Letztes Projekt öffnen
 close-project = Projekt schließen
 save = Speichern
 save-as = Speichern unter...
@@ -80,32 +84,32 @@ menu-git-management = Git-Verwaltung...
 print = Drucken
 quit = Beenden
 
-## Edit
+## Bearbeiten
 edit = Bearbeiten
 undo = Rückgängig
 redo = Wiederholen
 cut = Ausschneiden
 copy = Kopieren
 paste = Einfügen
+select-all = Alles auswählen
 find = Suchen
-replace = Ersetzen
-find-in-project = In Projekt suchen...
+find-in-project = Im Projekt suchen...
 spell-check = Rechtschreibprüfung...
 
-## View
+## Ansicht
 view = Ansicht
 indentation = Einrückung
 
-### Indentation
+### Einrückung
 automatic-indentation = Automatische Einrückung
 tab-width = Tabulator-Breite: {$tab_width}
 convert-indentation-to-spaces = Einrückung in Leerzeichen umwandeln
 convert-indentation-to-tabs = Einrückung in Tabulatoren umwandeln
 
 word-wrap = Zeilenumbruch
-show-line-numbers = Zeige Zeilennummern
+show-line-numbers = Zeilennummern anzeigen
 highlight-current-line = Aktuelle Zeile hervorheben
-syntax-highlighting = Syntax Hervorhebung...
+syntax-highlighting = Syntaxhervorhebung...
 menu-settings = Einstellungen...
 menu-keyboard-shortcuts = Tastenkombinationen...
 menu-about = Über COSMIC Text Editor
