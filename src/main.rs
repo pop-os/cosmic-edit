@@ -2687,9 +2687,11 @@ impl Application for App {
                         .position(widget::popover::Position::Point(point));
                 }
                 tab_column = tab_column.push(popover);
+                /*TODO: the status area breaks text box focus
                 if !status.is_empty() {
                     tab_column = tab_column.push(text(status).font(Font::MONOSPACE));
                 }
+                */
             }
             Some(Tab::GitDiff(tab)) => {
                 let mut diff_widget = widget::column::with_capacity(tab.diff.hunks.len());
