@@ -62,3 +62,7 @@ wgpu = ["libcosmic/wgpu", "cosmic-files/wgpu"]
 [profile.release-with-debug]
 inherits = "release"
 debug = true
+
+[patch.crates-io]
+# https://github.com/alexcrichton/filetime/pull/104
+filetime = { git = "https://github.com/jackpot51/filetime" }
