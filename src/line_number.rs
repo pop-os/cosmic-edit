@@ -13,14 +13,12 @@ pub struct LineNumberKey {
 #[derive(Debug)]
 pub struct LineNumberCache {
     cache: HashMap<LineNumberKey, Vec<LayoutLine>>,
-    scratch: ShapeBuffer,
 }
 
 impl LineNumberCache {
     pub fn new() -> Self {
         Self {
             cache: HashMap::new(),
-            scratch: ShapeBuffer::default(),
         }
     }
 
@@ -41,8 +39,7 @@ impl LineNumberCache {
             );
             buffer_line.set_align(Some(Align::Left));
             buffer_line
-                .layout_in_buffer(
-                    &mut self.scratch,
+                .layout(
                     font_system,
                     1.0, /* font size adjusted later */
                     None,
