@@ -19,8 +19,10 @@ line-count = Радкі
 git-management = Кіраванне Git
 git-management-description = Кіраванне Git - гэта інструмент распрацоўшчыка, які выкарыстоўваецца для аперацый кантролю версій.
 git-management-loading = Загрузка кіравання Git...
-unstaged-changes = Не праіндэксаваныя змены
+stage = Дадаць да індэксу
 staged-changes = Праіндэксаваныя змены
+unstage = Прыбраць з індэксу
+unstaged-changes = Не праіндэксаваныя змены
 
 ## Project search
 project-search = Пошук праекта
@@ -28,7 +30,9 @@ project-search = Пошук праекта
 ## Prompt save changes
 prompt-save-changes-title = Незахаваныя змены
 prompt-unsaved-changes = У вас ёсць незахаваныя змены. Захаваць?
+cancel = Адмяніць
 discard = Адхіліць змены
+save-all = Захаваць усё
 
 ## Settings
 settings = Налады
