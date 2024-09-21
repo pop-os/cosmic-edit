@@ -66,3 +66,8 @@ debug = true
 [patch.crates-io]
 # https://github.com/alexcrichton/filetime/pull/104
 filetime = { git = "https://github.com/jackpot51/filetime" }
+
+# [patch.'https://github.com/pop-os/libcosmic']
+# libcosmic = { path = "../libcosmic" }
+# cosmic-config = { path = "../libcosmic/cosmic-config" }
+# cosmic-theme = { path = "../libcosmic/cosmic-theme" }
