@@ -974,7 +974,7 @@ impl App {
 
                     if let Some(icon) = unstaged_opt {
                         unstaged_items.push(
-                            widget::button(
+                            widget::button::custom(
                                 widget::row::with_children(vec![
                                     icon.into(),
                                     widget::text(text.clone()).into(),
@@ -1015,7 +1015,7 @@ impl App {
 
                     if let Some(icon) = staged_opt {
                         staged_items.push(
-                            widget::button(
+                            widget::button::custom(
                                 widget::row::with_children(vec![
                                     icon.into(),
                                     widget::text(text.clone()).into(),
@@ -1114,7 +1114,7 @@ impl App {
                     for (line_i, line_search_result) in file_search_result.lines.iter().enumerate()
                     {
                         column = column.push(
-                            widget::button(
+                            widget::button::custom(
                                 widget::row::with_children(vec![
                                     widget::text(format!(
                                         "{:width$}",
@@ -2627,7 +2627,7 @@ impl Application for App {
                         .width(Length::Shrink),
                 )
                 .push(
-                    button(icon_cache_get("list-add-symbolic", 16))
+                    button::custom(icon_cache_get("list-add-symbolic", 16))
                         .on_press(Message::NewFile)
                         .padding(space_xxs)
                         .style(style::Button::Icon),
@@ -2761,7 +2761,7 @@ impl Application for App {
                     })
                     .width(Length::Fixed(320.0))
                     .trailing_icon(
-                        button(icon_cache_get("edit-clear-symbolic", 16))
+                        button::custom(icon_cache_get("edit-clear-symbolic", 16))
                             .on_press(Message::FindSearchValueChanged(String::new()))
                             .style(style::Button::Icon)
                             .into(),
@@ -2769,7 +2769,7 @@ impl Application for App {
             let find_widget = widget::row::with_children(vec![
                 find_input.into(),
                 widget::tooltip(
-                    button(icon_cache_get("go-up-symbolic", 16))
+                    button::custom(icon_cache_get("go-up-symbolic", 16))
                         .on_press(Message::FindPrevious)
                         .padding(space_xxs)
                         .style(style::Button::Icon),
@@ -2778,7 +2778,7 @@ impl Application for App {
                 )
                 .into(),
                 widget::tooltip(
-                    button(icon_cache_get("go-down-symbolic", 16))
+                    button::custom(icon_cache_get("go-down-symbolic", 16))
                         .on_press(Message::FindNext)
                         .padding(space_xxs)
                         .style(style::Button::Icon),
@@ -2787,7 +2787,7 @@ impl Application for App {
                 )
                 .into(),
                 widget::horizontal_space(Length::Fill).into(),
-                button(icon_cache_get("window-close-symbolic", 16))
+                button::custom(icon_cache_get("window-close-symbolic", 16))
                     .on_press(Message::Find(None))
                     .padding(space_xxs)
                     .style(style::Button::Icon)
@@ -2808,7 +2808,7 @@ impl Application for App {
                 .on_submit(Message::FindReplace)
                 .width(Length::Fixed(320.0))
                 .trailing_icon(
-                    button(icon_cache_get("edit-clear-symbolic", 16))
+                    button::custom(icon_cache_get("edit-clear-symbolic", 16))
                         .on_press(Message::FindReplaceValueChanged(String::new()))
                         .style(style::Button::Icon)
                         .into(),
@@ -2816,7 +2816,7 @@ impl Application for App {
                 let replace_widget = widget::row::with_children(vec![
                     replace_input.into(),
                     widget::tooltip(
-                        button(icon_cache_get("replace-symbolic", 16))
+                        button::custom(icon_cache_get("replace-symbolic", 16))
                             .on_press(Message::FindReplace)
                             .padding(space_xxs)
                             .style(style::Button::Icon),
@@ -2825,7 +2825,7 @@ impl Application for App {
                     )
                     .into(),
                     widget::tooltip(
-                        button(icon_cache_get("replace-all-symbolic", 16))
+                        button::custom(icon_cache_get("replace-all-symbolic", 16))
                             .on_press(Message::FindReplaceAll)
                             .padding(space_xxs)
                             .style(style::Button::Icon),
