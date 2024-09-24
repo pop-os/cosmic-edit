@@ -1,3 +1,4 @@
+cosmic-text-editor = Editor de Texto do COSMIC
 new-document = Novo documento
 open-project = Abrir projeto
 

@@ -2,6 +2,7 @@
 [Desktop Entry]
 Name=COSMIC Text Editor
 Name[pl]=Edytor Tekstu COSMIC
+Name[pt-BR]=Editor de Texto do COSMIC
 Exec=cosmic-edit %F
 Terminal=false
 Type=Application
@@ -11,3 +12,5 @@ Icon=com.system76.CosmicEdit
 Categories=COSMIC;Utility;TextEditor;
 Keywords=Text;Editor;
 Keywords[pl]=Edytor;Tekstu;
+Keywords[pt-BR]=Texto;Editor;
+
