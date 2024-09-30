@@ -27,6 +27,7 @@
     </screenshot>
   </screenshots>
   <provides>
+    <id>com.system76.CosmicApplication</id>
     <mimetypes>
       <mimetype>text/plain</mimetype>
     </mimetypes>
