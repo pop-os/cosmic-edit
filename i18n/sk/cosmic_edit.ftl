@@ -1,8 +1,12 @@
+cosmic-text-editor = Textový Editor COSMIC
 new-document = Nový dokument
 open-project = Otvoriť projekt
 todo = TODO
 
 # Context Pages
+
+## About
+git-description = Git commit {$hash} z {$date}
 
 ## Document statistics
 document-statistics = Štatistiky dokumentu
@@ -12,12 +16,23 @@ character-count-no-spaces = Znakov (bez medzier)
 line-count = Riadkov
 
 ## Git management
-git-management = Git správa
-unstaged-changes = Nepripravené zmeny
+git-management = Správa Git
+git-management-description = Správa Git je vývojársky nástroj používaný na operácie verzovania. 
+git-management-loading = Načítať Git správu...
+stage = Pripraviť
 staged-changes = Pripravené zmeny
+unstage = Zrušiť prípravu
+unstaged-changes = Nepripravené zmeny
 
 ## Project search
 project-search = Nájsť projekt
+
+## Prompt save changes
+prompt-save-changes-title = Neuložené zmeny
+prompt-unsaved-changes = Máte neuložené zmeny. Uložiť?
+cancel = Zrušiť
+discard = Zahodiť zmeny
+save-all = Zobraziť všetko
 
 ## Settings
 settings = Nastavenia
@@ -44,6 +59,8 @@ find-next = Nájsť následujúce
 replace-placeholder = Nahradiť...
 replace = Nahradiť
 replace-all = Nahradiť všetko
+case-sensitive = Rozlišovanie veľkosti písmen
+use-regex = Použiť regex
 
 # Menu
 
@@ -73,7 +90,7 @@ undo = Späť
 redo = Znovu
 cut = Vystrihnúť
 copy = Kopírovať
-paste = Vložiť
+paste = Prilepiť
 select-all = Vybrať všetko
 find = Nájsť
 find-in-project = Nájsť v projekte...
