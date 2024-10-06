@@ -61,7 +61,6 @@ replace = ಬದಲಾಯಿಸಿ
 replace-all = ಎಲ್ಲವನ್ನೂ ಬದಲಾಯಿಸಿ
 case-sensitive = ಕೇಸ್-ಸೆನ್ಸಿಟಿವ್
 use-regex = Regex ಬಳಸಿರಿ
-wrap-around = ಸುತ್ತು
 
 # Menu
 

@@ -61,7 +61,6 @@ replace = Nahradiť
 replace-all = Nahradiť všetko
 case-sensitive = Rozlišovanie veľkosti písmen
 use-regex = Použiť regex
-wrap-around = Zbaliť sa
 
 # Menu
 
