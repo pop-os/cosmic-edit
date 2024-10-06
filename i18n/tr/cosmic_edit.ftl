@@ -61,6 +61,7 @@ replace = Değiştir
 replace-all = Tümünü değiştir
 case-sensitive = Büyük/küçük harfe duyarlı
 use-regex = Regex düzenli ifadelerini kullan
+wrap-around = Etrafını Sarmak
 
 # Menu
 

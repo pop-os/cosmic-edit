@@ -61,6 +61,7 @@ replace = 替换
 replace-all = 全部替换
 case-sensitive = 区分大小写
 use-regex = 使用正则表达式
+wrap-around = 环绕
 
 # Menu
 

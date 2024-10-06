@@ -60,6 +60,7 @@ replace = Reemplazar
 replace-all = Reemplazar todo
 case-sensitive = Sensible a mayúsculas
 use-regex = Usar expresiones regulares
+wrap-around = Envolver alrededor
 
 # Menu
 

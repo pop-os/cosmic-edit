@@ -61,6 +61,7 @@ replace = Lecserélés
 replace-all = Összes lecserélése
 case-sensitive = Kis és -nagybetűk figyelembevétele
 use-regex = Regex használata
+wrap-around = Tekerje körbe
 
 # Menu
 
