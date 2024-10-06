@@ -209,9 +209,10 @@ impl EditorTab {
         }
     }
 
-    pub fn replace(&self, regex: &Regex, replace: &str) -> bool {
+    pub fn replace(&self, regex: &Regex, replace: &str, wrap_around: bool) -> bool {
         let mut editor = self.editor.lock().unwrap();
         let mut cursor = editor.cursor();
+        let mut wrapped = false; // Keeps track of whether the search has wrapped around yet.
         let start_line = cursor.line;
         while cursor.line < editor.with_buffer(|buffer| buffer.lines.len()) {
             if let Some((index, len)) = editor.with_buffer(|buffer| {
@@ -240,6 +241,13 @@ impl EditorTab {
             }
 
             cursor.line += 1;
+
+            // If we haven't wrapped yet and we've reached the last line, reset cursor line to 0 and
+            // set wrapped to true so we don't wrap again
+            if wrap_around && !wrapped && cursor.line == editor.with_buffer(|buffer| buffer.lines.len()) {
+                cursor.line = 0;
+                wrapped = true;
+            }
         }
         false
     }
