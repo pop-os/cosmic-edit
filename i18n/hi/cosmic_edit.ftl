@@ -61,7 +61,6 @@ replace = बदलें
 replace-all = सब कुछ बदलें
 case-sensitive = केस-सेंसिटिव
 use-regex = Regex का उपयोग करें
-wrap-around = चारों ओर लपेट दो
 
 # Menu
 

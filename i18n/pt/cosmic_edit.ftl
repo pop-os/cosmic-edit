@@ -61,7 +61,6 @@ replace = Substituir
 replace-all = Substituir tudo
 case-sensitive = Maiúsculas/Minúsculas
 use-regex = Usar expressão regular
-wrap-around = Enrole em volta
 
 # Menu
 
