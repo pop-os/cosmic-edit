@@ -1756,7 +1756,7 @@ impl Application for App {
                         match self.config.find_regex(&self.find_search_value) {
                             Ok(regex) => {
                                 //TODO: support captures
-                                tab.replace(&regex, &self.find_replace_value);
+                                tab.replace(&regex, &self.find_replace_value, self.config.find_wrap_around);;
                                 return self.update(Message::TabChanged(self.tab_model.active()));
                             }
                             Err(err) => {
@@ -1785,7 +1785,7 @@ impl Application for App {
                                     let mut editor = tab.editor.lock().unwrap();
                                     editor.set_cursor(cosmic_text::Cursor::new(0, 0));
                                 }
-                                while tab.replace(&regex, &self.find_replace_value) {}
+                                while tab.replace(&regex, &self.find_replace_value, false) {}
                                 return self.update(Message::TabChanged(self.tab_model.active()));
                             }
                             Err(err) => {
