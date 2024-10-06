@@ -337,6 +337,7 @@ pub enum Message {
     FindReplaceValueChanged(String),
     FindSearchValueChanged(String),
     FindUseRegex(bool),
+    FindWrapAround(bool),
     Focus,
     GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
     GitStage(PathBuf, PathBuf),
@@ -1708,7 +1709,7 @@ impl Application for App {
                         //TODO: do not compile find regex on every search?
                         match self.config.find_regex(&self.find_search_value) {
                             Ok(regex) => {
-                                tab.search(&regex, true);
+                                tab.search(&regex, true, self.config.find_wrap_around);
                             }
                             Err(err) => {
                                 //TODO: put regex error in find box
@@ -1731,7 +1732,7 @@ impl Application for App {
                         //TODO: do not compile find regex on every search?
                         match self.config.find_regex(&self.find_search_value) {
                             Ok(regex) => {
-                                tab.search(&regex, false);
+                                tab.search(&regex, false, self.config.find_wrap_around);
                             }
                             Err(err) => {
                                 //TODO: put regex error in find box
@@ -1810,6 +1811,10 @@ impl Application for App {
             }
             Message::FindUseRegex(find_use_regex) => {
                 self.config.find_use_regex = find_use_regex;
+                return self.save_config();
+            }
+            Message::FindWrapAround(find_wrap_around) => {
+                self.config.find_wrap_around = find_wrap_around;
                 return self.save_config();
             }
             Message::GitProjectStatus(project_status) => {
@@ -2853,6 +2858,12 @@ impl Application for App {
                         fl!("use-regex"),
                         self.config.find_use_regex,
                         Message::FindUseRegex,
+                    )
+                    .into(),
+                    widget::checkbox(
+                        fl!("wrap-around"),
+                        self.config.find_wrap_around,
+                        Message::FindWrapAround,
                     )
                     .into(),
                 ])

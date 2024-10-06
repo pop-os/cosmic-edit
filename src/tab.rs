@@ -245,10 +245,12 @@ impl EditorTab {
     }
 
     // Code adapted from cosmic-text ViEditor search
-    pub fn search(&self, regex: &Regex, forwards: bool) -> bool {
+    pub fn search(&self, regex: &Regex, forwards: bool, wrap_around: bool) -> bool {
         let mut editor = self.editor.lock().unwrap();
         let mut cursor = editor.cursor();
+        let mut wrapped = false; // Keeps track of whether the search has wrapped around yet.
         let start_line = cursor.line;
+
         if forwards {
             while cursor.line < editor.with_buffer(|buffer| buffer.lines.len()) {
                 if let Some(index) = editor.with_buffer(|buffer| {
@@ -269,6 +271,13 @@ impl EditorTab {
                 }
 
                 cursor.line += 1;
+
+                // If we haven't wrapped yet and we've reached the last line, reset cursor line to 0 and
+                // set wrapped to true so we don't wrap again
+                if wrap_around && !wrapped && cursor.line == editor.with_buffer(|buffer| buffer.lines.len()) {
+                    cursor.line = 0;
+                    wrapped = true;
+                }
             }
         } else {
             cursor.line += 1;
@@ -290,6 +299,13 @@ impl EditorTab {
                     cursor.index = index;
                     editor.set_cursor(cursor);
                     return true;
+                }
+                
+                // If we haven't wrapped yet and we've reached the first line, reset cursor line to the
+                // last line and set wrapped to true so we don't wrap again
+                if wrap_around && !wrapped && cursor.line == 0 {
+                    cursor.line = editor.with_buffer(|buffer| buffer.lines.len());
+                    wrapped = true;
                 }
             }
         }

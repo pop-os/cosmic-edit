@@ -61,6 +61,7 @@ replace = Replace
 replace-all = Replace all
 case-sensitive = Case sensitive
 use-regex = Use regex
+wrap-around = Wrap Around
 
 # Menu
 
