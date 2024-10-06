@@ -61,6 +61,7 @@ replace = Zastąp
 replace-all = Zastąp wszystkie
 case-sensitive = Uwzględnienie wielkości liter
 use-regex = Użyj wyrażenia regularnego
+wrap-around = Owinąć się
 
 # Menu
 

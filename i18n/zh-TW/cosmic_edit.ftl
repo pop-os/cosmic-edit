@@ -57,6 +57,7 @@ replace = 替換
 replace-all = 全部替換
 case-sensitive = 區分大小寫
 use-regex = 使用正規表達式
+wrap-around = 環繞式
 
 # Menu
 

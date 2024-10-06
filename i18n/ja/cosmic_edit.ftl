@@ -61,6 +61,7 @@ replace = 置き換える
 replace-all = すべてを置き換える
 case-sensitive = 大文字と小文字を区別
 use-regex = 正規表現を使用
+wrap-around = ラップアラウンド
 
 # Menu
 

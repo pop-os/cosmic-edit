@@ -61,6 +61,7 @@ replace = Замінити
 replace-all = Замінити всі
 case-sensitive = З урахуванням регістру
 use-regex = Використовувати регулярні вирази
+wrap-around = Обернути навколо
 
 # Menu
 
