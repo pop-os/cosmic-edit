@@ -32,7 +32,7 @@ prompt-save-changes-title = Neuložené zmeny
 prompt-unsaved-changes = Máte neuložené zmeny. Uložiť?
 cancel = Zrušiť
 discard = Zahodiť zmeny
-save-all = Zobraziť všetko
+save-all = Uložiť všetko
 
 ## Settings
 settings = Nastavenia
@@ -61,6 +61,7 @@ replace = Nahradiť
 replace-all = Nahradiť všetko
 case-sensitive = Rozlišovanie veľkosti písmen
 use-regex = Použiť regex
+wrap-around = Pokračovať od začiatku
 
 # Menu
 
