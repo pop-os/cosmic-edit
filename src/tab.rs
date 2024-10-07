@@ -5,7 +5,7 @@ use cosmic::{
     widget::icon,
 };
 use cosmic_files::mime_icon::{mime_for_path, mime_icon, FALLBACK_MIME_ICON};
-use cosmic_text::{Attrs, Buffer, Edit, Shaping, SyntaxEditor, ViEditor, Wrap};
+use cosmic_text::{Attrs, Buffer, Cursor, Edit, Selection, Shaping, SyntaxEditor, ViEditor, Wrap};
 use notify::Watcher;
 use regex::Regex;
 use std::{
@@ -235,6 +235,8 @@ impl EditorTab {
                 editor.delete_range(cursor, end);
                 cursor = editor.insert_at(cursor, replace, None);
                 editor.set_cursor(cursor);
+                // Need to disable selection to prevent the new cursor showing selection to old location
+                editor.set_selection(Selection::None);
                 editor.finish_change();
 
                 return true;
@@ -261,20 +263,25 @@ impl EditorTab {
 
         if forwards {
             while cursor.line < editor.with_buffer(|buffer| buffer.lines.len()) {
-                if let Some(index) = editor.with_buffer(|buffer| {
+                if let Some((start, end)) = editor.with_buffer(|buffer| {
                     regex
                         .find_iter(buffer.lines[cursor.line].text())
                         .filter_map(|m| {
                             if cursor.line != start_line || m.start() > cursor.index {
-                                Some(m.start())
+                                Some((m.start(), m.end()))
                             } else {
                                 None
                             }
                         })
                         .next()
                 }) {
-                    cursor.index = index;
+                    cursor.index = start;
                     editor.set_cursor(cursor);
+                    
+                    // Highlight searched text
+                    let selection = Selection::Normal(Cursor::new(cursor.line, end));
+                    editor.set_selection(selection);
+
                     return true;
                 }
 
@@ -292,20 +299,25 @@ impl EditorTab {
             while cursor.line > 0 {
                 cursor.line -= 1;
 
-                if let Some(index) = editor.with_buffer(|buffer| {
+                if let Some((start, end)) = editor.with_buffer(|buffer| {
                     regex
                         .find_iter(buffer.lines[cursor.line].text())
                         .filter_map(|m| {
                             if cursor.line != start_line || m.start() < cursor.index {
-                                Some(m.start())
+                                Some((m.start(), m.end()))
                             } else {
                                 None
                             }
                         })
                         .last()
                 }) {
-                    cursor.index = index;
+                    cursor.index = start;
                     editor.set_cursor(cursor);
+
+                    // Highlight searched text
+                    let selection = Selection::Normal(Cursor::new(cursor.line, end));
+                    editor.set_selection(selection);
+
                     return true;
                 }
                 
