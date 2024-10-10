@@ -246,7 +246,10 @@ impl EditorTab {
 
             // If we haven't wrapped yet and we've reached the last line, reset cursor line to 0 and
             // set wrapped to true so we don't wrap again
-            if wrap_around && !wrapped && cursor.line == editor.with_buffer(|buffer| buffer.lines.len()) {
+            if wrap_around
+                && !wrapped
+                && cursor.line == editor.with_buffer(|buffer| buffer.lines.len())
+            {
                 cursor.line = 0;
                 wrapped = true;
             }
@@ -277,7 +280,7 @@ impl EditorTab {
                 }) {
                     cursor.index = start;
                     editor.set_cursor(cursor);
-                    
+
                     // Highlight searched text
                     let selection = Selection::Normal(Cursor::new(cursor.line, end));
                     editor.set_selection(selection);
@@ -289,7 +292,10 @@ impl EditorTab {
 
                 // If we haven't wrapped yet and we've reached the last line, reset cursor line to 0 and
                 // set wrapped to true so we don't wrap again
-                if wrap_around && !wrapped && cursor.line == editor.with_buffer(|buffer| buffer.lines.len()) {
+                if wrap_around
+                    && !wrapped
+                    && cursor.line == editor.with_buffer(|buffer| buffer.lines.len())
+                {
                     cursor.line = 0;
                     wrapped = true;
                 }
@@ -320,7 +326,7 @@ impl EditorTab {
 
                     return true;
                 }
-                
+
                 // If we haven't wrapped yet and we've reached the first line, reset cursor line to the
                 // last line and set wrapped to true so we don't wrap again
                 if wrap_around && !wrapped && cursor.line == 0 {

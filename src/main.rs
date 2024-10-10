@@ -1756,7 +1756,11 @@ impl Application for App {
                         match self.config.find_regex(&self.find_search_value) {
                             Ok(regex) => {
                                 //TODO: support captures
-                                tab.replace(&regex, &self.find_replace_value, self.config.find_wrap_around);;
+                                tab.replace(
+                                    &regex,
+                                    &self.find_replace_value,
+                                    self.config.find_wrap_around,
+                                );
                                 return self.update(Message::TabChanged(self.tab_model.active()));
                             }
                             Err(err) => {
