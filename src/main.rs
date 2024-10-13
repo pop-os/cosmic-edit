@@ -1472,6 +1472,11 @@ impl Application for App {
                                 }
                             }
                         }
+
+                        // Prevent nav bar from closing when selecting a
+                        // folder in condensed mode.
+                        self.core_mut().nav_bar_set_toggled(true);
+
                         Command::none()
                     }
                     ProjectNode::File { path, .. } => {
