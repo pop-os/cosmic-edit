@@ -4,7 +4,7 @@ use cosmic::widget::menu::action::MenuAction;
 use cosmic::widget::menu::key_bind::KeyBind;
 use cosmic::widget::segmented_button::Entity;
 use cosmic::{
-    app::{message, Command, Core, Settings},
+    app::{message, Core, Settings, Task},
     cosmic_config::{self, CosmicConfigEntry},
     cosmic_theme, executor,
     font::Font,
@@ -13,9 +13,7 @@ use cosmic::{
         clipboard, event,
         futures::{self, SinkExt},
         keyboard::{self, Modifiers},
-        subscription,
-        widget::text,
-        window, Alignment, Background, Color, Length, Limits, Point,
+        stream, window, Alignment, Background, Color, Length, Limits, Point, Subscription,
     },
     style, theme,
     widget::{self, button, icon, nav_bar, segmented_button},
@@ -322,6 +320,7 @@ pub enum Message {
     ConfigState(ConfigState),
     CloseFile,
     CloseProject(usize),
+    CloseWindow(window::Id),
     Copy,
     Cut,
     DefaultFont(usize),
@@ -338,7 +337,7 @@ pub enum Message {
     FindSearchValueChanged(String),
     FindUseRegex(bool),
     FindWrapAround(bool),
-    Focus,
+    Focus(window::Id),
     GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
     GitStage(PathBuf, PathBuf),
     GitUnstage(PathBuf, PathBuf),
@@ -670,7 +669,7 @@ impl App {
         }
     }
 
-    fn update_config(&mut self) -> Command<Message> {
+    fn update_config(&mut self) -> Task<Message> {
         //TODO: provide iterator over data
         let entities: Vec<_> = self.tab_model.iter().collect();
         for entity in entities {
@@ -681,7 +680,7 @@ impl App {
         cosmic::app::command::set_theme(self.config.app_theme.theme())
     }
 
-    fn save_config(&mut self) -> Command<Message> {
+    fn save_config(&mut self) -> Task<Message> {
         if let Some(ref config_handler) = self.config_handler {
             if let Err(err) = self.config.write_entry(config_handler) {
                 log::error!("failed to save config: {}", err);
@@ -698,7 +697,7 @@ impl App {
         }
     }
 
-    fn update_dialogs(&mut self) -> Command<Message> {
+    fn update_dialogs(&mut self) -> Task<Message> {
         match self.dialog_page_opt {
             Some(DialogPage::PromptSaveClose(entity)) => {
                 if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
@@ -730,16 +729,16 @@ impl App {
             }
             None => {}
         }
-        Command::none()
+        Task::none()
     }
 
-    fn update_focus(&self) -> Command<Message> {
+    fn update_focus(&self) -> Task<Message> {
         if self.core.window.show_context {
             match self.context_page {
                 ContextPage::ProjectSearch => {
                     widget::text_input::focus(self.project_search_id.clone())
                 }
-                _ => Command::none(),
+                _ => Task::none(),
             }
         } else if self.find_opt.is_some() {
             widget::text_input::focus(self.find_search_id.clone())
@@ -783,7 +782,7 @@ impl App {
                 match expand_opt {
                     Some(id) => {
                         //TODO: can this be optimized?
-                        // Command not used becuase opening a folder just returns Command::none
+                        // Task not used becuase opening a folder just returns Task::none
                         let _ = self.on_nav_select(id);
                     }
                     None => {
@@ -796,7 +795,7 @@ impl App {
     }
 
     // Call this any time the tab changes
-    pub fn update_tab(&mut self) -> Command<Message> {
+    pub fn update_tab(&mut self) -> Task<Message> {
         self.update_nav_bar_active();
 
         let title = match self.active_tab() {
@@ -811,8 +810,12 @@ impl App {
         };
 
         let window_title = format!("{title} - {}", fl!("cosmic-text-editor"));
-        Command::batch([
-            self.set_window_title(window_title, self.main_window_id()),
+        Task::batch([
+            if let Some(window_id) = self.core.main_window_id() {
+                self.set_window_title(window_title, window_id)
+            } else {
+                Task::none()
+            },
             self.update_focus(),
         ])
     }
@@ -844,7 +847,7 @@ impl App {
                     .padding(0)
                 .into(),
             ])
-        .align_items(Alignment::Center)
+        .align_x(Alignment::Center)
         .spacing(space_xxs)
         .into()
     }
@@ -878,7 +881,7 @@ impl App {
             });
         }
 
-        widget::settings::view_column(vec![widget::settings::view_section("")
+        widget::settings::view_column(vec![widget::settings::section()
             .add(
                 widget::settings::item::builder(fl!("word-count"))
                     .control(widget::text(word_count.to_string())),
@@ -911,10 +914,10 @@ impl App {
                     cosmic_theme.warning_color(),
                 )
             };
-            let added = || widget::text("[+]").style(theme::Text::Color(success_color.into()));
+            let added = || widget::text("[+]").class(theme::Text::Color(success_color.into()));
             let deleted =
-                || widget::text("[-]").style(theme::Text::Color(destructive_color.into()));
-            let modified = || widget::text("[*]").style(theme::Text::Color(warning_color.into()));
+                || widget::text("[-]").class(theme::Text::Color(destructive_color.into()));
+            let modified = || widget::text("[*]").class(theme::Text::Color(warning_color.into()));
 
             let mut items =
                 Vec::with_capacity(project_status.len().saturating_mul(3).saturating_add(1));
@@ -979,7 +982,7 @@ impl App {
                                 widget::row::with_children(vec![
                                     icon.into(),
                                     widget::text(text.clone()).into(),
-                                    widget::horizontal_space(Length::Fill).into(),
+                                    widget::horizontal_space().into(),
                                     widget::button::standard(fl!("stage"))
                                         .on_press(Message::GitStage(
                                             project_path.clone(),
@@ -987,7 +990,7 @@ impl App {
                                         ))
                                         .into(),
                                 ])
-                                .align_items(Alignment::Center)
+                                .align_y(Alignment::Center)
                                 .spacing(spacing.space_xs),
                             )
                             .on_press(Message::PrepareGitDiff(
@@ -995,7 +998,7 @@ impl App {
                                 item.path.clone(),
                                 false,
                             ))
-                            .style(theme::Button::AppletMenu)
+                            .class(theme::Button::AppletMenu)
                             .width(Length::Fill)
                             .into(),
                         );
@@ -1020,7 +1023,7 @@ impl App {
                                 widget::row::with_children(vec![
                                     icon.into(),
                                     widget::text(text.clone()).into(),
-                                    widget::horizontal_space(Length::Fill).into(),
+                                    widget::horizontal_space().into(),
                                     widget::button::standard(fl!("unstage"))
                                         .on_press(Message::GitUnstage(
                                             project_path.clone(),
@@ -1028,7 +1031,7 @@ impl App {
                                         ))
                                         .into(),
                                 ])
-                                .align_items(Alignment::Center)
+                                .align_y(Alignment::Center)
                                 .spacing(spacing.space_xs),
                             )
                             .on_press(Message::PrepareGitDiff(
@@ -1036,7 +1039,7 @@ impl App {
                                 item.path.clone(),
                                 true,
                             ))
-                            .style(theme::Button::AppletMenu)
+                            .class(theme::Button::AppletMenu)
                             .width(Length::Fill)
                             .into(),
                         );
@@ -1047,7 +1050,8 @@ impl App {
 
                 if !unstaged_items.is_empty() {
                     items.push(
-                        widget::settings::view_section(fl!("unstaged-changes"))
+                        widget::settings::section()
+                            .title(fl!("unstaged-changes"))
                             .add(widget::column::with_children(unstaged_items))
                             .into(),
                     );
@@ -1055,7 +1059,8 @@ impl App {
 
                 if !staged_items.is_empty() {
                     items.push(
-                        widget::settings::view_section(fl!("staged-changes"))
+                        widget::settings::section()
+                            .title(fl!("staged-changes"))
                             .add(widget::column::with_children(staged_items))
                             .into(),
                     );
@@ -1132,17 +1137,15 @@ impl App {
                             )
                             .on_press(Message::OpenSearchResult(file_i, line_i))
                             .width(Length::Fill)
-                            .style(theme::Button::AppletMenu),
+                            .class(theme::Button::AppletMenu),
                         );
                     }
 
                     items.push(
-                        widget::settings::view_section(format!(
-                            "{}",
-                            file_search_result.path.display(),
-                        ))
-                        .add(column)
-                        .into(),
+                        widget::settings::section()
+                            .title(format!("{}", file_search_result.path.display(),))
+                            .add(column)
+                            .into(),
                     );
                 }
 
@@ -1188,7 +1191,8 @@ impl App {
             .iter()
             .position(|font_size| font_size == &self.config.font_size);
         widget::settings::view_column(vec![
-            widget::settings::view_section(fl!("appearance"))
+            widget::settings::section()
+                .title(fl!("appearance"))
                 .add(
                     widget::settings::item::builder(fl!("theme")).control(widget::dropdown(
                         &self.app_themes,
@@ -1231,7 +1235,8 @@ impl App {
                     ),
                 )
                 .into(),
-            widget::settings::view_section(fl!("keyboard-shortcuts"))
+            widget::settings::section()
+                .title(fl!("keyboard-shortcuts"))
                 .add(
                     widget::settings::item::builder(fl!("enable-vim-bindings"))
                         .toggler(self.config.vim_bindings, Message::VimBindings),
@@ -1265,7 +1270,7 @@ impl Application for App {
     }
 
     /// Creates the application, and optionally emits command on initialize.
-    fn init(core: Core, flags: Self::Flags) -> (Self, Command<Self::Message>) {
+    fn init(core: Core, flags: Self::Flags) -> (Self, Task<Self::Message>) {
         // Update font name from config
         {
             let mut font_system = font_system().write().unwrap();
@@ -1396,7 +1401,7 @@ impl Application for App {
             .style(theme::SegmentedButton::TabBar)
             .apply(widget::container)
             .padding(space_s)
-            .width(Length::Fill);
+            .width(Length::Shrink);
 
         if !self.core().is_condensed() {
             nav = nav.max_width(280);
@@ -1406,7 +1411,7 @@ impl Application for App {
             nav.apply(widget::scrollable)
                 .apply(widget::container)
                 .height(Length::Fill)
-                .style(theme::Container::custom(nav_bar::nav_bar_style))
+                .class(theme::Container::custom(nav_bar::nav_bar_style))
                 .into(),
         )
     }
@@ -1419,13 +1424,13 @@ impl Application for App {
         Some(Message::Quit)
     }
 
-    fn on_context_drawer(&mut self) -> Command<Message> {
+    fn on_context_drawer(&mut self) -> Task<Message> {
         // Focus correct widget
         self.update_focus()
     }
 
     //TODO: currently the first escape unfocuses, and the second calls this function
-    fn on_escape(&mut self) -> Command<Message> {
+    fn on_escape(&mut self) -> Task<Message> {
         if self.core.window.show_context {
             // Close context drawer if open
             self.core.window.show_context = false;
@@ -1438,7 +1443,7 @@ impl Application for App {
         self.update_focus()
     }
 
-    fn on_nav_select(&mut self, id: nav_bar::Id) -> Command<Message> {
+    fn on_nav_select(&mut self, id: nav_bar::Id) -> Task<Message> {
         // Toggle open state and get clone of node data
         let node_opt = match self.nav_model.data_mut::<ProjectNode>(id) {
             Some(node) => {
@@ -1477,7 +1482,7 @@ impl Application for App {
                         // folder in condensed mode.
                         self.core_mut().nav_bar_set_toggled(true);
 
-                        Command::none()
+                        Task::none()
                     }
                     ProjectNode::File { path, .. } => {
                         //TODO: go to already open file if possible
@@ -1520,9 +1525,9 @@ impl Application for App {
                 let mut column = widget::column::with_capacity(entities.len()).spacing(space_xxs);
                 for entity in entities.iter() {
                     if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(*entity) {
-                        let mut row = widget::row::with_capacity(3).align_items(Alignment::Center);
+                        let mut row = widget::row::with_capacity(3).align_y(Alignment::Center);
                         row = row.push(widget::text(tab.title()));
-                        row = row.push(widget::horizontal_space(Length::Fill));
+                        row = row.push(widget::horizontal_space());
                         if let Some(_path) = &tab.path_opt {
                             row = row.push(
                                 widget::button::standard(fl!("save"))
@@ -1562,7 +1567,7 @@ impl Application for App {
         }
     }
 
-    fn update(&mut self, message: Message) -> Command<Message> {
+    fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::AppTheme(app_theme) => {
                 self.config.app_theme = app_theme;
@@ -1613,6 +1618,11 @@ impl Application for App {
                     }
                 }
             }
+            Message::CloseWindow(window_id) => {
+                if Some(window_id) == self.core.main_window_id() {
+                    return self.update(Message::Quit);
+                }
+            }
             Message::Copy => {
                 if let Some(Tab::Editor(tab)) = self.active_tab() {
                     let editor = tab.editor.lock().unwrap();
@@ -1633,7 +1643,7 @@ impl Application for App {
                         selection_opt
                     };
                     if let Some(selection) = selection_opt {
-                        return Command::batch([
+                        return Task::batch([
                             clipboard::write(selection),
                             self.update(Message::TabChanged(self.tab_model.active())),
                         ]);
@@ -1830,7 +1840,7 @@ impl Application for App {
                 self.git_project_status = Some(project_status);
             }
             Message::GitStage(project_path, path) => {
-                return Command::perform(
+                return Task::perform(
                     async move {
                         //TODO: send errors to UI
                         match GitRepository::new(&project_path) {
@@ -1861,7 +1871,7 @@ impl Application for App {
                 );
             }
             Message::GitUnstage(project_path, path) => {
-                return Command::perform(
+                return Task::perform(
                     async move {
                         //TODO: send errors to UI
                         match GitRepository::new(&project_path) {
@@ -2107,9 +2117,9 @@ impl Application for App {
 
                 if let Some((path, cursor)) = path_cursor_opt {
                     if let Some(entity) = self.open_tab(Some(path)) {
-                        return Command::batch([
+                        return Task::batch([
                             //TODO: why must this be done in a command?
-                            Command::perform(
+                            Task::perform(
                                 async move { message::app(Message::TabSetCursor(entity, cursor)) },
                                 |x| x,
                             ),
@@ -2119,7 +2129,7 @@ impl Application for App {
                 }
             }
             Message::Paste => {
-                return clipboard::read(|value_opt| match value_opt {
+                return clipboard::read().map(|value_opt| match value_opt {
                     Some(value) => message::app(Message::PasteValue(value)),
                     None => message::none(),
                 });
@@ -2136,7 +2146,7 @@ impl Application for App {
                 }
             }
             Message::PrepareGitDiff(project_path, path, staged) => {
-                return Command::perform(
+                return Task::perform(
                     async move {
                         //TODO: send errors to UI
                         match GitRepository::new(&project_path) {
@@ -2183,7 +2193,7 @@ impl Application for App {
                         files: Vec::new(),
                     };
                     self.project_search_result = Some(project_search_result.clone());
-                    return Command::perform(
+                    return Task::perform(
                         async move {
                             let task_res = tokio::task::spawn_blocking(move || {
                                 project_search_result.search_projects(projects);
@@ -2378,7 +2388,7 @@ impl Application for App {
                         // Ex. If tab 2 and 3 both have unsaved changes and `PromptSaveClose` is
                         // emitted for tab 2, closing tab 3 should open the dialog for tab 3 in
                         // order for `Message::Save` to save the correct tab.
-                        return Command::batch([
+                        return Task::batch([
                             // Focus the tab in case the user is closing an unfocussed tab
                             // Otherwise, closing an unfocussed tab would be very confusing
                             self.update(Message::TabActivate(entity)),
@@ -2542,7 +2552,7 @@ impl Application for App {
             Message::UpdateGitProjectStatus => {
                 self.git_project_status = None;
                 let projects = self.projects.clone();
-                return Command::perform(
+                return Task::perform(
                     async move {
                         let mut project_status = Vec::new();
                         for (project_name, project_path) in projects.iter() {
@@ -2584,15 +2594,17 @@ impl Application for App {
                 self.config.vim_bindings = vim_bindings;
                 return self.save_config();
             }
-            Message::Focus => {
-                // focus the text box if context page is not shown
-                if !self.core.window.show_context {
-                    return self.update_focus();
+            Message::Focus(window_id) => {
+                if Some(window_id) == self.core.main_window_id() {
+                    // focus the text box if context page is not shown
+                    if !self.core.window.show_context {
+                        return self.update_focus();
+                    }
                 }
             }
         }
 
-        Command::none()
+        Task::none()
     }
 
     fn context_drawer(&self) -> Option<Element<Message>> {
@@ -2629,7 +2641,7 @@ impl Application for App {
 
         tab_column = tab_column.push(
             widget::row::with_capacity(2)
-                .align_items(Alignment::Center)
+                .align_y(Alignment::Center)
                 .push(
                     widget::tab_bar::horizontal(&self.tab_model)
                         .button_height(32)
@@ -2644,43 +2656,13 @@ impl Application for App {
                     button::custom(icon_cache_get("list-add-symbolic", 16))
                         .on_press(Message::NewFile)
                         .padding(space_xxs)
-                        .style(style::Button::Icon),
+                        .class(style::Button::Icon),
                 ),
         );
 
         let tab_id = self.tab_model.active();
         match self.tab_model.data::<Tab>(tab_id) {
             Some(Tab::Editor(tab)) => {
-                let status = {
-                    let editor = tab.editor.lock().unwrap();
-                    let parser = editor.parser();
-                    match &parser.mode {
-                        ViMode::Normal => {
-                            format!("{}", parser.cmd)
-                        }
-                        ViMode::Insert => "-- INSERT --".to_string(),
-                        ViMode::Extra(extra) => {
-                            format!("{}{}", parser.cmd, extra)
-                        }
-                        ViMode::Replace => "-- REPLACE --".to_string(),
-                        ViMode::Visual => {
-                            format!("-- VISUAL -- {}", parser.cmd)
-                        }
-                        ViMode::VisualLine => {
-                            format!("-- VISUAL LINE -- {}", parser.cmd)
-                        }
-                        ViMode::Command { value } => {
-                            format!(":{value}|")
-                        }
-                        ViMode::Search { value, forwards } => {
-                            if *forwards {
-                                format!("/{value}|")
-                            } else {
-                                format!("?{value}|")
-                            }
-                        }
-                    }
-                };
                 let mut text_box = text_box(&tab.editor, self.config.metrics())
                     .id(self.text_box_id.clone())
                     .on_changed(Message::TabChanged(tab_id))
@@ -2701,11 +2683,39 @@ impl Application for App {
                         .position(widget::popover::Position::Point(point));
                 }
                 tab_column = tab_column.push(popover);
-                /*TODO: the status area breaks text box focus
-                if !status.is_empty() {
-                    tab_column = tab_column.push(text(status).font(Font::MONOSPACE));
+                if self.config.vim_bindings {
+                    let status = {
+                        let editor = tab.editor.lock().unwrap();
+                        let parser = editor.parser();
+                        match &parser.mode {
+                            ViMode::Normal => {
+                                format!("{}", parser.cmd)
+                            }
+                            ViMode::Insert => "-- INSERT --".to_string(),
+                            ViMode::Extra(extra) => {
+                                format!("{}{}", parser.cmd, extra)
+                            }
+                            ViMode::Replace => "-- REPLACE --".to_string(),
+                            ViMode::Visual => {
+                                format!("-- VISUAL -- {}", parser.cmd)
+                            }
+                            ViMode::VisualLine => {
+                                format!("-- VISUAL LINE -- {}", parser.cmd)
+                            }
+                            ViMode::Command { value } => {
+                                format!(":{value}|")
+                            }
+                            ViMode::Search { value, forwards } => {
+                                if *forwards {
+                                    format!("/{value}|")
+                                } else {
+                                    format!("?{value}|")
+                                }
+                            }
+                        }
+                    };
+                    tab_column = tab_column.push(widget::text(status).font(Font::MONOSPACE));
                 }
-                */
             }
             Some(Tab::GitDiff(tab)) => {
                 let mut diff_widget = widget::column::with_capacity(tab.diff.hunks.len());
@@ -2721,36 +2731,36 @@ impl Application for App {
                                 "{:4} {:4}   {}",
                                 old_line, new_line, text
                             ))),
-                            GitDiffLine::Added { new_line, text } => widget::container(
-                                widget::text::monotext(format!(
+                            GitDiffLine::Added { new_line, text } => {
+                                widget::container(widget::text::monotext(format!(
                                     "{:4} {:4} + {}",
                                     "", new_line, text
-                                )),
-                            )
-                            .style(theme::Container::Custom(Box::new(|_theme| {
-                                //TODO: theme this color
-                                widget::container::Appearance {
-                                    background: Some(Background::Color(Color::from_rgb8(
-                                        0x00, 0x40, 0x00,
-                                    ))),
-                                    ..Default::default()
-                                }
-                            }))),
-                            GitDiffLine::Deleted { old_line, text } => widget::container(
-                                widget::text::monotext(format!(
+                                )))
+                                .style(|_theme| {
+                                    //TODO: theme this color
+                                    widget::container::Style {
+                                        background: Some(Background::Color(Color::from_rgb8(
+                                            0x00, 0x40, 0x00,
+                                        ))),
+                                        ..Default::default()
+                                    }
+                                })
+                            }
+                            GitDiffLine::Deleted { old_line, text } => {
+                                widget::container(widget::text::monotext(format!(
                                     "{:4} {:4} - {}",
                                     old_line, "", text
-                                )),
-                            )
-                            .style(theme::Container::Custom(Box::new(|_theme| {
-                                //TODO: theme this color
-                                widget::container::Appearance {
-                                    background: Some(Background::Color(Color::from_rgb8(
-                                        0x40, 0x00, 0x00,
-                                    ))),
-                                    ..Default::default()
-                                }
-                            }))),
+                                )))
+                                .style(|_theme| {
+                                    //TODO: theme this color
+                                    widget::container::Style {
+                                        background: Some(Background::Color(Color::from_rgb8(
+                                            0x40, 0x00, 0x00,
+                                        ))),
+                                        ..Default::default()
+                                    }
+                                })
+                            }
                         };
                         hunk_widget = hunk_widget.push(line_widget.width(Length::Fill));
                     }
@@ -2777,7 +2787,7 @@ impl Application for App {
                     .trailing_icon(
                         button::custom(icon_cache_get("edit-clear-symbolic", 16))
                             .on_press(Message::FindSearchValueChanged(String::new()))
-                            .style(style::Button::Icon)
+                            .class(style::Button::Icon)
                             .into(),
                     );
             let find_widget = widget::row::with_children(vec![
@@ -2786,8 +2796,8 @@ impl Application for App {
                     button::custom(icon_cache_get("go-up-symbolic", 16))
                         .on_press(Message::FindPrevious)
                         .padding(space_xxs)
-                        .style(style::Button::Icon),
-                    fl!("find-previous"),
+                        .class(style::Button::Icon),
+                    widget::text::body(fl!("find-previous")),
                     widget::tooltip::Position::Top,
                 )
                 .into(),
@@ -2795,19 +2805,19 @@ impl Application for App {
                     button::custom(icon_cache_get("go-down-symbolic", 16))
                         .on_press(Message::FindNext)
                         .padding(space_xxs)
-                        .style(style::Button::Icon),
-                    fl!("find-next"),
+                        .class(style::Button::Icon),
+                    widget::text::body(fl!("find-next")),
                     widget::tooltip::Position::Top,
                 )
                 .into(),
-                widget::horizontal_space(Length::Fill).into(),
+                widget::horizontal_space().into(),
                 button::custom(icon_cache_get("window-close-symbolic", 16))
                     .on_press(Message::Find(None))
                     .padding(space_xxs)
-                    .style(style::Button::Icon)
+                    .class(style::Button::Icon)
                     .into(),
             ])
-            .align_items(Alignment::Center)
+            .align_y(Alignment::Center)
             .padding(space_xxs)
             .spacing(space_xxs);
 
@@ -2824,7 +2834,7 @@ impl Application for App {
                 .trailing_icon(
                     button::custom(icon_cache_get("edit-clear-symbolic", 16))
                         .on_press(Message::FindReplaceValueChanged(String::new()))
-                        .style(style::Button::Icon)
+                        .class(style::Button::Icon)
                         .into(),
                 );
                 let replace_widget = widget::row::with_children(vec![
@@ -2833,8 +2843,8 @@ impl Application for App {
                         button::custom(icon_cache_get("replace-symbolic", 16))
                             .on_press(Message::FindReplace)
                             .padding(space_xxs)
-                            .style(style::Button::Icon),
-                        fl!("replace"),
+                            .class(style::Button::Icon),
+                        widget::text::body(fl!("replace")),
                         widget::tooltip::Position::Top,
                     )
                     .into(),
@@ -2842,13 +2852,13 @@ impl Application for App {
                         button::custom(icon_cache_get("replace-all-symbolic", 16))
                             .on_press(Message::FindReplaceAll)
                             .padding(space_xxs)
-                            .style(style::Button::Icon),
-                        fl!("replace-all"),
+                            .class(style::Button::Icon),
+                        widget::text::body(fl!("replace-all")),
                         widget::tooltip::Position::Top,
                     )
                     .into(),
                 ])
-                .align_items(Alignment::Center)
+                .align_y(Alignment::Center)
                 .padding(space_xxs)
                 .spacing(space_xxs);
 
@@ -2857,26 +2867,17 @@ impl Application for App {
 
             column = column.push(
                 widget::row::with_children(vec![
-                    widget::checkbox(
-                        fl!("case-sensitive"),
-                        self.config.find_case_sensitive,
-                        Message::FindCaseSensitive,
-                    )
-                    .into(),
-                    widget::checkbox(
-                        fl!("use-regex"),
-                        self.config.find_use_regex,
-                        Message::FindUseRegex,
-                    )
-                    .into(),
-                    widget::checkbox(
-                        fl!("wrap-around"),
-                        self.config.find_wrap_around,
-                        Message::FindWrapAround,
-                    )
-                    .into(),
+                    widget::checkbox(fl!("case-sensitive"), self.config.find_case_sensitive)
+                        .on_toggle(Message::FindCaseSensitive)
+                        .into(),
+                    widget::checkbox(fl!("use-regex"), self.config.find_use_regex)
+                        .on_toggle(Message::FindUseRegex)
+                        .into(),
+                    widget::checkbox(fl!("wrap-around"), self.config.find_wrap_around)
+                        .on_toggle(Message::FindWrapAround)
+                        .into(),
                 ])
-                .align_items(Alignment::Center)
+                .align_y(Alignment::Center)
                 .padding(space_xxs)
                 .spacing(space_xxs),
             );
@@ -2899,14 +2900,14 @@ impl Application for App {
         }
     }
 
-    fn subscription(&self) -> subscription::Subscription<Message> {
+    fn subscription(&self) -> Subscription<Message> {
         struct WatcherSubscription;
         struct ConfigSubscription;
         struct ConfigStateSubscription;
         struct ThemeSubscription;
 
-        subscription::Subscription::batch([
-            event::listen_with(|event, status| match event {
+        Subscription::batch([
+            event::listen_with(|event, status, window_id| match event {
                 event::Event::Keyboard(keyboard::Event::KeyPressed { modifiers, key, .. }) => {
                     match status {
                         event::Status::Ignored => Some(Message::Key(modifiers, key)),
@@ -2916,20 +2917,15 @@ impl Application for App {
                 event::Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
                     Some(Message::Modifiers(modifiers))
                 }
-                event::Event::Window(id, window::Event::Focused) if id == window::Id::MAIN => {
-                    Some(Message::Focus)
-                }
-                event::Event::Window(id, window::Event::CloseRequested)
-                    if id == window::Id::MAIN =>
-                {
-                    Some(Message::Quit)
+                event::Event::Window(window::Event::Focused) => Some(Message::Focus(window_id)),
+                event::Event::Window(window::Event::CloseRequested) => {
+                    Some(Message::CloseWindow(window_id))
                 }
                 _ => None,
             }),
-            subscription::channel(
+            Subscription::run_with_id(
                 TypeId::of::<WatcherSubscription>(),
-                100,
-                |mut output| async move {
+                stream::channel(100, |mut output| async move {
                     let watcher_res = {
                         let mut output = output.clone();
                         //TODO: debounce
@@ -2986,7 +2982,7 @@ impl Application for App {
                     loop {
                         time::sleep(time::Duration::new(1, 0)).await;
                     }
-                },
+                }),
             ),
             cosmic_config::config_subscription(
                 TypeId::of::<ConfigSubscription>(),
@@ -3026,7 +3022,7 @@ impl Application for App {
             }),
             match &self.dialog_opt {
                 Some(dialog) => dialog.subscription(),
-                None => subscription::Subscription::none(),
+                None => Subscription::none(),
             },
         ])
     }

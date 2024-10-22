@@ -1,6 +1,5 @@
 use cosmic_text::{
-    Align, Attrs, AttrsList, BufferLine, Family, FontSystem, LayoutLine, LineEnding, ShapeBuffer,
-    Shaping, Wrap,
+    Align, Attrs, AttrsList, BufferLine, Family, FontSystem, LayoutLine, LineEnding, Shaping, Wrap,
 };
 use std::collections::HashMap;
 

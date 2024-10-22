@@ -17,10 +17,10 @@ use cosmic::{
         renderer::{self, Quad, Renderer as _},
         widget::{
             self,
-            operation::{self, Operation, OperationOutputWrapper},
+            operation::{self, Operation},
             tree, Id, Widget,
         },
-        Border, Shell,
+        Border, Radians, Shell,
     },
     theme::Theme,
     Renderer,
@@ -265,7 +265,7 @@ where
         tree: &mut widget::Tree,
         _layout: Layout<'_>,
         _renderer: &Renderer,
-        operation: &mut dyn Operation<OperationOutputWrapper<Message>>,
+        operation: &mut dyn Operation,
     ) {
         let state = tree.state.downcast_mut::<State>();
 
@@ -653,7 +653,7 @@ where
             editor.set_redraw(false);
 
             state.scale_factor.set(scale_factor);
-            *handle_opt = Some(image::Handle::from_pixels(
+            *handle_opt = Some(image::Handle::from_rgba(
                 image_w as u32,
                 image_h as u32,
                 pixels_u8,
@@ -662,7 +662,7 @@ where
 
         let image_position = layout.position() + [self.padding.left, self.padding.top].into();
         if let Some(ref handle) = *handle_opt {
-            let image_size = image::Renderer::dimensions(renderer, handle);
+            let image_size = image::Renderer::measure_image(renderer, handle);
             let scaled_size = Size::new(scaled_w as f32, scaled_h as f32);
             log::debug!(
                 "text_box image {:?} scaled {:?} position {:?}",
@@ -670,11 +670,13 @@ where
                 scaled_size,
                 image_position
             );
-            image::Renderer::draw(
+            image::Renderer::draw_image(
                 renderer,
                 handle.clone(),
                 image::FilterMethod::Nearest,
                 Rectangle::new(image_position, scaled_size),
+                Radians(0.0),
+                1.0,
                 [0.0; 4],
             );
         }
@@ -884,6 +886,11 @@ where
         let (buffer_size, buffer_scroll) =
             editor.with_buffer(|buffer| (buffer.size(), buffer.scroll()));
         let last_changed = editor.changed();
+        //TODO: better handling of status line update
+        let (last_parser_mode, last_parser_cmd) = {
+            let parser = editor.parser();
+            (parser.mode.clone(), parser.cmd)
+        };
         let mut font_system = font_system().write().unwrap();
         let mut editor = editor.borrow_with(font_system.raw());
 
@@ -1191,8 +1198,12 @@ where
             _ => (),
         }
 
-        if editor.changed() != last_changed {
-            if let Some(on_changed) = &self.on_changed {
+        if let Some(on_changed) = &self.on_changed {
+            //TODO: better handling of status line update
+            let parser = editor.parser();
+            if editor.changed() != last_changed
+                || (&parser.mode, &parser.cmd) != (&last_parser_mode, &last_parser_cmd)
+            {
                 shell.publish(on_changed.clone());
             }
         }

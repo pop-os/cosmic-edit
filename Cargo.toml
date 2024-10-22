@@ -34,7 +34,6 @@ rust-embed = "8"
 [dependencies.cosmic-files]
 git = "https://github.com/pop-os/cosmic-files.git"
 default-features = false
-features = ["winit"]
 
 [dependencies.cosmic-syntax-theme]
 git = "https://github.com/pop-os/cosmic-syntax-theme.git"
@@ -62,10 +61,6 @@ wgpu = ["libcosmic/wgpu", "cosmic-files/wgpu"]
 [profile.release-with-debug]
 inherits = "release"
 debug = true
-
-[patch.crates-io]
-# https://github.com/alexcrichton/filetime/pull/104
-filetime = { git = "https://github.com/jackpot51/filetime" }
 
 # [patch.'https://github.com/pop-os/libcosmic']
 # libcosmic = { path = "../libcosmic" }

@@ -5,7 +5,6 @@ use cosmic::widget::menu::{items as menu_items, root as menu_root, Item as MenuI
 use cosmic::{
     iced::{widget::column, widget::horizontal_rule, Background, Length},
     iced_core::Border,
-    theme,
     widget::{
         self, horizontal_space,
         menu::{menu_button, ItemHeight, ItemWidth, MenuBar, Tree as MenuTree},
@@ -31,7 +30,7 @@ pub fn context_menu<'a>(
         }
         menu_button(vec![
             widget::text(menu_label).into(),
-            horizontal_space(Length::Fill).into(),
+            horizontal_space().into(),
             widget::text(key).into(),
         ])
         .on_press(Message::TabContextAction(entity, menu_action))
@@ -48,10 +47,10 @@ pub fn context_menu<'a>(
     ))
     .padding(1)
     //TODO: move style to libcosmic
-    .style(theme::Container::custom(|theme| {
+    .style(|theme| {
         let cosmic = theme.cosmic();
         let component = &cosmic.background.component;
-        widget::container::Appearance {
+        widget::container::Style {
             icon_color: Some(component.on.into()),
             text_color: Some(component.on.into()),
             background: Some(Background::Color(component.base.into())),
@@ -62,7 +61,7 @@ pub fn context_menu<'a>(
             },
             ..Default::default()
         }
-    }))
+    })
     .width(Length::Fixed(240.0))
     .into()
 }
