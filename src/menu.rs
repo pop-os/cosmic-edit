@@ -3,10 +3,10 @@
 use cosmic::widget::menu::key_bind::KeyBind;
 use cosmic::widget::menu::{items as menu_items, root as menu_root, Item as MenuItem};
 use cosmic::{
-    iced::{widget::column, widget::horizontal_rule, Background, Length},
+    iced::{widget::column, Background, Length},
     iced_core::Border,
     widget::{
-        self, horizontal_space,
+        self, divider, horizontal_space,
         menu::{menu_button, ItemHeight, ItemWidth, MenuBar, Tree as MenuTree},
         segmented_button,
     },
@@ -39,7 +39,7 @@ pub fn context_menu<'a>(
     widget::container(column!(
         menu_item(fl!("undo"), Action::Undo),
         menu_item(fl!("redo"), Action::Redo),
-        horizontal_rule(1),
+        divider::horizontal::light(),
         menu_item(fl!("cut"), Action::Cut),
         menu_item(fl!("copy"), Action::Copy),
         menu_item(fl!("paste"), Action::Paste),
@@ -55,7 +55,7 @@ pub fn context_menu<'a>(
             text_color: Some(component.on.into()),
             background: Some(Background::Color(component.base.into())),
             border: Border {
-                radius: 8.0.into(),
+                radius: cosmic.radius_s().map(|x| x + 1.0).into(),
                 width: 1.0,
                 color: component.divider.into(),
             },
