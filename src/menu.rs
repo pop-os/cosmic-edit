@@ -76,6 +76,7 @@ pub fn menu_bar<'a>(
     let menu_tab_width = |tab_width: u16| {
         MenuItem::CheckBox(
             fl!("tab-width", tab_width = tab_width),
+            None,
             config.tab_width == tab_width,
             Action::TabWidth(tab_width),
         )
@@ -95,6 +96,7 @@ pub fn menu_bar<'a>(
     for (i, path) in config_state.recent_files.iter().enumerate() {
         recent_files.push(MenuItem::Button(
             format_path(path),
+            None,
             Action::OpenRecentFile(i),
         ));
     }
@@ -103,6 +105,7 @@ pub fn menu_bar<'a>(
     for (i, path) in config_state.recent_projects.iter().enumerate() {
         recent_projects.push(MenuItem::Button(
             format_path(path),
+            None,
             Action::OpenRecentProject(i),
         ));
     }
@@ -111,6 +114,7 @@ pub fn menu_bar<'a>(
     for (project_i, (name, _path)) in projects.iter().enumerate() {
         close_projects.push(MenuItem::Button(
             name.clone(),
+            None,
             Action::CloseProject(project_i),
         ));
     }
@@ -121,32 +125,37 @@ pub fn menu_bar<'a>(
             menu_items(
                 key_binds,
                 vec![
-                    MenuItem::Button(fl!("new-file"), Action::NewFile),
-                    MenuItem::Button(fl!("new-window"), Action::NewWindow),
+                    MenuItem::Button(fl!("new-file"), None, Action::NewFile),
+                    MenuItem::Button(fl!("new-window"), None, Action::NewWindow),
                     MenuItem::Divider,
-                    MenuItem::Button(fl!("open-file"), Action::OpenFileDialog),
+                    MenuItem::Button(fl!("open-file"), None, Action::OpenFileDialog),
                     MenuItem::Folder(fl!("open-recent-file"), recent_files),
-                    MenuItem::Button(fl!("close-file"), Action::CloseFile),
+                    MenuItem::Button(fl!("close-file"), None, Action::CloseFile),
                     MenuItem::Divider,
-                    MenuItem::Button(fl!("menu-open-project"), Action::OpenProjectDialog),
+                    MenuItem::Button(fl!("menu-open-project"), None, Action::OpenProjectDialog),
                     MenuItem::Folder(fl!("open-recent-project"), recent_projects),
                     MenuItem::Folder(fl!("close-project"), close_projects),
                     MenuItem::Divider,
-                    MenuItem::Button(fl!("save"), Action::Save),
-                    MenuItem::Button(fl!("save-as"), Action::SaveAsDialog),
+                    MenuItem::Button(fl!("save"), None, Action::Save),
+                    MenuItem::Button(fl!("save-as"), None, Action::SaveAsDialog),
                     MenuItem::Divider,
-                    MenuItem::Button(fl!("revert-all-changes"), Action::Todo),
+                    MenuItem::Button(fl!("revert-all-changes"), None, Action::Todo),
                     MenuItem::Divider,
                     MenuItem::Button(
                         fl!("menu-document-statistics"),
+                        None,
                         Action::ToggleDocumentStatistics,
                     ),
                     //TODO MenuItem::Button(fl!("document-type"), Action::Todo),
                     //TODO MenuItem::Button(fl!("encoding"), Action::Todo),
-                    MenuItem::Button(fl!("menu-git-management"), Action::ToggleGitManagement),
+                    MenuItem::Button(
+                        fl!("menu-git-management"),
+                        None,
+                        Action::ToggleGitManagement,
+                    ),
                     //TODO MenuItem::Button(fl!("print"), Action::Todo),
                     MenuItem::Divider,
-                    MenuItem::Button(fl!("quit"), Action::Quit),
+                    MenuItem::Button(fl!("quit"), None, Action::Quit),
                 ],
             ),
         ),
@@ -155,19 +164,19 @@ pub fn menu_bar<'a>(
             menu_items(
                 key_binds,
                 vec![
-                    MenuItem::Button(fl!("undo"), Action::Undo),
-                    MenuItem::Button(fl!("redo"), Action::Redo),
+                    MenuItem::Button(fl!("undo"), None, Action::Undo),
+                    MenuItem::Button(fl!("redo"), None, Action::Redo),
                     MenuItem::Divider,
-                    MenuItem::Button(fl!("cut"), Action::Cut),
-                    MenuItem::Button(fl!("copy"), Action::Copy),
-                    MenuItem::Button(fl!("paste"), Action::Paste),
-                    MenuItem::Button(fl!("select-all"), Action::SelectAll),
+                    MenuItem::Button(fl!("cut"), None, Action::Cut),
+                    MenuItem::Button(fl!("copy"), None, Action::Copy),
+                    MenuItem::Button(fl!("paste"), None, Action::Paste),
+                    MenuItem::Button(fl!("select-all"), None, Action::SelectAll),
                     MenuItem::Divider,
-                    MenuItem::Button(fl!("find"), Action::Find),
-                    MenuItem::Button(fl!("replace"), Action::FindAndReplace),
-                    MenuItem::Button(fl!("find-in-project"), Action::ToggleProjectSearch),
+                    MenuItem::Button(fl!("find"), None, Action::Find),
+                    MenuItem::Button(fl!("replace"), None, Action::FindAndReplace),
+                    MenuItem::Button(fl!("find-in-project"), None, Action::ToggleProjectSearch),
                     MenuItem::Divider,
-                    MenuItem::Button(fl!("spell-check"), Action::Todo),
+                    MenuItem::Button(fl!("spell-check"), None, Action::Todo),
                 ],
             ),
         ),
@@ -181,6 +190,7 @@ pub fn menu_bar<'a>(
                         vec![
                             MenuItem::CheckBox(
                                 fl!("automatic-indentation"),
+                                None,
                                 config.auto_indent,
                                 Action::ToggleAutoIndent,
                             ),
@@ -199,24 +209,31 @@ pub fn menu_bar<'a>(
                         ],
                     ),
                     MenuItem::Divider,
-                    MenuItem::CheckBox(fl!("word-wrap"), config.word_wrap, Action::ToggleWordWrap),
+                    MenuItem::CheckBox(
+                        fl!("word-wrap"),
+                        None,
+                        config.word_wrap,
+                        Action::ToggleWordWrap,
+                    ),
                     MenuItem::CheckBox(
                         fl!("show-line-numbers"),
+                        None,
                         config.line_numbers,
                         Action::ToggleLineNumbers,
                     ),
                     MenuItem::CheckBox(
                         fl!("highlight-current-line"),
+                        None,
                         config.highlight_current_line,
                         Action::ToggleHighlightCurrentLine,
                     ),
                     //TODO: MenuItem::CheckBox(fl!("syntax-highlighting"), Action::Todo),
                     MenuItem::Divider,
-                    MenuItem::Button(fl!("menu-settings"), Action::ToggleSettingsPage),
+                    MenuItem::Button(fl!("menu-settings"), None, Action::ToggleSettingsPage),
                     //TODO MenuItem::Divider,
                     //TODO MenuItem::Button(fl!("menu-keyboard-shortcuts"), Action::Todo),
                     MenuItem::Divider,
-                    MenuItem::Button(fl!("menu-about"), Action::About),
+                    MenuItem::Button(fl!("menu-about"), None, Action::About),
                 ],
             ),
         ),
