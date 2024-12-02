@@ -4,7 +4,7 @@ use cosmic::widget::menu::action::MenuAction;
 use cosmic::widget::menu::key_bind::KeyBind;
 use cosmic::widget::segmented_button::Entity;
 use cosmic::{
-    app::{message, Core, Settings, Task},
+    app::{context_drawer, message, Core, Settings, Task},
     cosmic_config::{self, CosmicConfigEntry},
     cosmic_theme, executor,
     font::Font,
@@ -404,18 +404,6 @@ pub enum ContextPage {
     //TODO: Move search to pop-up
     ProjectSearch,
     Settings,
-}
-
-impl ContextPage {
-    fn title(&self) -> String {
-        match self {
-            Self::About => String::new(),
-            Self::DocumentStatistics => fl!("document-statistics"),
-            Self::GitManagement => fl!("git-management"),
-            Self::ProjectSearch => fl!("project-search"),
-            Self::Settings => fl!("settings"),
-        }
-    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1512,7 +1500,8 @@ impl Application for App {
                     .on_press(Message::TabCloseForce(*entity));
                 let cancel_button =
                     widget::button::text(fl!("cancel")).on_press(Message::DialogCancel);
-                let dialog = widget::dialog(fl!("prompt-save-changes-title"))
+                let dialog = widget::dialog()
+                    .title(fl!("prompt-save-changes-title"))
                     .body(fl!("prompt-unsaved-changes"))
                     .icon(icon::from_name("dialog-warning-symbolic").size(64))
                     .primary_action(save_button)
@@ -1554,7 +1543,8 @@ impl Application for App {
                     widget::button::destructive(fl!("discard")).on_press(Message::QuitForce);
                 let cancel_button =
                     widget::button::text(fl!("cancel")).on_press(Message::DialogCancel);
-                let dialog = widget::dialog(fl!("prompt-save-changes-title"))
+                let dialog = widget::dialog()
+                    .title(fl!("prompt-save-changes-title"))
                     .body(fl!("prompt-unsaved-changes"))
                     .icon(icon::from_name("dialog-warning-symbolic").size(64))
                     .control(column)
@@ -2496,7 +2486,6 @@ impl Application for App {
                     self.context_page = context_page;
                     self.core.window.show_context = true;
                 }
-                self.set_context_title(context_page.title());
 
                 // Execute commands for specific pages
                 if self.core.window.show_context && self.context_page == ContextPage::GitManagement
@@ -2607,17 +2596,36 @@ impl Application for App {
         Task::none()
     }
 
-    fn context_drawer(&self) -> Option<Element<Message>> {
+    fn context_drawer(&self) -> Option<context_drawer::ContextDrawer<Message>> {
         if !self.core.window.show_context {
             return None;
         }
 
         Some(match self.context_page {
-            ContextPage::About => self.about(),
-            ContextPage::DocumentStatistics => self.document_statistics(),
-            ContextPage::GitManagement => self.git_management(),
-            ContextPage::ProjectSearch => self.project_search(),
-            ContextPage::Settings => self.settings(),
+            ContextPage::About => context_drawer::context_drawer(
+                self.about(),
+                Message::ToggleContextPage(ContextPage::About),
+            ),
+            ContextPage::DocumentStatistics => context_drawer::context_drawer(
+                self.document_statistics(),
+                Message::ToggleContextPage(ContextPage::DocumentStatistics),
+            )
+            .title(fl!("document-statistics")),
+            ContextPage::GitManagement => context_drawer::context_drawer(
+                self.git_management(),
+                Message::ToggleContextPage(ContextPage::GitManagement),
+            )
+            .title(fl!("git-management")),
+            ContextPage::ProjectSearch => context_drawer::context_drawer(
+                self.project_search(),
+                Message::ToggleContextPage(ContextPage::ProjectSearch),
+            )
+            .title(fl!("project-search")),
+            ContextPage::Settings => context_drawer::context_drawer(
+                self.settings(),
+                Message::ToggleContextPage(ContextPage::Settings),
+            )
+            .title(fl!("settings")),
         })
     }
 
