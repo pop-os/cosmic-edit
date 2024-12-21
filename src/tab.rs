@@ -219,7 +219,10 @@ impl EditorTab {
                 regex
                     .find_iter(buffer.lines[cursor.line].text())
                     .filter_map(|m| {
-                        if cursor.line != start_line || m.start() >= cursor.index {
+                        if cursor.line != start_line
+                            || m.start() >= cursor.index
+                            || m.start() < cursor.index && wrapped == true
+                        {
                             Some((m.start(), m.len()))
                         } else {
                             None
@@ -263,6 +266,7 @@ impl EditorTab {
         let mut cursor = editor.cursor();
         let mut wrapped = false; // Keeps track of whether the search has wrapped around yet.
         let start_line = cursor.line;
+        let current_selection = editor.selection();
 
         if forwards {
             while cursor.line < editor.with_buffer(|buffer| buffer.lines.len()) {
@@ -270,7 +274,11 @@ impl EditorTab {
                     regex
                         .find_iter(buffer.lines[cursor.line].text())
                         .filter_map(|m| {
-                            if cursor.line != start_line || m.start() > cursor.index {
+                            if cursor.line != start_line
+                                || m.start() > cursor.index
+                                || m.start() == cursor.index && current_selection == Selection::None
+                                || m.start() < cursor.index && wrapped == true
+                            {
                                 Some((m.start(), m.end()))
                             } else {
                                 None
@@ -309,7 +317,11 @@ impl EditorTab {
                     regex
                         .find_iter(buffer.lines[cursor.line].text())
                         .filter_map(|m| {
-                            if cursor.line != start_line || m.start() < cursor.index {
+                            if cursor.line != start_line
+                                || m.start() < cursor.index
+                                || m.start() == cursor.index && current_selection == Selection::None
+                                || m.start() > cursor.index && wrapped == true
+                            {
                                 Some((m.start(), m.end()))
                             } else {
                                 None
