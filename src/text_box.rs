@@ -1100,6 +1100,8 @@ where
                     }
 
                     status = Status::Captured;
+                } else {
+                    state.is_focused = false;
                 }
             }
             Event::Mouse(MouseEvent::ButtonReleased(Button::Left)) => {
