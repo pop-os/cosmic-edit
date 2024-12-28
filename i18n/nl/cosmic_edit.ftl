@@ -1,7 +1,7 @@
 cosmic-text-editor = COSMIC-tekstbewerker
 new-document = Nieuw document
 open-project = Open project
-todo = Te doen
+todo = TODO
 
 # Context Pages
 
