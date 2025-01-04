@@ -43,8 +43,8 @@ theme = Thema
 match-desktop = Afstemmen op systeemkleuren
 dark = Donker
 light = Licht
-syntax-dark = Donkere syntaxmarkering
-syntax-light = Lichte syntaxmarkering
+syntax-dark = Donkere syntaxiskleuring
+syntax-light = Lichte syntaxiskleuring
 default-font = Standaard lettertype
 default-font-size = Standaard lettertypegrootte
 
@@ -61,7 +61,7 @@ replace = Vervangen
 replace-all = Alles vervangen
 case-sensitive = Hoofdlettergevoelig
 use-regex = Reguliere expressies
-wrap-around = Achterwaards vervangen
+wrap-around = Achterwaarts vervangen
 
 # Menu
 
@@ -95,7 +95,7 @@ paste = Plakken
 select-all = Alles selecteren
 find = Zoeken
 find-in-project = Project doorzoeken
-replace = Vervangeng
+replace = Vervangen
 spell-check = Spellingscontrole...
 
 ## View
@@ -103,15 +103,15 @@ view = Beeld
 indentation = Inspringing
 
 ### Indentation
-automatic-indentation = Automatische Inspringing
+automatic-indentation = Automatische inspringing
 tab-width = Tab breedte: {$tab_width}
-convert-indentation-to-spaces = Zet indentatie om in spaties
-convert-indentation-to-tabs = Zet indentatie om in tabs
+convert-indentation-to-spaces = Inspringing omzetten in spaties
+convert-indentation-to-tabs = Inspringing omzetten in tabs
 
-word-wrap = Woord omloop
+word-wrap = Woordomloop
 show-line-numbers = Toon regelnummers
 highlight-current-line = Markeer huidige regel
-syntax-highlighting = Syntax markering...
+syntax-highlighting = Syntaxiskleuring...
 menu-settings = Instellingen...
 menu-keyboard-shortcuts = Toetsenbord snelkoppelingen...
 menu-about = Over COSMIC-tekstbewerker
