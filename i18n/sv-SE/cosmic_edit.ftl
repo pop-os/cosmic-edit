@@ -16,6 +16,18 @@ git-management = Git hantering
 unstaged-changes = Oscenerade förändringar
 staged-changes = Iscensatta förändringar
 
+
+## Projektsök
+project-search = Projektsök
+
+## Fråga om ändringarna sparas
+prompt-save-changes-title = Osparade ändringar
+prompt-unsaved-changes = Du har osparade ändringar. Spara?
+cancel = Avbryt
+discard = Kasta ändringar
+save-all = Spara alla
+
+
 ## Inställningar
 settings = Inställningar
 
