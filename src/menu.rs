@@ -175,8 +175,10 @@ pub fn menu_bar<'a>(
                     MenuItem::Button(fl!("find"), None, Action::Find),
                     MenuItem::Button(fl!("replace"), None, Action::FindAndReplace),
                     MenuItem::Button(fl!("find-in-project"), None, Action::ToggleProjectSearch),
+                    /*TODO: implement spell-check
                     MenuItem::Divider,
                     MenuItem::Button(fl!("spell-check"), None, Action::Todo),
+                    */
                 ],
             ),
         ),
