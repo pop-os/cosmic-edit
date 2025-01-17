@@ -1601,7 +1601,11 @@ impl Application for App {
                                     }
                                 }
                             }
-                            None => break,
+                            None => {
+                                if closing {
+                                    break;
+                                }
+                            }
                         }
                         if closing {
                             self.nav_model.remove(id);
