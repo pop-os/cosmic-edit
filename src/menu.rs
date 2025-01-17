@@ -139,7 +139,7 @@ pub fn menu_bar<'a>(
                     MenuItem::Button(fl!("save"), None, Action::Save),
                     MenuItem::Button(fl!("save-as"), None, Action::SaveAsDialog),
                     MenuItem::Divider,
-                    MenuItem::Button(fl!("revert-all-changes"), None, Action::Todo),
+                    MenuItem::Button(fl!("revert-all-changes"), None, Action::RevertAllChanges),
                     MenuItem::Divider,
                     MenuItem::Button(
                         fl!("menu-document-statistics"),

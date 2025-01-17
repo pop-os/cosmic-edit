@@ -199,6 +199,7 @@ pub enum Action {
     Paste,
     Quit,
     Redo,
+    RevertAllChanges,
     Save,
     SaveAsDialog,
     SelectAll,
@@ -245,6 +246,7 @@ impl Action {
             Self::Paste => Message::Paste,
             Self::Quit => Message::Quit,
             Self::Redo => Message::Redo,
+            Self::RevertAllChanges => Message::RevertAllChanges,
             Self::Save => Message::Save(entity_opt),
             Self::SaveAsDialog => Message::SaveAsDialog(entity_opt),
             Self::SelectAll => Message::SelectAll,
@@ -367,6 +369,7 @@ pub enum Message {
     Quit,
     QuitForce,
     Redo,
+    RevertAllChanges,
     Save(Option<segmented_button::Entity>),
     SaveAll,
     SaveAsDialog(Option<segmented_button::Entity>),
@@ -2223,6 +2226,13 @@ impl Application for App {
                         let mut editor = tab.editor.lock().unwrap();
                         editor.redo();
                     }
+
+                    return self.update(Message::TabChanged(self.tab_model.active()));
+                }
+            }
+            Message::RevertAllChanges => {
+                if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
+                    tab.reload();
 
                     return self.update(Message::TabChanged(self.tab_model.active()));
                 }

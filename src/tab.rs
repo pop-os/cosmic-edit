@@ -127,6 +127,9 @@ impl EditorTab {
             match editor.load_text(path, self.attrs) {
                 Ok(()) => {
                     log::info!("reloaded {:?}", path);
+
+                    // Clear changed state
+                    editor.set_changed(false);
                 }
                 Err(err) => {
                     log::error!("failed to reload {:?}: {}", path, err);
