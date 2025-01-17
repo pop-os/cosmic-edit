@@ -984,12 +984,14 @@ where
                     status = Status::Captured;
                 }
                 Named::Tab => {
-                    if modifiers.shift() {
-                        editor.action(Action::Unindent);
-                    } else {
-                        editor.action(Action::Indent);
+                    if !modifiers.control() {
+                        if modifiers.shift() {
+                            editor.action(Action::Unindent);
+                        } else {
+                            editor.action(Action::Indent);
+                        }
+                        status = Status::Captured;
                     }
-                    status = Status::Captured;
                 }
                 _ => (),
             },
