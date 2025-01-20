@@ -99,7 +99,7 @@ spell-check = Spellingscontrole...
 
 ## View
 view = Beeld
-indentation = Inspringen
+indentation = Inspringing
 
 ### Indentation
 automatic-indentation = Automatische inspringing
