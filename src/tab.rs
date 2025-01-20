@@ -11,8 +11,10 @@ use regex::Regex;
 use std::{
     fs,
     path::PathBuf,
+    process::Command,
     sync::{Arc, Mutex},
 };
+
 
 use crate::{fl, git::GitDiff, Config, SYNTAX_SYSTEM};
 
@@ -45,7 +47,7 @@ pub struct EditorTab {
 impl EditorTab {
     pub fn new(config: &Config) -> Self {
         //TODO: do not repeat, used in App::init
-        let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Monospace);
+        let attrs = Attrs::new().family(cosmic_text::Family::Monospace);
 
         let mut buffer = Buffer::new_empty(config.metrics());
         buffer.set_text(
@@ -153,13 +155,34 @@ impl EditorTab {
                     text.push_str(line.ending().as_str());
                 }
             });
-            match fs::write(path, text) {
+            match fs::write(path, &text) {
                 Ok(()) => {
                     editor.save_point();
                     log::info!("saved {:?}", path);
                 }
                 Err(err) => {
-                    log::error!("failed to save {:?}: {}", path, err);
+                    if err.kind() == std::io::ErrorKind::PermissionDenied {
+                        log::warn!("permission denied, attempting to save with pkexec");
+                        let output = Command::new("pkexec")
+                            .arg("sh")
+                            .arg("-c")
+                            .arg(format!("echo '{}' | tee {}", text, path.display()))
+                            .output();
+                        match output {
+                            Ok(output) if output.status.success() => {
+                                editor.save_point();
+                                log::info!("saved with pkexec {:?}", path);
+                            }
+                            Ok(output) => {
+                                log::error!("pkexec failed: {}", String::from_utf8_lossy(&output.stderr));
+                            }
+                            Err(err) => {
+                                log::error!("failed to execute pkexec: {}", err);
+                            }
+                        }
+                    } else {
+                        log::error!("failed to save {:?}: {}", path, err);
+                    }
                 }
             }
         } else {
