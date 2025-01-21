@@ -9,9 +9,10 @@ use cosmic_text::{Attrs, Buffer, Cursor, Edit, Selection, Shaping, SyntaxEditor,
 use notify::Watcher;
 use regex::Regex;
 use std::{
+    io::Write,
     fs,
     path::PathBuf,
-    process::Command,
+    process::{Command, Stdio},
     sync::{Arc, Mutex},
 };
 
@@ -162,26 +163,29 @@ impl EditorTab {
                 }
                 Err(err) => {
                     if err.kind() == std::io::ErrorKind::PermissionDenied {
-                        log::warn!("permission denied, attempting to save with pkexec");
-                        let output = Command::new("pkexec")
-                            .arg("sh")
-                            .arg("-c")
-                            .arg(format!("echo '{}' | tee {}", text, path.display()))
-                            .output();
-                        match output {
-                            Ok(output) if output.status.success() => {
-                                editor.save_point();
-                                log::info!("saved with pkexec {:?}", path);
-                            }
-                            Ok(output) => {
-                                log::error!("pkexec failed: {}", String::from_utf8_lossy(&output.stderr));
-                            }
-                            Err(err) => {
-                                log::error!("failed to execute pkexec: {}", err);
-                            }
+                        log::warn!("Permission denied. Attempting to save with pkexec.");
+
+                        // Start the `pkexec tee` process
+                        let mut output = Command::new("pkexec")
+                            .arg("tee")
+                            .arg(path.to_str().unwrap())
+                            .stdin(Stdio::piped())
+                            .spawn()
+                            .expect("Failed to spawn pkexec process");
+
+                        // Write the content to the process's stdin
+                        if let Some(mut stdin) = output.stdin.take() {
+                            stdin.write_all(text.as_bytes()).expect("Failed to write to stdin");
                         }
-                    } else {
-                        log::error!("failed to save {:?}: {}", path, err);
+
+                        // Wait for the process to finish
+                        let status = output.wait().expect("Failed to wait on pkexec process");
+                        if status.success() {
+                            editor.save_point();
+                            log::info!("Saved with pkexec {:?}", path);
+                        } else {
+                            log::error!("pkexec failed with status: {:?}", status);
+                        }
                     }
                 }
             }
