@@ -168,7 +168,7 @@ impl EditorTab {
                         // Start the `pkexec tee` process
                         let mut output = Command::new("pkexec")
                             .arg("tee")
-                            .arg(path.to_str().unwrap())
+                            .arg(path)
                             .stdin(Stdio::piped())
                             .spawn()
                             .expect("Failed to spawn pkexec process");
