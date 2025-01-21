@@ -166,25 +166,22 @@ impl EditorTab {
                         log::warn!("Permission denied. Attempting to save with pkexec.");
 
                         // Start the `pkexec tee` process
-                        let mut output = Command::new("pkexec")
+                        if let Ok(mut output) = Command::new("pkexec")
                             .arg("tee")
                             .arg(path)
                             .stdin(Stdio::piped())
                             .spawn()
-                            .expect("Failed to spawn pkexec process");
-
-                        // Write the content to the process's stdin
-                        if let Some(mut stdin) = output.stdin.take() {
-                            stdin.write_all(text.as_bytes()).expect("Failed to write to stdin");
-                        }
-
-                        // Wait for the process to finish
-                        let status = output.wait().expect("Failed to wait on pkexec process");
-                        if status.success() {
-                            editor.save_point();
-                            log::info!("Saved with pkexec {:?}", path);
+                        {
+                            if let Some(mut stdin) = output.stdin.take() {
+                                if let Err(e) = stdin.write_all(text.as_bytes()) {
+                                    // Log the error but do not crash
+                                    eprintln!("Failed to write to stdin: {}", e);
+                                }
+                            } else {
+                                eprintln!("Failed to access stdin of pkexec process.");
+                            }
                         } else {
-                            log::error!("pkexec failed with status: {:?}", status);
+                            eprintln!("Failed to spawn pkexec process. Check permissions or path.");
                         }
                     }
                 }
