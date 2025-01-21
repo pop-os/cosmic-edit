@@ -170,6 +170,8 @@ impl EditorTab {
                             .arg("tee")
                             .arg(path)
                             .stdin(Stdio::piped())
+                            .stdout(Stdio::null()) // Redirect stdout to /dev/null
+                            .stderr(Stdio::inherit()) // Retain stderr for error visibility
                             .spawn()
                         {
                             if let Some(mut stdin) = output.stdin.take() {
