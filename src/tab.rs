@@ -175,13 +175,13 @@ impl EditorTab {
                             if let Some(mut stdin) = output.stdin.take() {
                                 if let Err(e) = stdin.write_all(text.as_bytes()) {
                                     // Log the error but do not crash
-                                    eprintln!("Failed to write to stdin: {}", e);
+                                    log::error!("Failed to write to stdin: {}", e);
                                 }
                             } else {
-                                eprintln!("Failed to access stdin of pkexec process.");
+                                log::error!("Failed to access stdin of pkexec process.");
                             }
                         } else {
-                            eprintln!("Failed to spawn pkexec process. Check permissions or path.");
+                            log::error!("Failed to spawn pkexec process. Check permissions or path.");
                         }
                     }
                 }
