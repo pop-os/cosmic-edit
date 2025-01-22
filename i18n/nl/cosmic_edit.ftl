@@ -70,7 +70,7 @@ file = Bestand
 new-file = Nieuw bestand
 new-window = Nieuw venster
 open-file = Bestand openen...
-open-recent = Open recent
+open-recent = Recent bestand openen
 close-file = Bestand sluiten
 menu-open-project = Project openen...
 open-recent-project = Recent project openen
@@ -86,7 +86,7 @@ print = Afdrukken
 quit = Afsluiten
 
 ## Edit
-edit = Bewerk
+edit = Bewerken
 undo = Ongedaan maken
 redo = Opnieuw doen
 cut = Knippen
