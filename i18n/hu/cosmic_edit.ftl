@@ -6,10 +6,10 @@ todo = Teendők
 # Context Pages
 
 ## About
-git-description = Git kommit {$hash} dátum: {$date}
+git-description = Git commit {$hash} ekkor: {$date}
 
 ## Document statistics
-document-statistics = Dokumentum statisztika
+document-statistics = Dokumentumstatisztika
 word-count = Szavak száma
 character-count = Karakterszám
 character-count-no-spaces = Karakterszám (szóközök nélkül)
@@ -25,7 +25,7 @@ unstage = Változtatások visszavonása előkészítésből
 unstaged-changes = Előkészítésből visszavont változtatások
 
 ## Project search
-project-search = Projekt kereső
+project-search = Projektkereső
 
 ## Prompt save changes
 prompt-save-changes-title = Nem mentett változtatások
@@ -40,7 +40,7 @@ settings = Beállítások
 ### Appearance
 appearance = Megjelenés
 theme = Téma
-match-desktop = Asztal témájának használata
+match-desktop = Asztallal egyező
 dark = Sötét
 light = Világos
 syntax-dark = Sötét szintaxis
@@ -59,8 +59,9 @@ find-next = Következő találat
 replace-placeholder = Lecserélés...
 replace = Lecserélés
 replace-all = Összes lecserélése
-case-sensitive = Kis és -nagybetűk figyelembevétele
+case-sensitive = Kis- és nagybetűk figyelembevétele
 use-regex = Regex használata
+wrap-around = Körbefutás
 
 # Menu
 
@@ -76,8 +77,8 @@ open-recent-project = Legutóbbi projekt megnyitása
 close-project = Projekt bezárása
 save = Mentés
 save-as = Mentés másként...
-revert-all-changes = Összes változtatás visszavonása
-menu-document-statistics = Dokumentum statisztika...
+revert-all-changes = Minden változtatás visszavonása
+menu-document-statistics = Dokumentumstatisztika...
 document-type = Dokumentum típus...
 encoding = Karakterkódolás...
 menu-git-management = Git-kezelő...
@@ -93,8 +94,8 @@ copy = Másolás
 paste = Beillesztés
 select-all = Összes kijelölése
 find = Keresés
-find-in-project = Keresés a projekten belül...
-spell-check = Helyesírás ellenőrzés...
+find-in-project = Keresés a projektben...
+spell-check = Helyesírás-ellenőrzés...
 
 ## View
 view = Nézet
@@ -106,10 +107,10 @@ tab-width = Tabulátor szélesség: {$tab_width}
 convert-indentation-to-spaces = Behúzások szóközökké alakítása
 convert-indentation-to-tabs = Behúzások tabulátorokká alakítása
 
-word-wrap = Tördelés
+word-wrap = Sortörés
 show-line-numbers = Sorszámok megjelenítése
 highlight-current-line = Aktuális sor kiemelése
 syntax-highlighting = Szintaxis kiemelés...
 menu-settings = Beállítások...
 menu-keyboard-shortcuts = Billentyűparancsok...
-menu-about = Információ a COSMIC Szövegszerkesztőről...
+menu-about = A COSMIC Szövegszerkesztőről...
