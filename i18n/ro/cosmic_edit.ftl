@@ -11,9 +11,9 @@ git-description = Git commit {$hash} pe {$date}
 ## Document statistics
 document-statistics = Statistici document
 word-count = Număr de cuvinte
-character-count = Caractere
-character-count-no-spaces = Caractere (fără spații)
-line-count = Linii
+character-count = Număr de caractere
+character-count-no-spaces = Număr de caractere (fără spații)
+line-count = Număr de linii
 
 ## Git management
 git-management = Management Git
@@ -79,7 +79,7 @@ save-as = Salvează ca...
 revert-all-changes = Renunță la toate modificările
 menu-document-statistics = Statistici document...
 document-type = Tip document...
-encoding = Encoding...
+encoding = Codificare...
 menu-git-management = Management Git...
 print = Imprimă
 quit = Ieși
