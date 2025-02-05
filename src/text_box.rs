@@ -42,6 +42,7 @@ pub struct TextBox<'a, Message> {
     metrics: Metrics,
     id: Option<Id>,
     padding: Padding,
+    on_auto_scroll: Option<Box<dyn Fn(Option<f32>) -> Message + 'a>>,
     on_changed: Option<Message>,
     click_timing: Duration,
     has_context_menu: bool,
@@ -60,6 +61,7 @@ where
             metrics,
             id: None,
             padding: Padding::new(0.0),
+            on_auto_scroll: None,
             on_changed: None,
             click_timing: Duration::from_millis(500),
             has_context_menu: false,
@@ -76,6 +78,11 @@ where
 
     pub fn padding<P: Into<Padding>>(mut self, padding: P) -> Self {
         self.padding = padding.into();
+        self
+    }
+
+    pub fn on_auto_scroll(mut self, on_auto_scroll: impl Fn(Option<f32>) -> Message + 'a) -> Self {
+        self.on_auto_scroll = Some(Box::new(on_auto_scroll));
         self
     }
 
@@ -1109,6 +1116,9 @@ where
             Event::Mouse(MouseEvent::ButtonReleased(Button::Left)) => {
                 state.dragging = None;
                 status = Status::Captured;
+                if let Some(on_auto_scroll) = &self.on_auto_scroll {
+                    shell.publish(on_auto_scroll(None));
+                }
             }
             Event::Mouse(MouseEvent::CursorMoved { .. }) => {
                 if let Some(dragging) = &state.dragging {
@@ -1124,6 +1134,20 @@ where
                                     x: x as i32,
                                     y: y as i32,
                                 });
+                                let auto_scroll = editor.with_buffer(|buffer| {
+                                    //TODO: ideal auto scroll speed
+                                    let speed = 10.0;
+                                    if y < 0.0 {
+                                        Some(y * speed)
+                                    } else if y > buffer.size().1.unwrap_or(0.0) {
+                                        Some((y - buffer.size().1.unwrap_or(0.0)) * speed)
+                                    } else {
+                                        None
+                                    }
+                                });
+                                if let Some(on_auto_scroll) = &self.on_auto_scroll {
+                                    shell.publish(on_auto_scroll(auto_scroll));
+                                }
                             }
                             Dragging::ScrollbarV {
                                 start_y,

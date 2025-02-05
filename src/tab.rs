@@ -9,13 +9,12 @@ use cosmic_text::{Attrs, Buffer, Cursor, Edit, Selection, Shaping, SyntaxEditor,
 use notify::Watcher;
 use regex::Regex;
 use std::{
-    io::Write,
     fs,
+    io::Write,
     path::PathBuf,
     process::{Command, Stdio},
     sync::{Arc, Mutex},
 };
-
 
 use crate::{fl, git::GitDiff, Config, SYNTAX_SYSTEM};
 
@@ -147,65 +146,70 @@ impl EditorTab {
     }
 
     pub fn save(&mut self) {
-    if let Some(path) = &self.path_opt {
-        let mut editor = self.editor.lock().unwrap();
-        let mut text = String::new();
-        
-        editor.with_buffer(|buffer| {
-            for line in buffer.lines.iter() {
-                text.push_str(line.text());
-                text.push_str(line.ending().as_str());
-            }
-        });
+        if let Some(path) = &self.path_opt {
+            let mut editor = self.editor.lock().unwrap();
+            let mut text = String::new();
 
-        match fs::write(path, &text) {
-            Ok(()) => {
-                editor.save_point();
-                log::info!("saved {:?}", path);
-            }
-            Err(err) => {
-                if err.kind() == std::io::ErrorKind::PermissionDenied {
-                    log::warn!("Permission denied. Attempting to save with pkexec.");
+            editor.with_buffer(|buffer| {
+                for line in buffer.lines.iter() {
+                    text.push_str(line.text());
+                    text.push_str(line.ending().as_str());
+                }
+            });
 
-                    if let Ok(mut output) = Command::new("pkexec")
-                        .arg("tee")
-                        .arg(path)
-                        .stdin(Stdio::piped())
-                        .stdout(Stdio::null()) // Redirect stdout to /dev/null
-                        .stderr(Stdio::inherit()) // Retain stderr for error visibility
-                        .spawn()
-                    {
-                        if let Some(mut stdin) = output.stdin.take() {
-                            if let Err(e) = stdin.write_all(text.as_bytes()) {
-                                log::error!("Failed to write to stdin: {}", e);
+            match fs::write(path, &text) {
+                Ok(()) => {
+                    editor.save_point();
+                    log::info!("saved {:?}", path);
+                }
+                Err(err) => {
+                    if err.kind() == std::io::ErrorKind::PermissionDenied {
+                        log::warn!("Permission denied. Attempting to save with pkexec.");
+
+                        if let Ok(mut output) = Command::new("pkexec")
+                            .arg("tee")
+                            .arg(path)
+                            .stdin(Stdio::piped())
+                            .stdout(Stdio::null()) // Redirect stdout to /dev/null
+                            .stderr(Stdio::inherit()) // Retain stderr for error visibility
+                            .spawn()
+                        {
+                            if let Some(mut stdin) = output.stdin.take() {
+                                if let Err(e) = stdin.write_all(text.as_bytes()) {
+                                    log::error!("Failed to write to stdin: {}", e);
+                                }
+                            } else {
+                                log::error!("Failed to access stdin of pkexec process.");
                             }
-                        } else {
-                            log::error!("Failed to access stdin of pkexec process.");
-                        }
 
-                        // Ensure the child process is reaped
-                        match output.wait() {
-                            Ok(status) => {
-                                if status.success() {
-                                    // Mark the editor's state as saved if the process succeeds
-                                    editor.save_point();
-                                    log::info!("File saved successfully with pkexec.");
-                                } else {
-                                    log::error!("pkexec process exited with a non-zero status: {:?}", status);
+                            // Ensure the child process is reaped
+                            match output.wait() {
+                                Ok(status) => {
+                                    if status.success() {
+                                        // Mark the editor's state as saved if the process succeeds
+                                        editor.save_point();
+                                        log::info!("File saved successfully with pkexec.");
+                                    } else {
+                                        log::error!(
+                                            "pkexec process exited with a non-zero status: {:?}",
+                                            status
+                                        );
+                                    }
+                                }
+                                Err(e) => {
+                                    log::error!("Failed to wait on pkexec process: {}", e);
                                 }
                             }
-                            Err(e) => {
-                                log::error!("Failed to wait on pkexec process: {}", e);
-                            }
+                        } else {
+                            log::error!(
+                                "Failed to spawn pkexec process. Check permissions or path."
+                            );
                         }
-                    } else {
-                        log::error!("Failed to spawn pkexec process. Check permissions or path.");
                     }
                 }
             }
-        }
-    } else {
-        log::warn!("tab has no path yet");
+        } else {
+            log::warn!("tab has no path yet");
         }
     }
 

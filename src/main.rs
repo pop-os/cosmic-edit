@@ -9,6 +9,7 @@ use cosmic::{
     cosmic_theme, executor,
     font::Font,
     iced::{
+        self,
         advanced::graphics::text::font_system,
         clipboard, event,
         futures::{self, SinkExt},
@@ -318,6 +319,7 @@ enum NewTab {
 #[derive(Clone, Debug)]
 pub enum Message {
     AppTheme(AppTheme),
+    AutoScroll(Option<f32>),
     Config(Config),
     ConfigState(ConfigState),
     CloseFile,
@@ -374,6 +376,7 @@ pub enum Message {
     SaveAll,
     SaveAsDialog(Option<segmented_button::Entity>),
     SaveAsResult(segmented_button::Entity, DialogResult),
+    Scroll(f32),
     SelectAll,
     SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
@@ -438,6 +441,7 @@ pub struct App {
     theme_names: Vec<String>,
     context_page: ContextPage,
     text_box_id: widget::Id,
+    auto_scroll: Option<f32>,
     dialog_opt: Option<Dialog<Message>>,
     dialog_page_opt: Option<DialogPage>,
     find_opt: Option<bool>,
@@ -1323,6 +1327,7 @@ impl Application for App {
             theme_names,
             context_page: ContextPage::Settings,
             text_box_id: widget::Id::unique(),
+            auto_scroll: None,
             dialog_opt: None,
             dialog_page_opt: None,
             find_opt: None,
@@ -1565,6 +1570,9 @@ impl Application for App {
             Message::AppTheme(app_theme) => {
                 self.config.app_theme = app_theme;
                 return self.save_config();
+            }
+            Message::AutoScroll(auto_scroll) => {
+                self.auto_scroll = auto_scroll;
             }
             Message::Config(config) => {
                 if config != self.config {
@@ -2330,6 +2338,16 @@ impl Application for App {
                     editor.set_selection(selection);
                 }
             }
+            Message::Scroll(auto_scroll) => {
+                if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
+                    let mut editor = tab.editor.lock().unwrap();
+                    editor.with_buffer_mut(|buffer| {
+                        let mut scroll = buffer.scroll();
+                        scroll.vertical += auto_scroll;
+                        buffer.set_scroll(scroll);
+                    });
+                }
+            }
             Message::SystemThemeModeChange(_theme_mode) => {
                 return self.update_config();
             }
@@ -2687,6 +2705,7 @@ impl Application for App {
             Some(Tab::Editor(tab)) => {
                 let mut text_box = text_box(&tab.editor, self.config.metrics())
                     .id(self.text_box_id.clone())
+                    .on_auto_scroll(Message::AutoScroll)
                     .on_changed(Message::TabChanged(tab_id))
                     .has_context_menu(tab.context_menu.is_some())
                     .on_context_menu(move |position_opt| {
@@ -2928,7 +2947,7 @@ impl Application for App {
         struct ConfigStateSubscription;
         struct ThemeSubscription;
 
-        Subscription::batch([
+        let mut subscriptions = vec![
             event::listen_with(|event, status, window_id| match event {
                 event::Event::Keyboard(keyboard::Event::KeyPressed { modifiers, key, .. }) => {
                     match status {
@@ -3046,6 +3065,15 @@ impl Application for App {
                 Some(dialog) => dialog.subscription(),
                 None => Subscription::none(),
             },
-        ])
+        ];
+
+        if let Some(auto_scroll) = self.auto_scroll {
+            subscriptions.push(
+                iced::time::every(time::Duration::from_millis(10))
+                    .map(move |_| Message::Scroll(auto_scroll)),
+            );
+        }
+
+        Subscription::batch(subscriptions)
     }
 }
