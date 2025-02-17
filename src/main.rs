@@ -225,6 +225,9 @@ pub enum Action {
     ToggleSettingsPage,
     ToggleWordWrap,
     Undo,
+    ZoomIn,
+    ZoomOut,
+    ZoomReset,
 }
 
 impl Action {
@@ -274,6 +277,9 @@ impl Action {
             Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
             Self::ToggleWordWrap => Message::ToggleWordWrap,
             Self::Undo => Message::Undo,
+            Self::ZoomIn => Message::ZoomIn,
+            Self::ZoomOut => Message::ZoomOut,
+            Self::ZoomReset => Message::ZoomReset,
         }
     }
 }
@@ -329,6 +335,10 @@ pub enum Message {
     Cut,
     DefaultFont(usize),
     DefaultFontSize(usize),
+    ZoomIn,
+    ZoomOut,
+    ZoomReset,
+    DefaultZoomStep(usize),
     DialogCancel,
     DialogMessage(DialogMessage),
     Find(Option<bool>),
@@ -433,6 +443,8 @@ pub struct App {
     config: Config,
     config_state_handler: Option<cosmic_config::Config>,
     config_state: ConfigState,
+    zoom_step_names: Vec<String>,
+    zoom_steps: Vec<u16>,
     key_binds: HashMap<KeyBind, Action>,
     app_themes: Vec<String>,
     font_names: Vec<String>,
@@ -682,6 +694,36 @@ impl App {
             }
         }
         self.update_config()
+    }
+
+    fn update_render_active_tab_zoom(&mut self, zoom_message: Message) -> Task<Message> {
+        if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
+            let current_zoom_adj = tab.zoom_adj();
+            match zoom_message {
+                Message::ZoomIn => tab.set_zoom_adj(current_zoom_adj.saturating_add(1)),
+                Message::ZoomOut => tab.set_zoom_adj(current_zoom_adj.saturating_sub(1)),
+                _ => {}
+            }
+            let entities: Vec<_> = self.tab_model.iter().collect();
+            for entity in entities {
+                if self.tab_model.is_active(entity) {
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                        eprintln!("setting stuff");
+                        tab.set_config(&self.config);
+                    }
+                }
+            }
+        }
+        Task::none()
+    }
+
+    fn reset_tabs_zoom(&mut self) {
+        let entities: Vec<_> = self.tab_model.iter().collect();
+        for entity in entities {
+            if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                tab.set_zoom_adj(0);
+            }
+        }
     }
 
     fn save_config_state(&mut self) {
@@ -1185,6 +1227,10 @@ impl App {
             .font_sizes
             .iter()
             .position(|font_size| font_size == &self.config.font_size);
+        let zoom_step_selected = self
+            .zoom_steps
+            .iter()
+            .position(|zoom_step| zoom_step == &self.config.font_size_zoom_step_mul_100);
         widget::settings::view_column(vec![
             widget::settings::section()
                 .title(fl!("appearance"))
@@ -1226,6 +1272,13 @@ impl App {
                     widget::settings::item::builder(fl!("default-font-size")).control(
                         widget::dropdown(&self.font_size_names, font_size_selected, |index| {
                             Message::DefaultFontSize(index)
+                        }),
+                    ),
+                )
+                .add(
+                    widget::settings::item::builder(fl!("default-zoom-step")).control(
+                        widget::dropdown(&self.zoom_step_names, zoom_step_selected, |index| {
+                            Message::DefaultZoomStep(index)
                         }),
                     ),
                 )
@@ -1311,6 +1364,13 @@ impl Application for App {
             theme_names.push(theme_name.to_string());
         }
 
+        let mut zoom_step_names = Vec::new();
+        let mut zoom_steps = Vec::new();
+        for zoom_step in [25, 50, 75, 100, 150, 200] {
+            zoom_step_names.push(format!("{}px", f32::from(zoom_step) / 100.0));
+            zoom_steps.push(zoom_step);
+        }
+
         let mut app = App {
             core,
             nav_model: nav_bar::Model::builder().build(),
@@ -1320,6 +1380,8 @@ impl Application for App {
             config_state_handler: flags.config_state_handler,
             config_state: flags.config_state,
             key_binds: key_binds(),
+            zoom_step_names,
+            zoom_steps,
             app_themes,
             font_names,
             font_size_names,
@@ -1699,12 +1761,34 @@ impl Application for App {
             Message::DefaultFontSize(index) => match self.font_sizes.get(index) {
                 Some(font_size) => {
                     self.config.font_size = *font_size;
+                    self.reset_tabs_zoom();
                     return self.save_config();
                 }
                 None => {
                     log::warn!("failed to find font with index {}", index);
                 }
             },
+            Message::ZoomIn => {
+                return self.update_render_active_tab_zoom(message);
+            }
+            Message::ZoomOut => {
+                return self.update_render_active_tab_zoom(message);
+            }
+            Message::ZoomReset => {
+                self.reset_tabs_zoom();
+                return self.save_config();
+            }
+            Message::DefaultZoomStep(index) => match self.zoom_steps.get(index) {
+                Some(zoom_step) => {
+                    self.config.font_size_zoom_step_mul_100 = *zoom_step;
+                    self.reset_tabs_zoom(); // reset zoom
+                    return self.save_config();
+                }
+                None => {
+                    log::warn!("failed to find zoom step with index {}", index);
+                }
+            },
+
             Message::DialogCancel => {
                 self.dialog_page_opt = None;
             }
@@ -2703,7 +2787,7 @@ impl Application for App {
         let tab_id = self.tab_model.active();
         match self.tab_model.data::<Tab>(tab_id) {
             Some(Tab::Editor(tab)) => {
-                let mut text_box = text_box(&tab.editor, self.config.metrics())
+                let mut text_box = text_box(&tab.editor, self.config.metrics(tab.zoom_adj()))
                     .id(self.text_box_id.clone())
                     .on_auto_scroll(Message::AutoScroll)
                     .on_changed(Message::TabChanged(tab_id))

@@ -42,14 +42,15 @@ pub struct EditorTab {
     attrs: Attrs<'static>,
     pub editor: Mutex<ViEditor<'static, 'static>>,
     pub context_menu: Option<Point>,
+    pub zoom_adj: i8,
 }
 
 impl EditorTab {
     pub fn new(config: &Config) -> Self {
         //TODO: do not repeat, used in App::init
         let attrs = Attrs::new().family(cosmic_text::Family::Monospace);
-
-        let mut buffer = Buffer::new_empty(config.metrics());
+        let zoom_adj = Default::default();
+        let mut buffer = Buffer::new_empty(config.metrics(zoom_adj));
         buffer.set_text(
             font_system().write().unwrap().raw(),
             "",
@@ -69,6 +70,7 @@ impl EditorTab {
             attrs,
             editor: Mutex::new(ViEditor::new(editor)),
             context_menu: None,
+            zoom_adj,
         };
 
         // Update any other config settings
@@ -307,6 +309,14 @@ impl EditorTab {
             }
         }
         false
+    }
+
+    pub fn zoom_adj(&self) -> i8 {
+        self.zoom_adj
+    }
+
+    pub fn set_zoom_adj(&mut self, value: i8) {
+        self.zoom_adj = value;
     }
 
     // Code adapted from cosmic-text ViEditor search

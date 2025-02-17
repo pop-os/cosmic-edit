@@ -44,6 +44,7 @@ pub struct Config {
     pub find_wrap_around: bool,
     pub font_name: String,
     pub font_size: u16,
+    pub font_size_zoom_step_mul_100: u16,
     pub highlight_current_line: bool,
     pub line_numbers: bool,
     pub syntax_theme_dark: String,
@@ -63,6 +64,7 @@ impl Default for Config {
             find_wrap_around: true,
             font_name: "Fira Mono".to_string(),
             font_size: 14,
+            font_size_zoom_step_mul_100: 100,
             highlight_current_line: true,
             line_numbers: true,
             syntax_theme_dark: "COSMIC Dark".to_string(),
@@ -75,6 +77,13 @@ impl Default for Config {
 }
 
 impl Config {
+    pub fn font_size_adjusted(&self, zoom_adj: i8) -> f32 {
+        let font_size = f32::from(self.font_size).max(1.0);
+        let adj = f32::from(zoom_adj);
+        let adj_step = f32::from(self.font_size_zoom_step_mul_100) / 100.0;
+        (font_size + adj * adj_step).max(1.0)
+    }
+
     pub fn find_regex(&self, pattern: &str) -> Result<regex::Regex, regex::Error> {
         let mut builder = if self.find_use_regex {
             regex::RegexBuilder::new(pattern)
@@ -86,8 +95,8 @@ impl Config {
     }
 
     // Calculate metrics from font size
-    pub fn metrics(&self) -> Metrics {
-        let font_size = self.font_size.max(1) as f32;
+    pub fn metrics(&self, zoom_adj: i8) -> Metrics {
+        let font_size = self.font_size_adjusted(zoom_adj);
         let line_height = (font_size * 1.4).ceil();
         Metrics::new(font_size, line_height)
     }
