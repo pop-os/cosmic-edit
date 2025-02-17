@@ -211,6 +211,10 @@ pub fn menu_bar<'a>(
                         ],
                     ),
                     MenuItem::Divider,
+                    MenuItem::Button(fl!("zoom-in"), None, Action::ZoomIn),
+                    MenuItem::Button(fl!("default-size"), None, Action::ZoomReset),
+                    MenuItem::Button(fl!("zoom-out"), None, Action::ZoomOut),
+                    MenuItem::Divider,
                     MenuItem::CheckBox(
                         fl!("word-wrap"),
                         None,

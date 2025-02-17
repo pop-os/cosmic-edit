@@ -35,6 +35,12 @@ pub fn key_binds() -> HashMap<KeyBind, Action> {
     bind!([Ctrl], Key::Character("s".into()), Save);
     bind!([Ctrl, Shift], Key::Character("S".into()), SaveAsDialog);
     bind!([Ctrl], Key::Character("a".into()), SelectAll);
+    // Ctrl+0, Ctrl+-, and Ctrl+= are not special keys for terminals and are free to use
+    bind!([Ctrl], Key::Character("0".into()), ZoomReset);
+    bind!([Ctrl], Key::Character("-".into()), ZoomOut);
+    bind!([Ctrl], Key::Character("=".into()), ZoomIn);
+    bind!([Ctrl], Key::Character("+".into()), ZoomIn);
+
     bind!([Ctrl], Key::Character("1".into()), TabActivate0);
     bind!([Ctrl], Key::Character("2".into()), TabActivate1);
     bind!([Ctrl], Key::Character("3".into()), TabActivate2);
