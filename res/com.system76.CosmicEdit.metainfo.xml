@@ -10,20 +10,26 @@
   <url type="bugtracker">https://github.com/pop-os/cosmic-edit</url>
   <name>COSMIC Text Editor</name>
   <name xml:lang="pl">Edytor tekstu COSMIC</name>
+  <name xml:lang="hu">COSMIC Szövegszerkesztő</name>
   <summary>Text editor for the COSMIC desktop</summary>
   <summary xml:lang="pl">Edytor tekstu pulpitu COSMIC</summary>
+  <summary xml:lang="hu">Szövegszerkesztő a COSMIC asztalhoz</summary>
   <description>
     <p>Text editor that provides advanced features with high performance</p>
     <p xml:lang="pl">Edytor tekstu oferujący zaawansowane funkcje i wysoką wydajność</p>
     <ul>
         <li>Written in Rust for performance and safety</li>
         <li xml:lang="pl">Napisany w Ruście dla wydajności i bezpieczeństwa</li>
+        <li xml:lang="hu">Rustban írva a teljesítmény és biztonság érdekében</li>
         <li>Syntax highlighting built in for most languages</li>
         <li xml:lang="pl">Wbudowane podświetlanie składni dla większości języków</li>
+        <li xml:lang="hu">Szintaxiskiemelés a legtöbb nyelvhez</li>
         <li>Provides project-based editing</li>
         <li xml:lang="pl">Możliwość edycji projektów</li>
+        <li xml:lang="hu">Projektalapú szerkesztést biztosít</li>
         <li>Integrated git management</li>
         <li xml:lang="pl">Wbudowane zarządzanie repozytoriami git</li>
+        <li xml:lang="hu">Integrált Git-kezelő</li>
     </ul>
   </description>
   <launchable type="desktop-id">com.system76.CosmicEdit.desktop</launchable>
