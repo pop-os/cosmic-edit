@@ -47,6 +47,8 @@ syntax-dark = Sötét szintaxis
 syntax-light = Világos szintaxis
 default-font = Alapértelmezett betűtípus
 default-font-size = Alapértelmezett betűméret
+default-zoom-step = Nagyítási mérték
+
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Billentyűparancsok
@@ -79,7 +81,7 @@ save = Mentés
 save-as = Mentés másként...
 revert-all-changes = Minden változtatás visszavonása
 menu-document-statistics = Dokumentumstatisztika...
-document-type = Dokumentum típus...
+document-type = Dokumentumtípus...
 encoding = Karakterkódolás...
 menu-git-management = Git-kezelő...
 print = Nyomtatás
@@ -99,18 +101,21 @@ spell-check = Helyesírás-ellenőrzés...
 
 ## View
 view = Nézet
+zoom-in = Nagyítás
+default-size = Alapértelmezett méret
+zoom-out = Kicsinyítés
 indentation = Behúzás
 
 ### Indentation
 automatic-indentation = Automatikus behúzás
-tab-width = Tabulátor szélesség: {$tab_width}
+tab-width = Tabulátorszélesség: {$tab_width}
 convert-indentation-to-spaces = Behúzások szóközökké alakítása
 convert-indentation-to-tabs = Behúzások tabulátorokká alakítása
 
 word-wrap = Sortörés
 show-line-numbers = Sorszámok megjelenítése
 highlight-current-line = Aktuális sor kiemelése
-syntax-highlighting = Szintaxis kiemelés...
+syntax-highlighting = Szintaxiskiemelés...
 menu-settings = Beállítások...
 menu-keyboard-shortcuts = Billentyűparancsok...
 menu-about = A COSMIC Szövegszerkesztőről...
