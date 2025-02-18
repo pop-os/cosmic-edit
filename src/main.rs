@@ -708,7 +708,6 @@ impl App {
             for entity in entities {
                 if self.tab_model.is_active(entity) {
                     if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                        eprintln!("setting stuff");
                         tab.set_config(&self.config);
                     }
                 }
