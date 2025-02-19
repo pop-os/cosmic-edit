@@ -1203,6 +1203,7 @@ dependencies = [
  "log",
  "notify",
  "open",
+ "paste",
  "patch",
  "regex",
  "rust-embed",

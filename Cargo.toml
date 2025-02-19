@@ -17,6 +17,7 @@ ignore = "0.4.23"
 log = "0.4.25"
 notify = "6.1.1"
 open = "5.3.2"
+paste = "1.0.15"
 patch = "0.7.0"
 regex = "1.11"
 serde = { version = "1", features = ["serde_derive"] }
