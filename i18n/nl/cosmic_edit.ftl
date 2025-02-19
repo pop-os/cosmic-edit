@@ -22,7 +22,7 @@ git-management-loading = Git-beheer wordt geladen...
 stage = Voorbereiden
 staged-changes = Voorbereide wijzigingen
 unstage = Niet voorbereiden
-unstaged-changes = Niet voorbereide wijzigingen
+unstaged-changes = Niet-voorbereide wijzigingen
 
 ## Project search
 project-search = Project zoeken
@@ -47,6 +47,8 @@ syntax-dark = Donkere syntaxiskleuring
 syntax-light = Lichte syntaxiskleuring
 default-font = Standaard lettertype
 default-font-size = Standaard lettertypegrootte
+default-zoom-step = Zoom-stapgrootte
+
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Toetsenbord snelkoppelingen
@@ -99,6 +101,9 @@ spell-check = Spellingscontrole...
 
 ## View
 view = Beeld
+zoom-in = Inzoomen
+default-size = Normaal zoomniveau
+zoom-out = Uitzoomen
 indentation = Inspringing
 
 ### Indentation
