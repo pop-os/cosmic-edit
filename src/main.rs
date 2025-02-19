@@ -687,15 +687,6 @@ impl App {
         cosmic::app::command::set_theme(self.config.app_theme.theme())
     }
 
-    fn save_config(&mut self) -> Task<Message> {
-        if let Some(ref config_handler) = self.config_handler {
-            if let Err(err) = self.config.write_entry(config_handler) {
-                log::error!("failed to save config: {}", err);
-            }
-        }
-        self.update_config()
-    }
-
     fn update_render_active_tab_zoom(&mut self, zoom_message: Message) -> Task<Message> {
         if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
             let current_zoom_adj = tab.zoom_adj();
@@ -1627,10 +1618,31 @@ impl Application for App {
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
+        // Helper for updating config values efficiently
+        macro_rules! config_set {
+            ($name: ident, $value: expr) => {
+                match &self.config_handler {
+                    Some(config_handler) => {
+                        if let Err(err) =
+                            paste::paste! { self.config.[<set_ $name>](config_handler, $value) }
+                        {
+                            log::warn!("failed to save config {:?}: {}", stringify!($name), err);
+                        }
+                    }
+                    None => {
+                        self.config.$name = $value;
+                        log::warn!(
+                            "failed to save config {:?}: no config handler",
+                            stringify!($name)
+                        );
+                    }
+                }
+            };
+        }
         match message {
             Message::AppTheme(app_theme) => {
-                self.config.app_theme = app_theme;
-                return self.save_config();
+                config_set!(app_theme, app_theme);
+                return self.update_config();
             }
             Message::AutoScroll(auto_scroll) => {
                 self.auto_scroll = auto_scroll;
@@ -1748,8 +1760,8 @@ impl Application for App {
                                 }
                             }
 
-                            self.config.font_name = font_name.to_string();
-                            return self.save_config();
+                            config_set!(font_name, font_name.to_string());
+                            return self.update_config();
                         }
                     }
                     None => {
@@ -1759,9 +1771,9 @@ impl Application for App {
             }
             Message::DefaultFontSize(index) => match self.font_sizes.get(index) {
                 Some(font_size) => {
-                    self.config.font_size = *font_size;
+                    config_set!(font_size, *font_size);
                     self.reset_tabs_zoom();
-                    return self.save_config();
+                    return self.update_config();
                 }
                 None => {
                     log::warn!("failed to find font with index {}", index);
@@ -1775,13 +1787,13 @@ impl Application for App {
             }
             Message::ZoomReset => {
                 self.reset_tabs_zoom();
-                return self.save_config();
+                return self.update_config();
             }
             Message::DefaultZoomStep(index) => match self.zoom_steps.get(index) {
                 Some(zoom_step) => {
-                    self.config.font_size_zoom_step_mul_100 = *zoom_step;
+                    config_set!(font_size_zoom_step_mul_100, *zoom_step);
                     self.reset_tabs_zoom(); // reset zoom
-                    return self.save_config();
+                    return self.update_config();
                 }
                 None => {
                     log::warn!("failed to find zoom step with index {}", index);
@@ -1803,8 +1815,8 @@ impl Application for App {
                 return self.update_focus();
             }
             Message::FindCaseSensitive(find_case_sensitive) => {
-                self.config.find_case_sensitive = find_case_sensitive;
-                return self.save_config();
+                config_set!(find_case_sensitive, find_case_sensitive);
+                return self.update_config();
             }
             Message::FindNext => {
                 if !self.find_search_value.is_empty() {
@@ -1917,12 +1929,12 @@ impl Application for App {
                 self.find_search_value = value;
             }
             Message::FindUseRegex(find_use_regex) => {
-                self.config.find_use_regex = find_use_regex;
-                return self.save_config();
+                config_set!(find_use_regex, find_use_regex);
+                return self.update_config();
             }
             Message::FindWrapAround(find_wrap_around) => {
-                self.config.find_wrap_around = find_wrap_around;
-                return self.save_config();
+                config_set!(find_wrap_around, find_wrap_around);
+                return self.update_config();
             }
             Message::GitProjectStatus(project_status) => {
                 self.git_project_status = Some(project_status);
@@ -2437,11 +2449,11 @@ impl Application for App {
             Message::SyntaxTheme(index, dark) => match self.theme_names.get(index) {
                 Some(theme_name) => {
                     if dark {
-                        self.config.syntax_theme_dark = theme_name.to_string();
+                        config_set!(syntax_theme_dark, theme_name.to_string());
                     } else {
-                        self.config.syntax_theme_light = theme_name.to_string();
+                        config_set!(syntax_theme_light, theme_name.to_string());
                     }
-                    return self.save_config();
+                    return self.update_config();
                 }
                 None => {
                     log::warn!("failed to find syntax theme with index {}", index);
@@ -2584,15 +2596,15 @@ impl Application for App {
                 }
             }
             Message::TabWidth(tab_width) => {
-                self.config.tab_width = tab_width;
-                return self.save_config();
+                config_set!(tab_width, tab_width);
+                return self.update_config();
             }
             Message::Todo => {
                 log::warn!("TODO");
             }
             Message::ToggleAutoIndent => {
-                self.config.auto_indent = !self.config.auto_indent;
-                return self.save_config();
+                config_set!(auto_indent, !self.config.auto_indent);
+                return self.update_config();
             }
             Message::ToggleContextPage(context_page) => {
                 if self.context_page == context_page {
@@ -2612,8 +2624,7 @@ impl Application for App {
                 return self.update_focus();
             }
             Message::ToggleHighlightCurrentLine => {
-                self.config.highlight_current_line = !self.config.highlight_current_line;
-
+                config_set!(highlight_current_line, !self.config.highlight_current_line);
                 // This forces a redraw of all buffers
                 let entities: Vec<_> = self.tab_model.iter().collect();
                 for entity in entities {
@@ -2623,11 +2634,10 @@ impl Application for App {
                     }
                 }
 
-                return self.save_config();
+                return self.update_config();
             }
             Message::ToggleLineNumbers => {
-                self.config.line_numbers = !self.config.line_numbers;
-
+                config_set!(line_numbers, !self.config.line_numbers);
                 // This forces a redraw of all buffers
                 let entities: Vec<_> = self.tab_model.iter().collect();
                 for entity in entities {
@@ -2637,11 +2647,11 @@ impl Application for App {
                     }
                 }
 
-                return self.save_config();
+                return self.update_config();
             }
             Message::ToggleWordWrap => {
-                self.config.word_wrap = !self.config.word_wrap;
-                return self.save_config();
+                config_set!(word_wrap, !self.config.word_wrap);
+                return self.update_config();
             }
             Message::Undo => {
                 if let Some(Tab::Editor(tab)) = self.active_tab() {
@@ -2695,8 +2705,8 @@ impl Application for App {
                 );
             }
             Message::VimBindings(vim_bindings) => {
-                self.config.vim_bindings = vim_bindings;
-                return self.save_config();
+                config_set!(vim_bindings, vim_bindings);
+                return self.update_config();
             }
             Message::Focus(window_id) => {
                 if Some(window_id) == self.core.main_window_id() {

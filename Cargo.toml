@@ -17,6 +17,7 @@ ignore = "0.4.21"
 log = "0.4.20"
 notify = "6.1.1"
 open = "5.0.2"
+paste = "1.0.15"
 patch = "0.7.0"
 regex = "1.10"
 serde = { version = "1", features = ["serde_derive"] }
@@ -27,7 +28,10 @@ two-face = "0.3.0"
 # Internationalization
 icu_collator = "1.5"
 icu_provider = { version = "1.5", features = ["sync"] }
-i18n-embed = { version = "0.14", features = ["fluent-system", "desktop-requester"] }
+i18n-embed = { version = "0.14", features = [
+    "fluent-system",
+    "desktop-requester",
+] }
 i18n-embed-fl = "0.7"
 rust-embed = "8"
 
