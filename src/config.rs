@@ -62,7 +62,7 @@ impl Default for Config {
             find_case_sensitive: false,
             find_use_regex: false,
             find_wrap_around: true,
-            font_name: "Fira Mono".to_string(),
+            font_name: "Noto Sans Mono".to_string(),
             font_size: 14,
             font_size_zoom_step_mul_100: 100,
             highlight_current_line: true,
