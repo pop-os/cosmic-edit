@@ -68,6 +68,7 @@ mod tab;
 use self::text_box::text_box;
 mod text_box;
 
+use lexopt::{Parser, Arg};
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
@@ -75,23 +76,41 @@ static LINE_NUMBER_CACHE: OnceLock<Mutex<LineNumberCache>> = OnceLock::new();
 static SWASH_CACHE: OnceLock<Mutex<SwashCache>> = OnceLock::new();
 static SYNTAX_SYSTEM: OnceLock<SyntaxSystem> = OnceLock::new();
 
+fn print_help() {
+    println!(
+        r#"
+COSMIC Edit
+A text editor designed for the COSMIC desktop environment.
+
+Project home page: https://github.com/pop-os/cosmic-edit
+
+Options:
+  --help     Show this message
+  --version  Show the version of cosmic-edit"#
+    );
+}
+
 pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
     let mut icon_cache = ICON_CACHE.get().unwrap().lock().unwrap();
     icon_cache.get(name, size)
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Add CLI arguments managements with `clap`
-    let matches = clap::Command::new("cosmic-edit")
-        .version(env!("CARGO_PKG_VERSION"))
-        .about("COSMIC Text Editor")
-        .long_about("A Text Editor designed to be part of the COSMIC desktop environment. \nFor more information, visit the GitHub repository at https://github.com/pop-os/cosmic-edit")
-        .get_matches();
+    let mut parser = Parser::from_env();
 
-    // Argument verification
-    if matches.contains_id("version") {
-        println!("cosmic-term {}", APP_VERSION);
-        return Ok(());
+    // Parse the arguments
+    while let Some(arg) = parser.next()? {
+        match arg {
+            Arg::Long("help") => {
+                print_help();
+                return Ok(());
+            }
+            Arg::Long("version") => {
+                println!("cosmic-edit {}", APP_VERSION);
+                return Ok(());
+            }
+            _ => {}
+        }
     }
 	
     #[cfg(all(unix, not(target_os = "redox")))]

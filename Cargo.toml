@@ -32,7 +32,7 @@ i18n-embed = { version = "0.15", features = ["fluent-system", "desktop-requester
 i18n-embed-fl = "0.9"
 rust-embed = "8"
 # CLI arguments
-clap = "4"
+lexopt = "0.3.0"
 
 [dependencies.cosmic-files]
 git = "https://github.com/pop-os/cosmic-files.git"
