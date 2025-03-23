@@ -47,6 +47,7 @@ syntax-dark = 深色语法
 syntax-light = 浅色语法
 default-font = 默认字体
 default-font-size = 默认字体大小
+default-zoom-step = 缩放步长
 
 ### Keyboard shortcuts
 keyboard-shortcuts = 键盘快捷键
@@ -61,6 +62,7 @@ replace = 替换
 replace-all = 全部替换
 case-sensitive = 区分大小写
 use-regex = 使用正则表达式
+wrap-around = 循环查找
 
 # Menu
 
@@ -98,6 +100,9 @@ spell-check = 拼写检查...
 
 ## View
 view = 视图
+zoom-in = 放大
+default-size = 默认大小
+zoom-out = 缩小
 indentation = 缩进
 
 ### Indentation
