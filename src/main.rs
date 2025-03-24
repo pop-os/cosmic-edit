@@ -69,7 +69,6 @@ use self::text_box::text_box;
 mod text_box;
 
 use lexopt::{Parser, Arg};
-const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
 static LINE_NUMBER_CACHE: OnceLock<Mutex<LineNumberCache>> = OnceLock::new();
@@ -78,8 +77,7 @@ static SYNTAX_SYSTEM: OnceLock<SyntaxSystem> = OnceLock::new();
 
 fn print_help() {
     println!(
-        r#"
-COSMIC Edit
+        r#"COSMIC Edit
 A text editor designed for the COSMIC desktop environment.
 
 Project home page: https://github.com/pop-os/cosmic-edit
@@ -101,12 +99,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse the arguments
     while let Some(arg) = parser.next()? {
         match arg {
-            Arg::Long("help") => {
+            Arg::Short('h') | Arg::Long("help") => {
                 print_help();
                 return Ok(());
             }
-            Arg::Long("version") => {
-                println!("cosmic-edit {}", APP_VERSION);
+            Arg::Short('v') | Arg::Long("version") => {
+                println!("cosmic-edit {} (git commit {})",
+                    env!("CARGO_PKG_VERSION"),
+                    env!("VERGEN_GIT_SHA")
+                );
                 return Ok(());
             }
             _ => {}
