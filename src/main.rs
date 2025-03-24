@@ -68,25 +68,12 @@ mod tab;
 use self::text_box::text_box;
 mod text_box;
 
-use lexopt::{Parser, Arg};
+use lexopt::{Arg, Parser};
 
 static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
 static LINE_NUMBER_CACHE: OnceLock<Mutex<LineNumberCache>> = OnceLock::new();
 static SWASH_CACHE: OnceLock<Mutex<SwashCache>> = OnceLock::new();
 static SYNTAX_SYSTEM: OnceLock<SyntaxSystem> = OnceLock::new();
-
-fn print_help() {
-    println!(
-        r#"COSMIC Edit
-A text editor designed for the COSMIC desktop environment.
-
-Project home page: https://github.com/pop-os/cosmic-edit
-
-Options:
-  --help     Show this message
-  --version  Show the version of cosmic-edit"#
-    );
-}
 
 pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
     let mut icon_cache = ICON_CACHE.get().unwrap().lock().unwrap();
@@ -100,11 +87,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     while let Some(arg) = parser.next()? {
         match arg {
             Arg::Short('h') | Arg::Long("help") => {
-                print_help();
-                return Ok(());
+                print_help(env!("CARGO_PKG_VERSION"), env!("VERGEN_GIT_SHA"));
+		return Ok(());
             }
             Arg::Short('v') | Arg::Long("version") => {
-                println!("cosmic-edit {} (git commit {})",
+                println!(
+		    "cosmic-edit {} (git commit {})",
                     env!("CARGO_PKG_VERSION"),
                     env!("VERGEN_GIT_SHA")
                 );
@@ -113,7 +101,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => {}
         }
     }
-	
+
+fn print_help(version: &str, git_rev: &str) {
+    println!(
+        r#"cosmic-edit {version} (git commit {git_rev})
+System76 <info@system76.com>
+	    
+Designed for the COSMIC™ desktop environment, cosmic-edit is a libcosmic-based text editor.
+	    
+Project home page: https://github.com/pop-os/cosmic-edit
+	    
+Options:
+  -h, --help     Show this message
+  -v, --version  Show the version of cosmic-edit"#
+    );
+}
+
     #[cfg(all(unix, not(target_os = "redox")))]
     match fork::daemon(true, true) {
         Ok(fork::Fork::Child) => (),
