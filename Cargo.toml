@@ -59,6 +59,10 @@ wgpu = ["libcosmic/wgpu", "cosmic-files/wgpu"]
 inherits = "release"
 debug = true
 
+[patch.crates-io]
+onig = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
+onig_sys = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
+
 # [patch.'https://github.com/pop-os/libcosmic']
 # libcosmic = { path = "../libcosmic" }
 # cosmic-config = { path = "../libcosmic/cosmic-config" }
