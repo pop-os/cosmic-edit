@@ -68,7 +68,9 @@ mod tab;
 use self::text_box::text_box;
 mod text_box;
 
-use lexopt::{Arg, Parser};
+use clap_lex::RawArgs;
+
+use std::error::Error;
 
 static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
 static LINE_NUMBER_CACHE: OnceLock<Mutex<LineNumberCache>> = OnceLock::new();
@@ -80,18 +82,19 @@ pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
     icon_cache.get(name, size)
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut parser = Parser::from_env();
+fn main() -> Result<(), Box<dyn Error>> {
+    let raw_args = RawArgs::from_args();
+    let mut cursor = raw_args.cursor();
 
     // Parse the arguments
-    while let Some(arg) = parser.next()? {
-        match arg {
-            Arg::Short('h') | Arg::Long("help") => {
+    while let Some(arg) = raw_args.next_os(&mut cursor) {
+        match arg.to_str() {
+            Some("--help") | Some("-h") => {
                 print_help(env!("CARGO_PKG_VERSION"), env!("VERGEN_GIT_SHA"));
 		return Ok(());
             }
-            Arg::Short('v') | Arg::Long("version") => {
-                println!(
+            Some("--version") | Some("-v") => {
+		println!(
 		    "cosmic-edit {} (git commit {})",
                     env!("CARGO_PKG_VERSION"),
                     env!("VERGEN_GIT_SHA")
