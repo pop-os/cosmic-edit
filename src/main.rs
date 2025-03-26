@@ -68,6 +68,10 @@ mod tab;
 use self::text_box::text_box;
 mod text_box;
 
+use clap_lex::RawArgs;
+
+use std::error::Error;
+
 static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
 static LINE_NUMBER_CACHE: OnceLock<Mutex<LineNumberCache>> = OnceLock::new();
 static SWASH_CACHE: OnceLock<Mutex<SwashCache>> = OnceLock::new();
@@ -78,7 +82,44 @@ pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
     icon_cache.get(name, size)
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
+    let raw_args = RawArgs::from_args();
+    let mut cursor = raw_args.cursor();
+
+    // Parse the arguments
+    while let Some(arg) = raw_args.next_os(&mut cursor) {
+        match arg.to_str() {
+            Some("--help") | Some("-h") => {
+                print_help(env!("CARGO_PKG_VERSION"), env!("VERGEN_GIT_SHA"));
+		return Ok(());
+            }
+            Some("--version") | Some("-V") => {
+		println!(
+		    "cosmic-edit {} (git commit {})",
+                    env!("CARGO_PKG_VERSION"),
+                    env!("VERGEN_GIT_SHA")
+                );
+                return Ok(());
+            }
+            _ => {}
+        }
+    }
+
+fn print_help(version: &str, git_rev: &str) {
+    println!(
+        r#"cosmic-edit {version} (git commit {git_rev})
+System76 <info@system76.com>
+	    
+Designed for the COSMIC™ desktop environment, cosmic-edit is a libcosmic-based text editor.
+	    
+Project home page: https://github.com/pop-os/cosmic-edit
+	    
+Options:
+  -h, --help     Show this message
+  -v, --version  Show the version of cosmic-edit"#
+    );
+}
+
     #[cfg(all(unix, not(target_os = "redox")))]
     match fork::daemon(true, true) {
         Ok(fork::Fork::Child) => (),
