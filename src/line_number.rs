@@ -33,7 +33,7 @@ impl LineNumberCache {
             let mut buffer_line = BufferLine::new(
                 text,
                 LineEnding::default(),
-                AttrsList::new(attrs),
+                AttrsList::new(&attrs),
                 Shaping::Advanced,
             );
             buffer_line.set_align(Some(Align::Left));

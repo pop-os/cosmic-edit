@@ -4,7 +4,8 @@ use cosmic::widget::menu::action::MenuAction;
 use cosmic::widget::menu::key_bind::KeyBind;
 use cosmic::widget::segmented_button::Entity;
 use cosmic::{
-    app::{context_drawer, message, Core, Settings, Task},
+    action,
+    app::{context_drawer, Core, Settings, Task},
     cosmic_config::{self, CosmicConfigEntry},
     cosmic_theme, executor,
     font::Font,
@@ -684,7 +685,7 @@ impl App {
                 tab.set_config(&self.config);
             }
         }
-        cosmic::app::command::set_theme(self.config.app_theme.theme())
+        cosmic::command::set_theme(self.config.app_theme.theme())
     }
 
     fn update_render_active_tab_zoom(&mut self, zoom_message: Message) -> Task<Message> {
@@ -1129,7 +1130,7 @@ impl App {
                     items.push(
                         search_input
                             .on_input(Message::ProjectSearchValue)
-                            .on_submit(Message::ProjectSearchSubmit)
+                            .on_submit(|_| Message::ProjectSearchSubmit)
                             .into(),
                     );
                 }
@@ -1181,7 +1182,7 @@ impl App {
             None => {
                 vec![search_input
                     .on_input(Message::ProjectSearchValue)
-                    .on_submit(Message::ProjectSearchSubmit)
+                    .on_submit(|_| Message::ProjectSearchSubmit)
                     .into()]
             }
         };
@@ -1426,7 +1427,7 @@ impl Application for App {
     }
 
     // The default nav_bar widget needs to be condensed for cosmic-edit
-    fn nav_bar(&self) -> Option<Element<message::Message<Self::Message>>> {
+    fn nav_bar(&self) -> Option<Element<action::Action<Self::Message>>> {
         if !self.core().nav_bar_active() {
             return None;
         }
@@ -1444,7 +1445,7 @@ impl Application for App {
             .button_height(space_xxxs + 20 /* line height */ + space_xxxs)
             .button_padding([space_s, space_xxxs, space_s, space_xxxs])
             .button_spacing(space_xxxs)
-            .on_activate(|entity| message::cosmic(cosmic::app::cosmic::Message::NavBar(entity)))
+            .on_activate(|entity| action::cosmic(cosmic::app::Action::NavBar(entity)))
             .spacing(space_none)
             .style(theme::SegmentedButton::TabBar)
             .apply(widget::container)
@@ -1946,7 +1947,7 @@ impl Application for App {
                         match GitRepository::new(&project_path) {
                             Ok(repo) => match repo.stage(&path).await {
                                 Ok(()) => {
-                                    return message::app(Message::UpdateGitProjectStatus);
+                                    return action::app(Message::UpdateGitProjectStatus);
                                 }
                                 Err(err) => {
                                     log::error!(
@@ -1965,7 +1966,7 @@ impl Application for App {
                                 );
                             }
                         }
-                        message::none()
+                        action::none()
                     },
                     |x| x,
                 );
@@ -1977,7 +1978,7 @@ impl Application for App {
                         match GitRepository::new(&project_path) {
                             Ok(repo) => match repo.unstage(&path).await {
                                 Ok(()) => {
-                                    return message::app(Message::UpdateGitProjectStatus);
+                                    return action::app(Message::UpdateGitProjectStatus);
                                 }
                                 Err(err) => {
                                     log::error!(
@@ -1996,7 +1997,7 @@ impl Application for App {
                                 );
                             }
                         }
-                        message::none()
+                        action::none()
                     },
                     |x| x,
                 );
@@ -2220,7 +2221,7 @@ impl Application for App {
                         return Task::batch([
                             //TODO: why must this be done in a command?
                             Task::perform(
-                                async move { message::app(Message::TabSetCursor(entity, cursor)) },
+                                async move { action::app(Message::TabSetCursor(entity, cursor)) },
                                 |x| x,
                             ),
                             self.update_tab(),
@@ -2230,8 +2231,8 @@ impl Application for App {
             }
             Message::Paste => {
                 return clipboard::read().map(|value_opt| match value_opt {
-                    Some(value) => message::app(Message::PasteValue(value)),
-                    None => message::none(),
+                    Some(value) => action::app(Message::PasteValue(value)),
+                    None => action::none(),
                 });
             }
             Message::PasteValue(value) => {
@@ -2252,7 +2253,7 @@ impl Application for App {
                         match GitRepository::new(&project_path) {
                             Ok(repo) => match repo.diff(&path, staged).await {
                                 Ok(diff) => {
-                                    return message::app(Message::OpenGitDiff(project_path, diff));
+                                    return action::app(Message::OpenGitDiff(project_path, diff));
                                 }
                                 Err(err) => {
                                     log::error!(
@@ -2271,7 +2272,7 @@ impl Application for App {
                                 );
                             }
                         }
-                        message::none()
+                        action::none()
                     },
                     |x| x,
                 );
@@ -2297,14 +2298,14 @@ impl Application for App {
                         async move {
                             let task_res = tokio::task::spawn_blocking(move || {
                                 project_search_result.search_projects(projects);
-                                message::app(Message::ProjectSearchResult(project_search_result))
+                                action::app(Message::ProjectSearchResult(project_search_result))
                             })
                             .await;
                             match task_res {
                                 Ok(message) => message,
                                 Err(err) => {
                                     log::error!("failed to run search task: {}", err);
-                                    message::none()
+                                    action::none()
                                 }
                             }
                         },
@@ -2699,7 +2700,7 @@ impl Application for App {
                                 }
                             }
                         }
-                        message::app(Message::GitProjectStatus(project_status))
+                        action::app(Message::GitProjectStatus(project_status))
                     },
                     |x| x,
                 );
@@ -2912,10 +2913,12 @@ impl Application for App {
                 widget::text_input::text_input(fl!("find-placeholder"), &self.find_search_value)
                     .id(self.find_search_id.clone())
                     .on_input(Message::FindSearchValueChanged)
-                    .on_submit(if self.modifiers.contains(Modifiers::SHIFT) {
-                        Message::FindPrevious
-                    } else {
-                        Message::FindNext
+                    .on_submit(|_| {
+                        if self.modifiers.contains(Modifiers::SHIFT) {
+                            Message::FindPrevious
+                        } else {
+                            Message::FindNext
+                        }
                     })
                     .width(Length::Fixed(320.0))
                     .trailing_icon(
@@ -2963,7 +2966,7 @@ impl Application for App {
                 )
                 .id(self.find_replace_id.clone())
                 .on_input(Message::FindReplaceValueChanged)
-                .on_submit(Message::FindReplace)
+                .on_submit(|_| Message::FindReplace)
                 .width(Length::Fixed(320.0))
                 .trailing_icon(
                     button::custom(icon_cache_get("edit-clear-symbolic", 16))

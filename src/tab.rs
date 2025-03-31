@@ -54,7 +54,7 @@ impl EditorTab {
         buffer.set_text(
             font_system().write().unwrap().raw(),
             "",
-            attrs,
+            &attrs,
             Shaping::Advanced,
         );
 
@@ -101,7 +101,7 @@ impl EditorTab {
         let mut editor = self.editor.lock().unwrap();
         let mut font_system = font_system().write().unwrap();
         let mut editor = editor.borrow_with(font_system.raw());
-        match editor.load_text(&path, self.attrs) {
+        match editor.load_text(&path, self.attrs.clone()) {
             Ok(()) => {
                 log::info!("opened {:?}", path);
                 self.path_opt = match fs::canonicalize(&path) {
@@ -128,7 +128,7 @@ impl EditorTab {
             let scroll = editor.with_buffer(|buffer| buffer.scroll());
             //TODO: save/restore more?
 
-            match editor.load_text(path, self.attrs) {
+            match editor.load_text(path, self.attrs.clone()) {
                 Ok(()) => {
                     log::info!("reloaded {:?}", path);
 
