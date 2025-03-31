@@ -1209,7 +1209,7 @@ dependencies = [
 [[package]]
 name = "cosmic-files"
 version = "0.1.0"
-source = "git+https://github.com/pop-os/cosmic-files.git#f8ecc856b3368106e7adc47797a27e8e59e3164d"
+source = "git+https://github.com/pop-os/cosmic-files.git#5732a8d6fe3f0a2bfde32a6a56b3e9b55f3c6d86"
 dependencies = [
  "chrono",
  "dirs 6.0.0",
