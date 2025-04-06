@@ -1,4 +1,4 @@
-cosmic-text-editor = COSMIC - Editor di testo
+cosmic-text-editor = COSMIC Text Editor
 new-document = Nuovo documento
 open-project = Apri progetto
 todo = TODO
