@@ -56,8 +56,8 @@ enable-vim-bindings = Activează comenzile Vim
 
 # Find
 find-placeholder = Caută...
-find-previous = Caută anterior
-find-next = Caută următor
+find-previous = Caută anteriorul
+find-next = Caută următorul
 replace-placeholder = Înlocuiește...
 replace = Înlocuiește
 replace-all = Înlocuiește tot
