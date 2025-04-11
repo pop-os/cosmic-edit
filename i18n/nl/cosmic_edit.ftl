@@ -22,7 +22,7 @@ git-management-loading = Git-beheer wordt geladen...
 stage = Voorbereiden
 staged-changes = Voorbereide wijzigingen
 unstage = Niet voorbereiden
-unstaged-changes = Niet voorbereide wijzigingen
+unstaged-changes = Niet-voorbereide wijzigingen
 
 ## Project search
 project-search = Project zoeken
@@ -47,10 +47,12 @@ syntax-dark = Donkere syntaxiskleuring
 syntax-light = Lichte syntaxiskleuring
 default-font = Standaard lettertype
 default-font-size = Standaard lettertypegrootte
+default-zoom-step = Zoom-stapgrootte
+
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Toetsenbord snelkoppelingen
-enable-vim-bindings = Schakel Vim-snelkoppelingen in
+enable-vim-bindings = Vim-snelkoppelingen inschakelen
 
 # Find
 find-placeholder = Zoeken...
@@ -70,10 +72,10 @@ file = Bestand
 new-file = Nieuw bestand
 new-window = Nieuw venster
 open-file = Bestand openen...
-open-recent = Open recent
+open-recent = Recent bestand openen
 close-file = Bestand sluiten
 menu-open-project = Project openen...
-open-recent-project = Open recent project
+open-recent-project = Recent project openen
 close-project = Project sluiten
 save = Opslaan
 save-as = Opslaan als...
@@ -86,7 +88,7 @@ print = Afdrukken
 quit = Afsluiten
 
 ## Edit
-edit = Bewerk
+edit = Bewerken
 undo = Ongedaan maken
 redo = Opnieuw doen
 cut = Knippen
@@ -94,12 +96,14 @@ copy = Kopiëren
 paste = Plakken
 select-all = Alles selecteren
 find = Zoeken
-find-in-project = Project doorzoeken
-replace = Vervangen
+find-in-project = Project doorzoeken...
 spell-check = Spellingscontrole...
 
 ## View
 view = Beeld
+zoom-in = Inzoomen
+default-size = Normaal zoomniveau
+zoom-out = Uitzoomen
 indentation = Inspringing
 
 ### Indentation
@@ -114,4 +118,4 @@ highlight-current-line = Markeer huidige regel
 syntax-highlighting = Syntaxiskleuring...
 menu-settings = Instellingen...
 menu-keyboard-shortcuts = Toetsenbord snelkoppelingen...
-menu-about = Over COSMIC-tekstbewerker
+menu-about = Over COSMIC-tekstbewerker...

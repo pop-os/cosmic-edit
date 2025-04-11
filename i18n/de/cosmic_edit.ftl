@@ -47,6 +47,8 @@ syntax-dark = Syntax Dunkel
 syntax-light = Syntax Hell
 default-font = Standard-Schriftart
 default-font-size = Standard-Schriftgröße
+default-zoom-step = Zoomstufen
+
 
 ### Tastenkombinationen
 keyboard-shortcuts = Tastenkombinationen
@@ -99,6 +101,9 @@ spell-check = Rechtschreibprüfung...
 
 ## Ansicht
 view = Ansicht
+zoom-in = Hineinzoomen
+default-size = Standardgröße
+zoom-out = Herauszoomen
 indentation = Einrückung
 
 ### Einrückung

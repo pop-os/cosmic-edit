@@ -4,11 +4,13 @@ use cosmic::widget::menu::action::MenuAction;
 use cosmic::widget::menu::key_bind::KeyBind;
 use cosmic::widget::segmented_button::Entity;
 use cosmic::{
-    app::{context_drawer, message, Core, Settings, Task},
+    action,
+    app::{context_drawer, Core, Settings, Task},
     cosmic_config::{self, CosmicConfigEntry},
     cosmic_theme, executor,
     font::Font,
     iced::{
+        self,
         advanced::graphics::text::font_system,
         clipboard, event,
         futures::{self, SinkExt},
@@ -199,6 +201,7 @@ pub enum Action {
     Paste,
     Quit,
     Redo,
+    RevertAllChanges,
     Save,
     SaveAsDialog,
     SelectAll,
@@ -223,6 +226,9 @@ pub enum Action {
     ToggleSettingsPage,
     ToggleWordWrap,
     Undo,
+    ZoomIn,
+    ZoomOut,
+    ZoomReset,
 }
 
 impl Action {
@@ -245,6 +251,7 @@ impl Action {
             Self::Paste => Message::Paste,
             Self::Quit => Message::Quit,
             Self::Redo => Message::Redo,
+            Self::RevertAllChanges => Message::RevertAllChanges,
             Self::Save => Message::Save(entity_opt),
             Self::SaveAsDialog => Message::SaveAsDialog(entity_opt),
             Self::SelectAll => Message::SelectAll,
@@ -271,6 +278,9 @@ impl Action {
             Self::ToggleSettingsPage => Message::ToggleContextPage(ContextPage::Settings),
             Self::ToggleWordWrap => Message::ToggleWordWrap,
             Self::Undo => Message::Undo,
+            Self::ZoomIn => Message::ZoomIn,
+            Self::ZoomOut => Message::ZoomOut,
+            Self::ZoomReset => Message::ZoomReset,
         }
     }
 }
@@ -316,6 +326,7 @@ enum NewTab {
 #[derive(Clone, Debug)]
 pub enum Message {
     AppTheme(AppTheme),
+    AutoScroll(Option<f32>),
     Config(Config),
     ConfigState(ConfigState),
     CloseFile,
@@ -325,6 +336,10 @@ pub enum Message {
     Cut,
     DefaultFont(usize),
     DefaultFontSize(usize),
+    ZoomIn,
+    ZoomOut,
+    ZoomReset,
+    DefaultZoomStep(usize),
     DialogCancel,
     DialogMessage(DialogMessage),
     Find(Option<bool>),
@@ -367,10 +382,12 @@ pub enum Message {
     Quit,
     QuitForce,
     Redo,
+    RevertAllChanges,
     Save(Option<segmented_button::Entity>),
     SaveAll,
     SaveAsDialog(Option<segmented_button::Entity>),
     SaveAsResult(segmented_button::Entity, DialogResult),
+    Scroll(f32),
     SelectAll,
     SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
@@ -427,6 +444,8 @@ pub struct App {
     config: Config,
     config_state_handler: Option<cosmic_config::Config>,
     config_state: ConfigState,
+    zoom_step_names: Vec<String>,
+    zoom_steps: Vec<u16>,
     key_binds: HashMap<KeyBind, Action>,
     app_themes: Vec<String>,
     font_names: Vec<String>,
@@ -435,6 +454,7 @@ pub struct App {
     theme_names: Vec<String>,
     context_page: ContextPage,
     text_box_id: widget::Id,
+    auto_scroll: Option<f32>,
     dialog_opt: Option<Dialog<Message>>,
     dialog_page_opt: Option<DialogPage>,
     find_opt: Option<bool>,
@@ -665,16 +685,36 @@ impl App {
                 tab.set_config(&self.config);
             }
         }
-        cosmic::app::command::set_theme(self.config.app_theme.theme())
+        cosmic::command::set_theme(self.config.app_theme.theme())
     }
 
-    fn save_config(&mut self) -> Task<Message> {
-        if let Some(ref config_handler) = self.config_handler {
-            if let Err(err) = self.config.write_entry(config_handler) {
-                log::error!("failed to save config: {}", err);
+    fn update_render_active_tab_zoom(&mut self, zoom_message: Message) -> Task<Message> {
+        if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
+            let current_zoom_adj = tab.zoom_adj();
+            match zoom_message {
+                Message::ZoomIn => tab.set_zoom_adj(current_zoom_adj.saturating_add(1)),
+                Message::ZoomOut => tab.set_zoom_adj(current_zoom_adj.saturating_sub(1)),
+                _ => {}
+            }
+            let entities: Vec<_> = self.tab_model.iter().collect();
+            for entity in entities {
+                if self.tab_model.is_active(entity) {
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                        tab.set_config(&self.config);
+                    }
+                }
             }
         }
-        self.update_config()
+        Task::none()
+    }
+
+    fn reset_tabs_zoom(&mut self) {
+        let entities: Vec<_> = self.tab_model.iter().collect();
+        for entity in entities {
+            if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                tab.set_zoom_adj(0);
+            }
+        }
     }
 
     fn save_config_state(&mut self) {
@@ -1090,7 +1130,7 @@ impl App {
                     items.push(
                         search_input
                             .on_input(Message::ProjectSearchValue)
-                            .on_submit(Message::ProjectSearchSubmit)
+                            .on_submit(|_| Message::ProjectSearchSubmit)
                             .into(),
                     );
                 }
@@ -1142,7 +1182,7 @@ impl App {
             None => {
                 vec![search_input
                     .on_input(Message::ProjectSearchValue)
-                    .on_submit(Message::ProjectSearchSubmit)
+                    .on_submit(|_| Message::ProjectSearchSubmit)
                     .into()]
             }
         };
@@ -1178,6 +1218,10 @@ impl App {
             .font_sizes
             .iter()
             .position(|font_size| font_size == &self.config.font_size);
+        let zoom_step_selected = self
+            .zoom_steps
+            .iter()
+            .position(|zoom_step| zoom_step == &self.config.font_size_zoom_step_mul_100);
         widget::settings::view_column(vec![
             widget::settings::section()
                 .title(fl!("appearance"))
@@ -1219,6 +1263,13 @@ impl App {
                     widget::settings::item::builder(fl!("default-font-size")).control(
                         widget::dropdown(&self.font_size_names, font_size_selected, |index| {
                             Message::DefaultFontSize(index)
+                        }),
+                    ),
+                )
+                .add(
+                    widget::settings::item::builder(fl!("default-zoom-step")).control(
+                        widget::dropdown(&self.zoom_step_names, zoom_step_selected, |index| {
+                            Message::DefaultZoomStep(index)
                         }),
                     ),
                 )
@@ -1304,6 +1355,13 @@ impl Application for App {
             theme_names.push(theme_name.to_string());
         }
 
+        let mut zoom_step_names = Vec::new();
+        let mut zoom_steps = Vec::new();
+        for zoom_step in [25, 50, 75, 100, 150, 200] {
+            zoom_step_names.push(format!("{}px", f32::from(zoom_step) / 100.0));
+            zoom_steps.push(zoom_step);
+        }
+
         let mut app = App {
             core,
             nav_model: nav_bar::Model::builder().build(),
@@ -1313,6 +1371,8 @@ impl Application for App {
             config_state_handler: flags.config_state_handler,
             config_state: flags.config_state,
             key_binds: key_binds(),
+            zoom_step_names,
+            zoom_steps,
             app_themes,
             font_names,
             font_size_names,
@@ -1320,6 +1380,7 @@ impl Application for App {
             theme_names,
             context_page: ContextPage::Settings,
             text_box_id: widget::Id::unique(),
+            auto_scroll: None,
             dialog_opt: None,
             dialog_page_opt: None,
             find_opt: None,
@@ -1366,7 +1427,7 @@ impl Application for App {
     }
 
     // The default nav_bar widget needs to be condensed for cosmic-edit
-    fn nav_bar(&self) -> Option<Element<message::Message<Self::Message>>> {
+    fn nav_bar(&self) -> Option<Element<action::Action<Self::Message>>> {
         if !self.core().nav_bar_active() {
             return None;
         }
@@ -1384,7 +1445,7 @@ impl Application for App {
             .button_height(space_xxxs + 20 /* line height */ + space_xxxs)
             .button_padding([space_s, space_xxxs, space_s, space_xxxs])
             .button_spacing(space_xxxs)
-            .on_activate(|entity| message::cosmic(cosmic::app::cosmic::Message::NavBar(entity)))
+            .on_activate(|entity| action::cosmic(cosmic::app::Action::NavBar(entity)))
             .spacing(space_none)
             .style(theme::SegmentedButton::TabBar)
             .apply(widget::container)
@@ -1558,10 +1619,34 @@ impl Application for App {
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
+        // Helper for updating config values efficiently
+        macro_rules! config_set {
+            ($name: ident, $value: expr) => {
+                match &self.config_handler {
+                    Some(config_handler) => {
+                        if let Err(err) =
+                            paste::paste! { self.config.[<set_ $name>](config_handler, $value) }
+                        {
+                            log::warn!("failed to save config {:?}: {}", stringify!($name), err);
+                        }
+                    }
+                    None => {
+                        self.config.$name = $value;
+                        log::warn!(
+                            "failed to save config {:?}: no config handler",
+                            stringify!($name)
+                        );
+                    }
+                }
+            };
+        }
         match message {
             Message::AppTheme(app_theme) => {
-                self.config.app_theme = app_theme;
-                return self.save_config();
+                config_set!(app_theme, app_theme);
+                return self.update_config();
+            }
+            Message::AutoScroll(auto_scroll) => {
+                self.auto_scroll = auto_scroll;
             }
             Message::Config(config) => {
                 if config != self.config {
@@ -1598,7 +1683,11 @@ impl Application for App {
                                     }
                                 }
                             }
-                            None => break,
+                            None => {
+                                if closing {
+                                    break;
+                                }
+                            }
                         }
                         if closing {
                             self.nav_model.remove(id);
@@ -1672,8 +1761,8 @@ impl Application for App {
                                 }
                             }
 
-                            self.config.font_name = font_name.to_string();
-                            return self.save_config();
+                            config_set!(font_name, font_name.to_string());
+                            return self.update_config();
                         }
                     }
                     None => {
@@ -1683,13 +1772,35 @@ impl Application for App {
             }
             Message::DefaultFontSize(index) => match self.font_sizes.get(index) {
                 Some(font_size) => {
-                    self.config.font_size = *font_size;
-                    return self.save_config();
+                    config_set!(font_size, *font_size);
+                    self.reset_tabs_zoom();
+                    return self.update_config();
                 }
                 None => {
                     log::warn!("failed to find font with index {}", index);
                 }
             },
+            Message::ZoomIn => {
+                return self.update_render_active_tab_zoom(message);
+            }
+            Message::ZoomOut => {
+                return self.update_render_active_tab_zoom(message);
+            }
+            Message::ZoomReset => {
+                self.reset_tabs_zoom();
+                return self.update_config();
+            }
+            Message::DefaultZoomStep(index) => match self.zoom_steps.get(index) {
+                Some(zoom_step) => {
+                    config_set!(font_size_zoom_step_mul_100, *zoom_step);
+                    self.reset_tabs_zoom(); // reset zoom
+                    return self.update_config();
+                }
+                None => {
+                    log::warn!("failed to find zoom step with index {}", index);
+                }
+            },
+
             Message::DialogCancel => {
                 self.dialog_page_opt = None;
             }
@@ -1705,8 +1816,8 @@ impl Application for App {
                 return self.update_focus();
             }
             Message::FindCaseSensitive(find_case_sensitive) => {
-                self.config.find_case_sensitive = find_case_sensitive;
-                return self.save_config();
+                config_set!(find_case_sensitive, find_case_sensitive);
+                return self.update_config();
             }
             Message::FindNext => {
                 if !self.find_search_value.is_empty() {
@@ -1819,12 +1930,12 @@ impl Application for App {
                 self.find_search_value = value;
             }
             Message::FindUseRegex(find_use_regex) => {
-                self.config.find_use_regex = find_use_regex;
-                return self.save_config();
+                config_set!(find_use_regex, find_use_regex);
+                return self.update_config();
             }
             Message::FindWrapAround(find_wrap_around) => {
-                self.config.find_wrap_around = find_wrap_around;
-                return self.save_config();
+                config_set!(find_wrap_around, find_wrap_around);
+                return self.update_config();
             }
             Message::GitProjectStatus(project_status) => {
                 self.git_project_status = Some(project_status);
@@ -1836,7 +1947,7 @@ impl Application for App {
                         match GitRepository::new(&project_path) {
                             Ok(repo) => match repo.stage(&path).await {
                                 Ok(()) => {
-                                    return message::app(Message::UpdateGitProjectStatus);
+                                    return action::app(Message::UpdateGitProjectStatus);
                                 }
                                 Err(err) => {
                                     log::error!(
@@ -1855,7 +1966,7 @@ impl Application for App {
                                 );
                             }
                         }
-                        message::none()
+                        action::none()
                     },
                     |x| x,
                 );
@@ -1867,7 +1978,7 @@ impl Application for App {
                         match GitRepository::new(&project_path) {
                             Ok(repo) => match repo.unstage(&path).await {
                                 Ok(()) => {
-                                    return message::app(Message::UpdateGitProjectStatus);
+                                    return action::app(Message::UpdateGitProjectStatus);
                                 }
                                 Err(err) => {
                                     log::error!(
@@ -1886,7 +1997,7 @@ impl Application for App {
                                 );
                             }
                         }
-                        message::none()
+                        action::none()
                     },
                     |x| x,
                 );
@@ -2110,7 +2221,7 @@ impl Application for App {
                         return Task::batch([
                             //TODO: why must this be done in a command?
                             Task::perform(
-                                async move { message::app(Message::TabSetCursor(entity, cursor)) },
+                                async move { action::app(Message::TabSetCursor(entity, cursor)) },
                                 |x| x,
                             ),
                             self.update_tab(),
@@ -2120,8 +2231,8 @@ impl Application for App {
             }
             Message::Paste => {
                 return clipboard::read().map(|value_opt| match value_opt {
-                    Some(value) => message::app(Message::PasteValue(value)),
-                    None => message::none(),
+                    Some(value) => action::app(Message::PasteValue(value)),
+                    None => action::none(),
                 });
             }
             Message::PasteValue(value) => {
@@ -2142,7 +2253,7 @@ impl Application for App {
                         match GitRepository::new(&project_path) {
                             Ok(repo) => match repo.diff(&path, staged).await {
                                 Ok(diff) => {
-                                    return message::app(Message::OpenGitDiff(project_path, diff));
+                                    return action::app(Message::OpenGitDiff(project_path, diff));
                                 }
                                 Err(err) => {
                                     log::error!(
@@ -2161,7 +2272,7 @@ impl Application for App {
                                 );
                             }
                         }
-                        message::none()
+                        action::none()
                     },
                     |x| x,
                 );
@@ -2187,14 +2298,14 @@ impl Application for App {
                         async move {
                             let task_res = tokio::task::spawn_blocking(move || {
                                 project_search_result.search_projects(projects);
-                                message::app(Message::ProjectSearchResult(project_search_result))
+                                action::app(Message::ProjectSearchResult(project_search_result))
                             })
                             .await;
                             match task_res {
                                 Ok(message) => message,
                                 Err(err) => {
                                     log::error!("failed to run search task: {}", err);
-                                    message::none()
+                                    action::none()
                                 }
                             }
                         },
@@ -2223,6 +2334,13 @@ impl Application for App {
                         let mut editor = tab.editor.lock().unwrap();
                         editor.redo();
                     }
+
+                    return self.update(Message::TabChanged(self.tab_model.active()));
+                }
+            }
+            Message::RevertAllChanges => {
+                if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
+                    tab.reload();
 
                     return self.update(Message::TabChanged(self.tab_model.active()));
                 }
@@ -2316,17 +2434,27 @@ impl Application for App {
                     editor.set_selection(selection);
                 }
             }
+            Message::Scroll(auto_scroll) => {
+                if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
+                    let mut editor = tab.editor.lock().unwrap();
+                    editor.with_buffer_mut(|buffer| {
+                        let mut scroll = buffer.scroll();
+                        scroll.vertical += auto_scroll;
+                        buffer.set_scroll(scroll);
+                    });
+                }
+            }
             Message::SystemThemeModeChange(_theme_mode) => {
                 return self.update_config();
             }
             Message::SyntaxTheme(index, dark) => match self.theme_names.get(index) {
                 Some(theme_name) => {
                     if dark {
-                        self.config.syntax_theme_dark = theme_name.to_string();
+                        config_set!(syntax_theme_dark, theme_name.to_string());
                     } else {
-                        self.config.syntax_theme_light = theme_name.to_string();
+                        config_set!(syntax_theme_light, theme_name.to_string());
                     }
-                    return self.save_config();
+                    return self.update_config();
                 }
                 None => {
                     log::warn!("failed to find syntax theme with index {}", index);
@@ -2469,15 +2597,15 @@ impl Application for App {
                 }
             }
             Message::TabWidth(tab_width) => {
-                self.config.tab_width = tab_width;
-                return self.save_config();
+                config_set!(tab_width, tab_width);
+                return self.update_config();
             }
             Message::Todo => {
                 log::warn!("TODO");
             }
             Message::ToggleAutoIndent => {
-                self.config.auto_indent = !self.config.auto_indent;
-                return self.save_config();
+                config_set!(auto_indent, !self.config.auto_indent);
+                return self.update_config();
             }
             Message::ToggleContextPage(context_page) => {
                 if self.context_page == context_page {
@@ -2497,8 +2625,7 @@ impl Application for App {
                 return self.update_focus();
             }
             Message::ToggleHighlightCurrentLine => {
-                self.config.highlight_current_line = !self.config.highlight_current_line;
-
+                config_set!(highlight_current_line, !self.config.highlight_current_line);
                 // This forces a redraw of all buffers
                 let entities: Vec<_> = self.tab_model.iter().collect();
                 for entity in entities {
@@ -2508,11 +2635,10 @@ impl Application for App {
                     }
                 }
 
-                return self.save_config();
+                return self.update_config();
             }
             Message::ToggleLineNumbers => {
-                self.config.line_numbers = !self.config.line_numbers;
-
+                config_set!(line_numbers, !self.config.line_numbers);
                 // This forces a redraw of all buffers
                 let entities: Vec<_> = self.tab_model.iter().collect();
                 for entity in entities {
@@ -2522,11 +2648,11 @@ impl Application for App {
                     }
                 }
 
-                return self.save_config();
+                return self.update_config();
             }
             Message::ToggleWordWrap => {
-                self.config.word_wrap = !self.config.word_wrap;
-                return self.save_config();
+                config_set!(word_wrap, !self.config.word_wrap);
+                return self.update_config();
             }
             Message::Undo => {
                 if let Some(Tab::Editor(tab)) = self.active_tab() {
@@ -2574,14 +2700,14 @@ impl Application for App {
                                 }
                             }
                         }
-                        message::app(Message::GitProjectStatus(project_status))
+                        action::app(Message::GitProjectStatus(project_status))
                     },
                     |x| x,
                 );
             }
             Message::VimBindings(vim_bindings) => {
-                self.config.vim_bindings = vim_bindings;
-                return self.save_config();
+                config_set!(vim_bindings, vim_bindings);
+                return self.update_config();
             }
             Message::Focus(window_id) => {
                 if Some(window_id) == self.core.main_window_id() {
@@ -2671,8 +2797,9 @@ impl Application for App {
         let tab_id = self.tab_model.active();
         match self.tab_model.data::<Tab>(tab_id) {
             Some(Tab::Editor(tab)) => {
-                let mut text_box = text_box(&tab.editor, self.config.metrics())
+                let mut text_box = text_box(&tab.editor, self.config.metrics(tab.zoom_adj()))
                     .id(self.text_box_id.clone())
+                    .on_auto_scroll(Message::AutoScroll)
                     .on_changed(Message::TabChanged(tab_id))
                     .has_context_menu(tab.context_menu.is_some())
                     .on_context_menu(move |position_opt| {
@@ -2786,10 +2913,12 @@ impl Application for App {
                 widget::text_input::text_input(fl!("find-placeholder"), &self.find_search_value)
                     .id(self.find_search_id.clone())
                     .on_input(Message::FindSearchValueChanged)
-                    .on_submit(if self.modifiers.contains(Modifiers::SHIFT) {
-                        Message::FindPrevious
-                    } else {
-                        Message::FindNext
+                    .on_submit(|_| {
+                        if self.modifiers.contains(Modifiers::SHIFT) {
+                            Message::FindPrevious
+                        } else {
+                            Message::FindNext
+                        }
                     })
                     .width(Length::Fixed(320.0))
                     .trailing_icon(
@@ -2837,7 +2966,7 @@ impl Application for App {
                 )
                 .id(self.find_replace_id.clone())
                 .on_input(Message::FindReplaceValueChanged)
-                .on_submit(Message::FindReplace)
+                .on_submit(|_| Message::FindReplace)
                 .width(Length::Fixed(320.0))
                 .trailing_icon(
                     button::custom(icon_cache_get("edit-clear-symbolic", 16))
@@ -2914,7 +3043,7 @@ impl Application for App {
         struct ConfigStateSubscription;
         struct ThemeSubscription;
 
-        Subscription::batch([
+        let mut subscriptions = vec![
             event::listen_with(|event, status, window_id| match event {
                 event::Event::Keyboard(keyboard::Event::KeyPressed { modifiers, key, .. }) => {
                     match status {
@@ -3032,6 +3161,15 @@ impl Application for App {
                 Some(dialog) => dialog.subscription(),
                 None => Subscription::none(),
             },
-        ])
+        ];
+
+        if let Some(auto_scroll) = self.auto_scroll {
+            subscriptions.push(
+                iced::time::every(time::Duration::from_millis(10))
+                    .map(move |_| Message::Scroll(auto_scroll)),
+            );
+        }
+
+        Subscription::batch(subscriptions)
     }
 }

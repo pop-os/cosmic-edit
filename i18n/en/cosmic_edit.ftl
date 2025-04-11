@@ -47,6 +47,8 @@ syntax-dark = Syntax dark
 syntax-light = Syntax light
 default-font = Default font
 default-font-size = Default font size
+default-zoom-step = Zoom steps
+
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Keyboard shortcuts
@@ -99,6 +101,9 @@ spell-check = Spell check...
 
 ## View
 view = View
+zoom-in = Zoom in
+default-size = Default size
+zoom-out = Zoom out
 indentation = Indentation
 
 ### Indentation

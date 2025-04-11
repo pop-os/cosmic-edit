@@ -6,7 +6,7 @@ todo = TODO
 # Context Pages
 
 ## About
-git-description = Git commit {$hash} pe {$date}
+git-description = Commit Git {$hash} din {$date}
 
 ## Document statistics
 document-statistics = Statistici document
@@ -17,15 +17,15 @@ line-count = Linii
 
 ## Git management
 git-management = Management Git
-git-management-description = Managementul Git este un instrument pentru dezvoltatori utilizat pentru operațiuni de control al versiunilor.
+git-management-description = Managementul Git este un instrument pentru dezvoltatori folosit pentru operațiuni de control al versiunilor.
 git-management-loading = Se încarcă managementul Git...
-stage = Stage
-staged-changes = Stage-uri pregătite
-unstage = Anulează stage-ul
-unstaged-changes = Stage-uri nepregătite
+stage = Marchează
+staged-changes = Modificări marcate
+unstage = Demarchează
+unstaged-changes = Modificări nemarcate
 
 ## Project search
-project-search = Căutare proiect
+project-search = Căutare în proiect
 
 ## Prompt save changes
 prompt-save-changes-title = Modificări nesalvate
@@ -40,27 +40,30 @@ settings = Setări
 ### Appearance
 appearance = Aspect
 theme = Temă
-match-desktop = Asemenea desktop-ului
+match-desktop = Potrivește cu desktopul
 dark = Întunecat
 light = Deschis
 syntax-dark = Sintaxă întunecată
 syntax-light = Sintaxă deschisă
 default-font = Font implicit
-default-font-size = Dimensiune font implicită
+default-font-size = Mărime font implicită
+default-zoom-step = Pași de zoom
+
 
 ### Keyboard shortcuts
-keyboard-shortcuts = Comenzi rapide de la tastatură
-enable-vim-bindings = Activează legăturile Vim
+keyboard-shortcuts = Scurtături tastatură
+enable-vim-bindings = Activează comenzile Vim
 
 # Find
 find-placeholder = Caută...
-find-previous = Caută anterior
+find-previous = Caută anteriorul
 find-next = Caută următorul
 replace-placeholder = Înlocuiește...
 replace = Înlocuiește
 replace-all = Înlocuiește tot
 case-sensitive = Sensibil la majuscule
-use-regex = Folosește regex
+use-regex = Folosește expresii regulate
+wrap-around = Căutare circulară
 
 # Menu
 
@@ -76,13 +79,13 @@ open-recent-project = Deschide proiect recent
 close-project = Închide proiect
 save = Salvează
 save-as = Salvează ca...
-revert-all-changes = Renunță la toate modificările
+revert-all-changes = Revocă toate modificările
 menu-document-statistics = Statistici document...
 document-type = Tip document...
-encoding = Encoding...
+encoding = Codare...
 menu-git-management = Management Git...
-print = Imprimă
-quit = Ieși
+print = Tipărește
+quit = Închide
 
 ## Edit
 edit = Editare
@@ -98,17 +101,21 @@ spell-check = Verificare ortografică...
 
 ## View
 view = Vizualizare
+zoom-in = Mărește
+default-size = Mărime implicită
+zoom-out = Micșorează
 indentation = Indentare
 
 ### Indentation
 automatic-indentation = Indentare automată
-tab-width = Lățimea tab-urilor: {$tab_width}
+tab-width = Lățime tab: {$tab_width}
 convert-indentation-to-spaces = Conversie indentare în spații
-convert-indentation-to-tabs = Conversie indentare în tab-uri
+convert-indentation-to-tabs = Conversie indentare în taburi
 
+word-wrap = Încadrare cuvinte
 show-line-numbers = Afișează numerele liniilor
 highlight-current-line = Evidențiază linia curentă
 syntax-highlighting = Evidențiere sintaxă...
 menu-settings = Setări...
-menu-keyboard-shortcuts = Comenzi rapide de la tastatură...
+menu-keyboard-shortcuts = Scurtături tastatură...
 menu-about = Despre Editorul de text COSMIC...

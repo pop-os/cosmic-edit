@@ -139,7 +139,7 @@ pub fn menu_bar<'a>(
                     MenuItem::Button(fl!("save"), None, Action::Save),
                     MenuItem::Button(fl!("save-as"), None, Action::SaveAsDialog),
                     MenuItem::Divider,
-                    MenuItem::Button(fl!("revert-all-changes"), None, Action::Todo),
+                    MenuItem::Button(fl!("revert-all-changes"), None, Action::RevertAllChanges),
                     MenuItem::Divider,
                     MenuItem::Button(
                         fl!("menu-document-statistics"),
@@ -175,8 +175,10 @@ pub fn menu_bar<'a>(
                     MenuItem::Button(fl!("find"), None, Action::Find),
                     MenuItem::Button(fl!("replace"), None, Action::FindAndReplace),
                     MenuItem::Button(fl!("find-in-project"), None, Action::ToggleProjectSearch),
+                    /*TODO: implement spell-check
                     MenuItem::Divider,
                     MenuItem::Button(fl!("spell-check"), None, Action::Todo),
+                    */
                 ],
             ),
         ),
@@ -208,6 +210,10 @@ pub fn menu_bar<'a>(
                             //TODO MenuItem::Button(fl!("convert-indentation-to-tabs"), Action::Todo),
                         ],
                     ),
+                    MenuItem::Divider,
+                    MenuItem::Button(fl!("zoom-in"), None, Action::ZoomIn),
+                    MenuItem::Button(fl!("default-size"), None, Action::ZoomReset),
+                    MenuItem::Button(fl!("zoom-out"), None, Action::ZoomOut),
                     MenuItem::Divider,
                     MenuItem::CheckBox(
                         fl!("word-wrap"),

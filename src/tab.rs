@@ -10,7 +10,9 @@ use notify::Watcher;
 use regex::Regex;
 use std::{
     fs,
+    io::Write,
     path::PathBuf,
+    process::{Command, Stdio},
     sync::{Arc, Mutex},
 };
 
@@ -40,18 +42,19 @@ pub struct EditorTab {
     attrs: Attrs<'static>,
     pub editor: Mutex<ViEditor<'static, 'static>>,
     pub context_menu: Option<Point>,
+    pub zoom_adj: i8,
 }
 
 impl EditorTab {
     pub fn new(config: &Config) -> Self {
         //TODO: do not repeat, used in App::init
-        let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Monospace);
-
-        let mut buffer = Buffer::new_empty(config.metrics());
+        let attrs = Attrs::new().family(cosmic_text::Family::Monospace);
+        let zoom_adj = Default::default();
+        let mut buffer = Buffer::new_empty(config.metrics(zoom_adj));
         buffer.set_text(
             font_system().write().unwrap().raw(),
             "",
-            attrs,
+            &attrs,
             Shaping::Advanced,
         );
 
@@ -67,6 +70,7 @@ impl EditorTab {
             attrs,
             editor: Mutex::new(ViEditor::new(editor)),
             context_menu: None,
+            zoom_adj,
         };
 
         // Update any other config settings
@@ -97,7 +101,7 @@ impl EditorTab {
         let mut editor = self.editor.lock().unwrap();
         let mut font_system = font_system().write().unwrap();
         let mut editor = editor.borrow_with(font_system.raw());
-        match editor.load_text(&path, self.attrs) {
+        match editor.load_text(&path, self.attrs.clone()) {
             Ok(()) => {
                 log::info!("opened {:?}", path);
                 self.path_opt = match fs::canonicalize(&path) {
@@ -124,9 +128,12 @@ impl EditorTab {
             let scroll = editor.with_buffer(|buffer| buffer.scroll());
             //TODO: save/restore more?
 
-            match editor.load_text(path, self.attrs) {
+            match editor.load_text(path, self.attrs.clone()) {
                 Ok(()) => {
                     log::info!("reloaded {:?}", path);
+
+                    // Clear changed state
+                    editor.set_changed(false);
                 }
                 Err(err) => {
                     log::error!("failed to reload {:?}: {}", path, err);
@@ -144,19 +151,63 @@ impl EditorTab {
         if let Some(path) = &self.path_opt {
             let mut editor = self.editor.lock().unwrap();
             let mut text = String::new();
+
             editor.with_buffer(|buffer| {
                 for line in buffer.lines.iter() {
                     text.push_str(line.text());
                     text.push_str(line.ending().as_str());
                 }
             });
-            match fs::write(path, text) {
+
+            match fs::write(path, &text) {
                 Ok(()) => {
                     editor.save_point();
                     log::info!("saved {:?}", path);
                 }
                 Err(err) => {
-                    log::error!("failed to save {:?}: {}", path, err);
+                    if err.kind() == std::io::ErrorKind::PermissionDenied {
+                        log::warn!("Permission denied. Attempting to save with pkexec.");
+
+                        if let Ok(mut output) = Command::new("pkexec")
+                            .arg("tee")
+                            .arg(path)
+                            .stdin(Stdio::piped())
+                            .stdout(Stdio::null()) // Redirect stdout to /dev/null
+                            .stderr(Stdio::inherit()) // Retain stderr for error visibility
+                            .spawn()
+                        {
+                            if let Some(mut stdin) = output.stdin.take() {
+                                if let Err(e) = stdin.write_all(text.as_bytes()) {
+                                    log::error!("Failed to write to stdin: {}", e);
+                                }
+                            } else {
+                                log::error!("Failed to access stdin of pkexec process.");
+                            }
+
+                            // Ensure the child process is reaped
+                            match output.wait() {
+                                Ok(status) => {
+                                    if status.success() {
+                                        // Mark the editor's state as saved if the process succeeds
+                                        editor.save_point();
+                                        log::info!("File saved successfully with pkexec.");
+                                    } else {
+                                        log::error!(
+                                            "pkexec process exited with a non-zero status: {:?}",
+                                            status
+                                        );
+                                    }
+                                }
+                                Err(e) => {
+                                    log::error!("Failed to wait on pkexec process: {}", e);
+                                }
+                            }
+                        } else {
+                            log::error!(
+                                "Failed to spawn pkexec process. Check permissions or path."
+                            );
+                        }
+                    }
                 }
             }
         } else {
@@ -258,6 +309,14 @@ impl EditorTab {
             }
         }
         false
+    }
+
+    pub fn zoom_adj(&self) -> i8 {
+        self.zoom_adj
+    }
+
+    pub fn set_zoom_adj(&mut self, value: i8) {
+        self.zoom_adj = value;
     }
 
     // Code adapted from cosmic-text ViEditor search
