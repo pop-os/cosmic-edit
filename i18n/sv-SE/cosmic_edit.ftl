@@ -41,6 +41,7 @@ syntax-dark = Syntax mörk
 syntax-light = Syntax ljus
 default-font = Standard teckensnitt
 default-font-size = Standard teckensnittsstorlek
+default-zoom-step = Zoom steg
 
 ### Tangentbordsgenvägar
 keyboard-shortcuts = Tangentbordsgenvägar
@@ -53,6 +54,9 @@ find-next = Sök nästa
 replace-placeholder = Ersätt...
 replace = Ersätt
 replace-all = Ersätt alla
+case-sensitive = Skiftlägeskänslig
+use-regex = Använd regex
+wrap-around = Linda runt
 
 # Meny
 
@@ -91,6 +95,9 @@ spell-check = Stavningskontroll...
 
 ## Visa
 view = Visa
+zoom-in = Zooma in
+default-size = Standard storlek
+zoom-out = Zooma ut
 indentation = Indrag
 
 ### Indentation
