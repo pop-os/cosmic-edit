@@ -950,6 +950,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap_lex"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
+
+[[package]]
 name = "clipboard-win"
 version = "5.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1179,6 +1185,7 @@ dependencies = [
 name = "cosmic-edit"
 version = "0.1.0"
 dependencies = [
+ "clap_lex",
  "cosmic-files",
  "cosmic-syntax-theme",
  "cosmic-text",
