@@ -109,7 +109,6 @@ impl EditorTab {
         text
     }
 
-
     pub fn open(&mut self, path: PathBuf) {
         let mut editor = self.editor.lock().unwrap();
         let mut font_system = font_system().write().unwrap();
