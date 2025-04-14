@@ -1,5 +1,3 @@
-
-
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::widget::menu::action::MenuAction;
@@ -2285,27 +2283,27 @@ impl Application for App {
                     |x| x,
                 );
             }
-Message::Print => {
-    if let Some(tab) = self.active_tab() {
-        match tab {
-            Tab::Editor(editor_tab) => {
-                let mut text = String::new();
-                let editor = editor_tab.editor.lock().unwrap();
-                editor.with_buffer(|buffer| {
-                    for line in &buffer.lines {
-                        text.push_str(line.text());
-                        text.push_str(line.ending().as_str());
+            Message::Print => {
+                if let Some(tab) = self.active_tab() {
+                    match tab {
+                        Tab::Editor(editor_tab) => {
+                            let mut text = String::new();
+                            let editor = editor_tab.editor.lock().unwrap();
+                            editor.with_buffer(|buffer| {
+                                for line in &buffer.lines {
+                                    text.push_str(line.text());
+                                    text.push_str(line.ending().as_str());
+                                }
+                            });
+                            return Task::done(action::app(Message::PrintValue(text)));
+                        }
+                        Tab::GitDiff(_) => {
+                            return Task::none();
+                        }
                     }
-                });
-                return Task::done(action::app(Message::PrintValue(text)));
-            }
-            Tab::GitDiff(_) => {
+                }
                 return Task::none();
             }
-        }
-    }
-    return Task::none();
-}
             Message::PrintValue(text) => {
                 if let Err(err) = crate::print::print_text(&text) {
                     eprintln!("Print failed: {}", err);
