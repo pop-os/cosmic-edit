@@ -1,3 +1,5 @@
+
+
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::widget::menu::action::MenuAction;
@@ -68,6 +70,8 @@ mod tab;
 
 use self::text_box::text_box;
 mod text_box;
+
+mod print;
 
 static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
 static LINE_NUMBER_CACHE: OnceLock<Mutex<LineNumberCache>> = OnceLock::new();
@@ -199,6 +203,7 @@ pub enum Action {
     OpenRecentFile(usize),
     OpenRecentProject(usize),
     Paste,
+    Print,
     Quit,
     Redo,
     RevertAllChanges,
@@ -249,6 +254,7 @@ impl Action {
             Self::OpenRecentFile(index) => Message::OpenRecentFile(*index),
             Self::OpenRecentProject(index) => Message::OpenRecentProject(*index),
             Self::Paste => Message::Paste,
+            Self::Print => Message::Print,
             Self::Quit => Message::Quit,
             Self::Redo => Message::Redo,
             Self::RevertAllChanges => Message::RevertAllChanges,
@@ -375,6 +381,8 @@ pub enum Message {
     Paste,
     PasteValue(String),
     PrepareGitDiff(PathBuf, PathBuf, bool),
+    Print,
+    PrintValue(String),
     ProjectSearchResult(ProjectSearchResult),
     ProjectSearchSubmit,
     ProjectSearchValue(String),
@@ -2276,6 +2284,33 @@ impl Application for App {
                     },
                     |x| x,
                 );
+            }
+Message::Print => {
+    if let Some(tab) = self.active_tab() {
+        match tab {
+            Tab::Editor(editor_tab) => {
+                let mut text = String::new();
+                let editor = editor_tab.editor.lock().unwrap();
+                editor.with_buffer(|buffer| {
+                    for line in &buffer.lines {
+                        text.push_str(line.text());
+                        text.push_str(line.ending().as_str());
+                    }
+                });
+                return Task::done(action::app(Message::PrintValue(text)));
+            }
+            Tab::GitDiff(_) => {
+                return Task::none();
+            }
+        }
+    }
+    return Task::none();
+}
+            Message::PrintValue(text) => {
+                if let Err(err) = crate::print::print_text(&text) {
+                    eprintln!("Print failed: {}", err);
+                }
+                return Task::none();
             }
             Message::ProjectSearchResult(project_search_result) => {
                 self.project_search_result = Some(project_search_result);

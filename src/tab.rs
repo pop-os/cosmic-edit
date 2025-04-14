@@ -97,6 +97,19 @@ impl EditorTab {
         editor.update_theme(config.syntax_theme());
     }
 
+    pub fn get_buffer_text(&self) -> String {
+        let editor = self.editor.lock().unwrap();
+        let mut text = String::new();
+        editor.with_buffer(|buffer| {
+            for line in buffer.lines.iter() {
+                text.push_str(line.text());
+                text.push_str(line.ending().as_str());
+            }
+        });
+        text
+    }
+
+
     pub fn open(&mut self, path: PathBuf) {
         let mut editor = self.editor.lock().unwrap();
         let mut font_system = font_system().write().unwrap();
