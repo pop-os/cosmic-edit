@@ -24,6 +24,12 @@ staged-changes = Modifications indexées
 unstage = Désindexer
 unstaged-changes = Modifications non indexées
 
+## Print dialog
+print-title = Envoyer à l'imprimante
+print-message = Voulez-vous vraiment imprimer ce document ?
+print-confirm = Imprimer
+print-cancel= Annuler
+
 ## Project search
 project-search = Recherche de projets
 

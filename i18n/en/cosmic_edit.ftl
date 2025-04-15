@@ -24,6 +24,12 @@ staged-changes = Staged changes
 unstage = Unstage
 unstaged-changes = Unstaged changes
 
+## Print dialog
+print-title = Send to printer
+print-message = Do you really want to print this document?
+print-confirm = Print
+print-cancel = Cancel
+
 ## Project search
 project-search = Project search
 

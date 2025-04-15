@@ -69,6 +69,8 @@ mod tab;
 use self::text_box::text_box;
 mod text_box;
 
+mod print;
+
 static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
 static LINE_NUMBER_CACHE: OnceLock<Mutex<LineNumberCache>> = OnceLock::new();
 static SWASH_CACHE: OnceLock<Mutex<SwashCache>> = OnceLock::new();
@@ -199,6 +201,9 @@ pub enum Action {
     OpenRecentFile(usize),
     OpenRecentProject(usize),
     Paste,
+    Print,
+    PrintCancelled,
+    PrintConfirmed,
     Quit,
     Redo,
     RevertAllChanges,
@@ -249,6 +254,9 @@ impl Action {
             Self::OpenRecentFile(index) => Message::OpenRecentFile(*index),
             Self::OpenRecentProject(index) => Message::OpenRecentProject(*index),
             Self::Paste => Message::Paste,
+            Self::Print => Message::Print,
+            Self::PrintCancelled => Message::PrintCancelled,
+            Self::PrintConfirmed => Message::PrintConfirmed,
             Self::Quit => Message::Quit,
             Self::Redo => Message::Redo,
             Self::RevertAllChanges => Message::RevertAllChanges,
@@ -379,6 +387,10 @@ pub enum Message {
     ProjectSearchSubmit,
     ProjectSearchValue(String),
     PromptSaveChanges(segmented_button::Entity),
+    Print,
+    PrintCancelled,
+    PrintConfirmed,
+    PrintDialog(String),
     Quit,
     QuitForce,
     Redo,
@@ -425,6 +437,7 @@ pub enum ContextPage {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum DialogPage {
+    PrintDialog(String),
     PromptSaveClose(segmented_button::Entity),
     PromptSaveQuit(Vec<segmented_button::Entity>),
 }
@@ -754,6 +767,8 @@ impl App {
                     // Update dialog
                     self.dialog_page_opt = Some(DialogPage::PromptSaveQuit(unsaved));
                 }
+            }
+            Some(DialogPage::PrintDialog(_)) => {
             }
             None => {}
         }
@@ -1554,6 +1569,24 @@ impl Application for App {
         let cosmic_theme::Spacing { space_xxs, .. } = self.core().system_theme().cosmic().spacing;
 
         match dialog {
+            DialogPage::PrintDialog(text) => {
+                let print_label = fl!("print-title");
+                let message_label = fl!("print-message");
+                let confirm_label = fl!("print-confirm");
+                let cancel_label = fl!("print-cancel"); 
+                
+                let confirm_button = widget::button::suggested(confirm_label)
+                    .on_press(Message::PrintConfirmed);
+                let cancel_button = widget::button::destructive(cancel_label)
+                    .on_press(Message::PrintCancelled);
+                let dialog = widget::dialog()
+                    .title(print_label) 
+                    .body(format!("{}: {}", message_label, text))
+                    .icon(icon::from_name("dialog-warning-symbolic").size(64))
+                    .primary_action(confirm_button) 
+                    .secondary_action(cancel_button);
+                Some(dialog.into())
+            }    
             DialogPage::PromptSaveClose(entity) => {
                 let save_button =
                     widget::button::suggested(fl!("save")).on_press(Message::Save(Some(*entity)));
@@ -2276,6 +2309,36 @@ impl Application for App {
                     },
                     |x| x,
                 );
+            }
+            Message::Print => {
+                self.dialog_page_opt = Some(DialogPage::PrintDialog(String::new()));
+                return Task::none();
+            }
+            Message::PrintCancelled => {
+                self.dialog_page_opt = None;
+                return Task::none();
+            }
+            Message::PrintConfirmed => {
+                if let Some(DialogPage::PrintDialog(_)) = self.dialog_page_opt.take() {
+                    if let Some(tab) = self.active_tab() {
+                        if let Tab::Editor(editor_tab) = tab {
+                            let mut text = String::new();
+                            let editor = editor_tab.editor.lock().unwrap();
+                            editor.with_buffer(|buffer| {
+                                for line in &buffer.lines {
+                                    text.push_str(line.text());
+                                    text.push_str(line.ending().as_str());
+                                }
+                            });
+                            let _ = crate::print::print_text(&text);
+                        }
+                    }
+                }
+                return Task::none();
+            }
+            Message::PrintDialog(text) => {
+                self.dialog_page_opt = Some(DialogPage::PrintDialog(text));
+                return Task::none();
             }
             Message::ProjectSearchResult(project_search_result) => {
                 self.project_search_result = Some(project_search_result);

@@ -21,6 +21,7 @@ paste = "1.0.15"
 patch = "0.7.0"
 regex = "1.11"
 serde = { version = "1", features = ["serde_derive"] }
+tempfile = "3"
 tokio = { version = "1", features = ["process", "time"] }
 # Extra syntax highlighting
 syntect = "5.2.0"
