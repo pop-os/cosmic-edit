@@ -3,18 +3,22 @@
 use cosmic::widget::menu::key_bind::KeyBind;
 use cosmic::widget::menu::{items as menu_items, root as menu_root, Item as MenuItem};
 use cosmic::{
+    app::Core,
     iced::{widget::column, Background, Length},
     iced_core::Border,
     widget::{
         self, divider, horizontal_space,
         menu::{menu_button, ItemHeight, ItemWidth, MenuBar, Tree as MenuTree},
-        segmented_button,
+        responsive_menu_bar, segmented_button,
     },
     Element,
 };
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, sync::LazyLock};
 
 use crate::{fl, Action, Config, ConfigState, Message};
+
+static MENU_ID: LazyLock<cosmic::widget::Id> =
+    LazyLock::new(|| cosmic::widget::Id::new("responsive-menu"));
 
 pub fn context_menu<'a>(
     key_binds: &HashMap<KeyBind, Action>,
@@ -67,6 +71,7 @@ pub fn context_menu<'a>(
 }
 
 pub fn menu_bar<'a>(
+    core: &Core,
     config: &Config,
     config_state: &ConfigState,
     key_binds: &HashMap<KeyBind, Action>,
@@ -119,133 +124,130 @@ pub fn menu_bar<'a>(
         ));
     }
 
-    MenuBar::new(vec![
-        MenuTree::with_children(
-            menu_root(fl!("file")),
-            menu_items(
-                key_binds,
-                vec![
-                    MenuItem::Button(fl!("new-file"), None, Action::NewFile),
-                    MenuItem::Button(fl!("new-window"), None, Action::NewWindow),
-                    MenuItem::Divider,
-                    MenuItem::Button(fl!("open-file"), None, Action::OpenFileDialog),
-                    MenuItem::Folder(fl!("open-recent-file"), recent_files),
-                    MenuItem::Button(fl!("close-file"), None, Action::CloseFile),
-                    MenuItem::Divider,
-                    MenuItem::Button(fl!("menu-open-project"), None, Action::OpenProjectDialog),
-                    MenuItem::Folder(fl!("open-recent-project"), recent_projects),
-                    MenuItem::Folder(fl!("close-project"), close_projects),
-                    MenuItem::Divider,
-                    MenuItem::Button(fl!("save"), None, Action::Save),
-                    MenuItem::Button(fl!("save-as"), None, Action::SaveAsDialog),
-                    MenuItem::Divider,
-                    MenuItem::Button(fl!("revert-all-changes"), None, Action::RevertAllChanges),
-                    MenuItem::Divider,
-                    MenuItem::Button(
-                        fl!("menu-document-statistics"),
-                        None,
-                        Action::ToggleDocumentStatistics,
-                    ),
-                    //TODO MenuItem::Button(fl!("document-type"), Action::Todo),
-                    //TODO MenuItem::Button(fl!("encoding"), Action::Todo),
-                    MenuItem::Button(
-                        fl!("menu-git-management"),
-                        None,
-                        Action::ToggleGitManagement,
-                    ),
-                    //TODO MenuItem::Button(fl!("print"), Action::Todo),
-                    MenuItem::Divider,
-                    MenuItem::Button(fl!("quit"), None, Action::Quit),
-                ],
-            ),
-        ),
-        MenuTree::with_children(
-            menu_root(fl!("edit")),
-            menu_items(
-                key_binds,
-                vec![
-                    MenuItem::Button(fl!("undo"), None, Action::Undo),
-                    MenuItem::Button(fl!("redo"), None, Action::Redo),
-                    MenuItem::Divider,
-                    MenuItem::Button(fl!("cut"), None, Action::Cut),
-                    MenuItem::Button(fl!("copy"), None, Action::Copy),
-                    MenuItem::Button(fl!("paste"), None, Action::Paste),
-                    MenuItem::Button(fl!("select-all"), None, Action::SelectAll),
-                    MenuItem::Divider,
-                    MenuItem::Button(fl!("find"), None, Action::Find),
-                    MenuItem::Button(fl!("replace"), None, Action::FindAndReplace),
-                    MenuItem::Button(fl!("find-in-project"), None, Action::ToggleProjectSearch),
-                    /*TODO: implement spell-check
-                    MenuItem::Divider,
-                    MenuItem::Button(fl!("spell-check"), None, Action::Todo),
-                    */
-                ],
-            ),
-        ),
-        MenuTree::with_children(
-            menu_root(fl!("view")),
-            menu_items(
-                key_binds,
-                vec![
-                    MenuItem::Folder(
-                        fl!("indentation"),
-                        vec![
-                            MenuItem::CheckBox(
-                                fl!("automatic-indentation"),
-                                None,
-                                config.auto_indent,
-                                Action::ToggleAutoIndent,
-                            ),
-                            MenuItem::Divider,
-                            menu_tab_width(1),
-                            menu_tab_width(2),
-                            menu_tab_width(3),
-                            menu_tab_width(4),
-                            menu_tab_width(5),
-                            menu_tab_width(6),
-                            menu_tab_width(7),
-                            menu_tab_width(8),
-                            //TODO MenuItem::Divider,
-                            //TODO MenuItem::Button(fl!("convert-indentation-to-spaces"), Action::Todo),
-                            //TODO MenuItem::Button(fl!("convert-indentation-to-tabs"), Action::Todo),
-                        ],
-                    ),
-                    MenuItem::Divider,
-                    MenuItem::Button(fl!("zoom-in"), None, Action::ZoomIn),
-                    MenuItem::Button(fl!("default-size"), None, Action::ZoomReset),
-                    MenuItem::Button(fl!("zoom-out"), None, Action::ZoomOut),
-                    MenuItem::Divider,
-                    MenuItem::CheckBox(
-                        fl!("word-wrap"),
-                        None,
-                        config.word_wrap,
-                        Action::ToggleWordWrap,
-                    ),
-                    MenuItem::CheckBox(
-                        fl!("show-line-numbers"),
-                        None,
-                        config.line_numbers,
-                        Action::ToggleLineNumbers,
-                    ),
-                    MenuItem::CheckBox(
-                        fl!("highlight-current-line"),
-                        None,
-                        config.highlight_current_line,
-                        Action::ToggleHighlightCurrentLine,
-                    ),
-                    //TODO: MenuItem::CheckBox(fl!("syntax-highlighting"), Action::Todo),
-                    MenuItem::Divider,
-                    MenuItem::Button(fl!("menu-settings"), None, Action::ToggleSettingsPage),
-                    //TODO MenuItem::Divider,
-                    //TODO MenuItem::Button(fl!("menu-keyboard-shortcuts"), Action::Todo),
-                    MenuItem::Divider,
-                    MenuItem::Button(fl!("menu-about"), None, Action::About),
-                ],
-            ),
-        ),
-    ])
-    .item_height(ItemHeight::Dynamic(40))
-    .item_width(ItemWidth::Uniform(320))
-    .spacing(4.0)
-    .into()
+    responsive_menu_bar()
+        .item_height(ItemHeight::Dynamic(40))
+        .item_width(ItemWidth::Uniform(320))
+        .spacing(4.0)
+        .into_element(
+            core,
+            key_binds,
+            MENU_ID.clone(),
+            Message::Surface,
+            vec![
+                (
+                    (fl!("file")),
+                    vec![
+                        MenuItem::Button(fl!("new-file"), None, Action::NewFile),
+                        MenuItem::Button(fl!("new-window"), None, Action::NewWindow),
+                        MenuItem::Divider,
+                        MenuItem::Button(fl!("open-file"), None, Action::OpenFileDialog),
+                        MenuItem::Folder(fl!("open-recent-file"), recent_files),
+                        MenuItem::Button(fl!("close-file"), None, Action::CloseFile),
+                        MenuItem::Divider,
+                        MenuItem::Button(fl!("menu-open-project"), None, Action::OpenProjectDialog),
+                        MenuItem::Folder(fl!("open-recent-project"), recent_projects),
+                        MenuItem::Folder(fl!("close-project"), close_projects),
+                        MenuItem::Divider,
+                        MenuItem::Button(fl!("save"), None, Action::Save),
+                        MenuItem::Button(fl!("save-as"), None, Action::SaveAsDialog),
+                        MenuItem::Divider,
+                        MenuItem::Button(fl!("revert-all-changes"), None, Action::RevertAllChanges),
+                        MenuItem::Divider,
+                        MenuItem::Button(
+                            fl!("menu-document-statistics"),
+                            None,
+                            Action::ToggleDocumentStatistics,
+                        ),
+                        //TODO MenuItem::Button(fl!("document-type"), Action::Todo),
+                        //TODO MenuItem::Button(fl!("encoding"), Action::Todo),
+                        MenuItem::Button(
+                            fl!("menu-git-management"),
+                            None,
+                            Action::ToggleGitManagement,
+                        ),
+                        //TODO MenuItem::Button(fl!("print"), Action::Todo),
+                        MenuItem::Divider,
+                        MenuItem::Button(fl!("quit"), None, Action::Quit),
+                    ],
+                ),
+                (
+                    (fl!("edit")),
+                    vec![
+                        MenuItem::Button(fl!("undo"), None, Action::Undo),
+                        MenuItem::Button(fl!("redo"), None, Action::Redo),
+                        MenuItem::Divider,
+                        MenuItem::Button(fl!("cut"), None, Action::Cut),
+                        MenuItem::Button(fl!("copy"), None, Action::Copy),
+                        MenuItem::Button(fl!("paste"), None, Action::Paste),
+                        MenuItem::Button(fl!("select-all"), None, Action::SelectAll),
+                        MenuItem::Divider,
+                        MenuItem::Button(fl!("find"), None, Action::Find),
+                        MenuItem::Button(fl!("replace"), None, Action::FindAndReplace),
+                        MenuItem::Button(fl!("find-in-project"), None, Action::ToggleProjectSearch),
+                        /*TODO: implement spell-check
+                        MenuItem::Divider,
+                        MenuItem::Button(fl!("spell-check"), None, Action::Todo),
+                        */
+                    ],
+                ),
+                (
+                    (fl!("view")),
+                    vec![
+                        MenuItem::Folder(
+                            fl!("indentation"),
+                            vec![
+                                MenuItem::CheckBox(
+                                    fl!("automatic-indentation"),
+                                    None,
+                                    config.auto_indent,
+                                    Action::ToggleAutoIndent,
+                                ),
+                                MenuItem::Divider,
+                                menu_tab_width(1),
+                                menu_tab_width(2),
+                                menu_tab_width(3),
+                                menu_tab_width(4),
+                                menu_tab_width(5),
+                                menu_tab_width(6),
+                                menu_tab_width(7),
+                                menu_tab_width(8),
+                                //TODO MenuItem::Divider,
+                                //TODO MenuItem::Button(fl!("convert-indentation-to-spaces"), Action::Todo),
+                                //TODO MenuItem::Button(fl!("convert-indentation-to-tabs"), Action::Todo),
+                            ],
+                        ),
+                        MenuItem::Divider,
+                        MenuItem::Button(fl!("zoom-in"), None, Action::ZoomIn),
+                        MenuItem::Button(fl!("default-size"), None, Action::ZoomReset),
+                        MenuItem::Button(fl!("zoom-out"), None, Action::ZoomOut),
+                        MenuItem::Divider,
+                        MenuItem::CheckBox(
+                            fl!("word-wrap"),
+                            None,
+                            config.word_wrap,
+                            Action::ToggleWordWrap,
+                        ),
+                        MenuItem::CheckBox(
+                            fl!("show-line-numbers"),
+                            None,
+                            config.line_numbers,
+                            Action::ToggleLineNumbers,
+                        ),
+                        MenuItem::CheckBox(
+                            fl!("highlight-current-line"),
+                            None,
+                            config.highlight_current_line,
+                            Action::ToggleHighlightCurrentLine,
+                        ),
+                        //TODO: MenuItem::CheckBox(fl!("syntax-highlighting"), Action::Todo),
+                        MenuItem::Divider,
+                        MenuItem::Button(fl!("menu-settings"), None, Action::ToggleSettingsPage),
+                        //TODO MenuItem::Divider,
+                        //TODO MenuItem::Button(fl!("menu-keyboard-shortcuts"), Action::Todo),
+                        MenuItem::Divider,
+                        MenuItem::Button(fl!("menu-about"), None, Action::About),
+                    ],
+                ),
+            ],
+        )
 }
