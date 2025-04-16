@@ -14,12 +14,13 @@
   <name xml:lang="pt_BR">Editor de Texto</name>
   <summary>Text editor for the COSMIC desktop</summary>
   <summary xml:lang="pl">Edytor tekstu pulpitu COSMIC</summary>
-  <summary xml:lang="hu">Szövegszerkesztő a COSMIC asztalhoz</summary>
+  <summary xml:lang="hu">Szövegszerkesztő a COSMIC asztali környezethez</summary>
   <summary xml:lang="pt_BR">Editor de texto do desktop COSMIC</summary>
   <description>
     <p>Text editor that provides advanced features with high performance</p>
     <p xml:lang="pl">Edytor tekstu oferujący zaawansowane funkcje i wysoką wydajność</p>
     <p xml:lang="pt_BR">Editor de texto que fornece funcionalidades avançadas com alta performance</p>
+    <p xml:lang="hu">Nagy teljesítményű szövegszerkesztő fejlett funkciókkal</p>
     <ul>
         <li>Written in Rust for performance and safety</li>
         <li xml:lang="pl">Napisany w Ruście dla wydajności i bezpieczeństwa</li>
