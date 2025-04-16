@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
+use cosmic::surface;
 use cosmic::widget::menu::action::MenuAction;
 use cosmic::widget::menu::key_bind::KeyBind;
 use cosmic::widget::segmented_button::Entity;
@@ -389,6 +390,7 @@ pub enum Message {
     SaveAsResult(segmented_button::Entity, DialogResult),
     Scroll(f32),
     SelectAll,
+    Surface(surface::Action),
     SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
     TabActivate(segmented_button::Entity),
@@ -2444,6 +2446,11 @@ impl Application for App {
                     });
                 }
             }
+            Message::Surface(a) => {
+                return cosmic::task::message(cosmic::Action::Cosmic(
+                    cosmic::app::Action::Surface(a),
+                ));
+            }
             Message::SystemThemeModeChange(_theme_mode) => {
                 return self.update_config();
             }
@@ -2757,6 +2764,7 @@ impl Application for App {
 
     fn header_start(&self) -> Vec<Element<Message>> {
         vec![menu_bar(
+            &self.core,
             &self.config,
             &self.config_state,
             &self.key_binds,
