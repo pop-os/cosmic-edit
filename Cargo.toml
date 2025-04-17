@@ -62,6 +62,8 @@ debug = true
 [patch.crates-io]
 onig = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
 onig_sys = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
+# https://github.com/smol-rs/polling/pull/235
+polling = { git = "https://github.com/jackpot51/polling.git", branch = "master" }
 
 # [patch.'https://github.com/pop-os/libcosmic']
 # libcosmic = { path = "../libcosmic" }
