@@ -9,11 +9,13 @@ use cosmic::{
         event::{Event, Status},
         keyboard::{Event as KeyEvent, Modifiers},
         mouse::{self, Button, Event as MouseEvent, ScrollDelta},
+        window,
     },
     iced_core::{
         Border, Radians, Shell, Transformation,
         clipboard::Clipboard,
         image,
+        input_method::{self, InputMethod},
         keyboard::{Key, key::Named},
         layout::{self, Layout},
         renderer::{self, Quad, Renderer as _},
@@ -126,6 +128,37 @@ where
     pub fn on_focus(mut self, on_focus: Message) -> Self {
         self.on_focus = Some(on_focus);
         self
+    }
+
+    fn input_method<'b>(
+        &self,
+        state: &'b State,
+        editor: &BorrowedWithFontSystem<'_, ViEditor<'static, 'static>>,
+        scale_factor: f32,
+        layout: Layout<'_>,
+    ) -> InputMethod<&'b str> {
+        if state.is_focused {
+        } else {
+            return InputMethod::Disabled;
+        };
+
+        let editor_pos = layout.position() + [self.padding.left, self.padding.top].into();
+        let (caret_x, caret_y) = editor.cursor_position().unwrap_or_default();
+        InputMethod::Enabled {
+            cursor: Rectangle::new(
+                Point::new(
+                    editor_pos.x
+                        + (caret_x as f32 + state.editor_offset_x.get() as f32) / scale_factor,
+                    editor_pos.y + (caret_y as f32) / scale_factor,
+                ),
+                Size::new(
+                    1.0,
+                    (self.metrics.scale(scale_factor).line_height) / scale_factor,
+                ),
+            ),
+            purpose: input_method::Purpose::Normal,
+            preedit: state.preedit.as_ref().map(input_method::Preedit::as_ref),
+        }
     }
 }
 
@@ -1103,6 +1136,33 @@ where
                 }
                 state.modifiers = *modifiers;
             }
+            Event::InputMethod(event) => match event {
+                input_method::Event::Opened | input_method::Event::Closed => {
+                    let metrics = self.metrics.scale(scale_factor);
+                    state.preedit = matches!(event, input_method::Event::Opened).then(|| {
+                        let mut preedit = input_method::Preedit::new();
+                        preedit.text_size = Some(metrics.font_size.into());
+                        preedit
+                    });
+                }
+                input_method::Event::Preedit(content, selection) => {
+                    if state.is_focused {
+                        state.preedit = Some(input_method::Preedit {
+                            content: content.to_owned(),
+                            selection: selection.clone(),
+                            text_size: Some(self.metrics.font_size.into()),
+                        });
+                    }
+                }
+                input_method::Event::Commit(text) => {
+                    if state.is_focused {
+                        editor.start_change();
+                        editor.insert_string(&text, None);
+                        editor.finish_change();
+                        shell.capture_event();
+                    }
+                }
+            },
             Event::Mouse(MouseEvent::ButtonPressed(button)) => {
                 if let Some(p) = cursor_position.position_in(layout.bounds()) {
                     state.is_focused = true;
@@ -1336,6 +1396,16 @@ where
                     shell.capture_event();
                 }
             }
+            Event::Window(window::Event::RedrawRequested(_now)) => {
+                if state.is_focused {
+                    shell.request_input_method(&self.input_method(
+                        state,
+                        &editor,
+                        scale_factor,
+                        layout,
+                    ));
+                }
+            }
             _ => (),
         }
 
@@ -1385,6 +1455,7 @@ pub struct State {
     scrollbar_h_rect: Cell<Option<Rectangle<f32>>>,
     handle_opt: Mutex<Option<image::Handle>>,
     shift_anchor: Mutex<Option<Cursor>>,
+    preedit: Option<input_method::Preedit>,
 }
 
 impl State {
@@ -1402,6 +1473,7 @@ impl State {
             scrollbar_h_rect: Cell::new(None),
             handle_opt: Mutex::new(None),
             shift_anchor: Mutex::new(None),
+            preedit: None,
         }
     }
 }
