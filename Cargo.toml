@@ -52,7 +52,8 @@ features = ["a11y", "multi-window", "tokio", "winit", "surface-message"]
 fork = "0.2"
 
 [features]
-default = ["wgpu"]
+default = ["gvfs", "wgpu"]
+gvfs = ["cosmic-files/gvfs"]
 wgpu = ["libcosmic/wgpu", "cosmic-files/wgpu"]
 
 [profile.release-with-debug]
