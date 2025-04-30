@@ -286,13 +286,26 @@ impl EditorTab {
                 end.index = index + len;
 
                 editor.start_change();
+                // if index = 0 and len = 0, we are targeting and deleting an empty line
+                // we'll move either cursor or end to delete the newline
+                if index == 0 && len == 0 {
+                    if cursor.line > 0 {
+                        // move the cursor up one line
+                        cursor.line -= 1;
+                        cursor.index =
+                            editor.with_buffer(|buffer| buffer.lines[cursor.line].text().len());
+                    } else if cursor.line + 1 < editor.with_buffer(|buffer| buffer.lines.len()) {
+                        // move the end down one line
+                        end.line += 1;
+                        end.index = 0;
+                    }
+                }
                 editor.delete_range(cursor, end);
                 cursor = editor.insert_at(cursor, replace, None);
                 editor.set_cursor(cursor);
                 // Need to disable selection to prevent the new cursor showing selection to old location
                 editor.set_selection(Selection::None);
                 editor.finish_change();
-
                 return true;
             }
 
