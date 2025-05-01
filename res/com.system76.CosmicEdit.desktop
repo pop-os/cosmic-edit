@@ -1,6 +1,7 @@
 #TODO: more build-out, desktop actions, translations?
 [Desktop Entry]
 Name=COSMIC Text Editor
+Name[zh_CN]=COSMIC 文本编辑器
 Name[pl]=Edytor Tekstu COSMIC
 Name[pt_BR]=Editor de Texto
 Name[hu]=COSMIC Szövegszerkesztő
