@@ -1,8 +1,12 @@
+cosmic-text-editor = COSMIC Text Editor
 new-document = Nuevo documento
 open-project = Abrir proyecto
 todo = TODO
 
 # Context Pages
+
+## About
+git-description = Git Commit: {$hash} - Fecha: {$date}
 
 ## Document statistics
 document-statistics = Estadísticas del documento
@@ -13,29 +17,53 @@ line-count = Líneas
 
 ## Git management
 git-management = Gestión de Git
+git-management-description = {$git-management} es una herramienta para desarrolladores utilizada para las operciones de control de versión.
+git-management-loading = Cargando {$git-management}...
+stage = Etapa
 unstaged-changes = Cambios no confirmados
 staged-changes = Cambios confirmados
+unstagged-changes = Cambios rectificados
 
 ## Project search
 project-search = Búsqueda del proyecto
 
+## Prompt save changes
+prompt-save-changes-title = Cambios no guardados
+prompt-unsaved-changes = Hay cambios sin guardar, ¿Quiere guardarlos?
+cancel = Cancelar
+discard = Descartar cambios
+save-all = Guardar todo
+
 ## Settings
-settings = Ajustes 
+settings = Configuración
 
 ## Appearance
 appearance = Apariencia
 theme = Tema
-match-desktop = Sincronizar al escritorio
+match-desktop = Seguir el estilo del escritorio
 dark = Oscuro
 light = Claro
 syntax-dark = Sintaxis oscura
 syntax-light = Sintaxis clara
-default-font = Tipo de letra por defecto
-default-font-size = Tamaño de letra por defecto
+default-font = Fuente predeterminada
+default-font-size = Tamaño predeterminado de la fuente
+default-zoom-step = Granulidad de la ampliación o disminución
+
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Atajos de teclado
 enable-vim-bindings = Activar atajos de teclado de Vim
+
+# Find
+find-placeholder = Buscar...
+find-previous = Buscar anterior
+find-next = Buscar siguiente
+replace-placeholder = Remplazar...
+replace = Remplazar
+replace-all = Remplazar todo
+case-sensitive = Sensible a mayúsculas y minúsculas
+use-regex = Usar expresiones regulares
+wrap-around = Envolver
 
 # Menu
 
@@ -67,12 +95,15 @@ cut = Cortar
 copy = Copiar
 paste = Pegar
 find = Buscar
-replace = Reemplazar
+replace = Remplazar
 find-in-project = Buscar en el proyecto...
 spell-check = Corrector ortográfico...
 
 ## View
 view = Vista
+zoom-in = Ampliar
+default-size = Tamaño predeterminado
+zoom-out = Disminuir
 indentation = Indentación
 
 ### Indentation
@@ -85,6 +116,6 @@ word-wrap = Ajuste de línea
 show-line-numbers = Mostrar números de línea
 highlight-current-line = Resaltar línea actual
 syntax-highlighting = Resaltado de sintaxis...
-menu-settings = Ajustes...
+menu-settings = Configuración...
 menu-keyboard-shortcuts = Atajos de teclado...
-menu-about = Sobre el Editor de Texto COSMIC
+menu-about = Sobre el COSMIC Text Editor
