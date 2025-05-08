@@ -991,7 +991,7 @@ where
                     status = Status::Captured;
                 }
                 Named::Tab => {
-                    if !modifiers.control() {
+                    if !modifiers.control() && !modifiers.alt() {
                         if modifiers.shift() {
                             editor.action(Action::Unindent);
                         } else {
