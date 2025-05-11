@@ -56,6 +56,9 @@ default = ["gvfs", "wgpu"]
 gvfs = ["cosmic-files/gvfs"]
 wgpu = ["libcosmic/wgpu", "cosmic-files/wgpu"]
 
+[profile.release]
+lto = "fat"
+
 [profile.release-with-debug]
 inherits = "release"
 debug = true
