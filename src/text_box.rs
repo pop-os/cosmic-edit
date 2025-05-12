@@ -935,6 +935,19 @@ where
             editor.action(Action::Motion(motion));
         }
 
+        // Pre-select word for CTRL+<backspace> and CTRL+<delete>
+        fn delete_modifiers(
+            editor: &mut BorrowedWithFontSystem<'_, ViEditor<'static, 'static>>,
+            motion_to_apply: Motion,
+            modifiers: Modifiers,
+        ) {
+            if modifiers.control() && editor.selection() == Selection::None {
+                let cursor = editor.cursor();
+                editor.set_selection(Selection::Normal(cursor));
+                editor.action(Action::Motion(motion_to_apply));
+            }
+        }
+
         let mut status = Status::Ignored;
         match event {
             Event::Keyboard(KeyEvent::KeyPressed {
@@ -983,10 +996,12 @@ where
                     status = Status::Captured;
                 }
                 Named::Backspace => {
+                    delete_modifiers(&mut editor, Motion::LeftWord, modifiers);
                     editor.action(Action::Backspace);
                     status = Status::Captured;
                 }
                 Named::Delete => {
+                    delete_modifiers(&mut editor, Motion::RightWord, modifiers);
                     editor.action(Action::Delete);
                     status = Status::Captured;
                 }
