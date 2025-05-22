@@ -16,16 +16,16 @@ character-count-no-spaces = Caracteres (sem espaços)
 line-count = Linhas
 
 ## Git management
-git-management = Gerenciador Git
-git-management-description = O gerenciador do Git é uma ferramenta de desenvolvedor usada para operações de controle de versão.
-git-management-loading = Carregando o gerenciador Git...
+git-management = Gestor do Git
+git-management-description = O gestor do Git é uma ferramenta de desenvolvedor usada para operações de controle de versão.
+git-management-loading = Carregando o gestor do Git...
 stage = Adicionar em stage
 staged-changes = Alterações em stage
 unstage = Remover do stage
 unstaged-changes = Alterações fora do stage
 
 ## Project search
-project-search = Localizar projeto
+project-search = Localizar no projeto
 
 ## Prompt save changes
 prompt-save-changes-title = Alterações não salvas
@@ -40,11 +40,11 @@ settings = Configurações
 ## Appearance
 appearance = Aparência
 theme = Tema
-match-desktop = Acompanhar a áre de trabalho
+match-desktop = Seguir tema do sistema
 dark = Escuro
 light = Claro
-syntax-dark = Sintaxe escura
-syntax-light = Sintaxe clara
+syntax-dark = Esquema de cores escuro
+syntax-light = Esquema de cores claro
 default-font = Fonte padrão
 default-font-size = Tamanho padrão da fonte
 default-zoom-step = Etapas de zoom
@@ -72,7 +72,7 @@ file = Arquivo
 new-file = Novo arquivo
 new-window = Nova janela
 open-file = Abrir arquivo...
-open-recent = Abrir recente
+open-recent-file = Abrir arquivo recente
 close-file = Fechar arquivo
 menu-open-project = Abrir projeto...
 open-recent-project = Abrir projeto recente
@@ -83,7 +83,7 @@ revert-all-changes = Reverter todas alterações
 menu-document-statistics = Estatísticas do documento...
 document-type = Tipo de documento...
 encoding = Codificação...
-menu-git-management = Gerenciador Git...
+menu-git-management = Gestor do Git...
 print = Imprimir
 quit = Sair
 
@@ -100,7 +100,7 @@ find-in-project = Localizar no projeto...
 spell-check = Verificação ortográfica...
 
 ## View
-view = Visualizar
+view = Exibir
 zoom-in = Aumentar o zoom
 default-size = Tamanho padrão
 zoom-out = Diminuir o zoom
