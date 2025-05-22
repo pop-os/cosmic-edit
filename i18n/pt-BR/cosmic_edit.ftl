@@ -16,16 +16,16 @@ character-count-no-spaces = Caracteres (sem espaços)
 line-count = Linhas
 
 ## Git management
-git-management = Gerenciador Git
-git-management-description = O gerenciador do Git é uma ferramenta de desenvolvedor usada para operações de controle de versão.
-git-management-loading = Carregando o gerenciador Git...
+git-management = Gestor do Git
+git-management-description = O gestor do Git é uma ferramenta de desenvolvedor usada para operações de controle de versão.
+git-management-loading = Carregando o gestor do Git...
 stage = Adicionar em stage
 staged-changes = Alterações em stage
 unstage = Remover do stage
 unstaged-changes = Alterações fora do stage
 
 ## Project search
-project-search = Localizar projeto
+project-search = Localizar no projeto
 
 ## Prompt save changes
 prompt-save-changes-title = Alterações não salvas
@@ -83,7 +83,7 @@ revert-all-changes = Reverter todas alterações
 menu-document-statistics = Estatísticas do documento...
 document-type = Tipo de documento...
 encoding = Codificação...
-menu-git-management = Gerenciamento do Git...
+menu-git-management = Gestor do Git...
 print = Imprimir
 quit = Sair
 
