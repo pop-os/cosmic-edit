@@ -100,7 +100,7 @@ find-in-project = Localizar no projeto...
 spell-check = Verificação ortográfica...
 
 ## View
-view = Visualizar
+view = Exibir
 zoom-in = Aumentar o zoom
 default-size = Tamanho padrão
 zoom-out = Diminuir o zoom
