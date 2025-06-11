@@ -55,6 +55,7 @@ fork = "0.2"
 default = ["gvfs", "wgpu"]
 gvfs = ["cosmic-files/gvfs"]
 wgpu = ["libcosmic/wgpu", "cosmic-files/wgpu"]
+wayland = ["libcosmic/wayland", "cosmic-files/wayland"]
 
 [profile.release-with-debug]
 inherits = "release"

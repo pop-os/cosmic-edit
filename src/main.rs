@@ -2149,7 +2149,8 @@ impl Application for App {
                     },
                     relative_path.display()
                 );
-                let icon = icon::icon(mime_icon(mime_for_path(&diff.path), 16)).size(16);
+                let icon =
+                    icon::icon(mime_icon(mime_for_path(&diff.path, None, false), 16)).size(16);
                 let tab = Tab::GitDiff(GitDiffTab { title, diff });
                 self.tab_model
                     .insert()
