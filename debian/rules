@@ -12,7 +12,7 @@ override_dh_auto_clean:
 	fi
 
 override_dh_auto_build:
-	just build-vendored
+	just build-vendored --features wayland
 
 override_dh_auto_install:
 	just rootdir=$(DESTDIR) install
