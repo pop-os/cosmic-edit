@@ -40,9 +40,9 @@ settings = Configurações
 ## Appearance
 appearance = Aparência
 theme = Tema
-match-desktop = Seguir tema do sistema
-dark = Escuro
-light = Claro
+match-desktop = Estilo do sistema
+dark = Estilo escuro
+light = Estilo claro
 syntax-dark = Esquema de cores escuro
 syntax-light = Esquema de cores claro
 default-font = Fonte padrão
