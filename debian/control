@@ -7,6 +7,7 @@ Build-Depends:
     git,
     just (>= 1.13.0),
     pkg-config,
+    libglib2.0-dev,
     libxkbcommon-dev,
     rust-all,
 Standards-Version: 4.6.2
