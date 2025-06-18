@@ -237,7 +237,7 @@ impl EditorTab {
 
     pub fn icon(&self, size: u16) -> icon::Icon {
         match &self.path_opt {
-            Some(path) => icon::icon(mime_icon(mime_for_path(path), size)).size(size),
+            Some(path) => icon::icon(mime_icon(mime_for_path(path, None, false), size)).size(size),
             None => icon::from_name(FALLBACK_MIME_ICON).size(size).icon(),
         }
     }

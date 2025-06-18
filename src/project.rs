@@ -61,7 +61,9 @@ impl ProjectNode {
                     icon_cache_get("go-next-symbolic", size)
                 }
             }
-            Self::File { path, .. } => icon::icon(mime_icon(mime_for_path(path), size)).size(size),
+            Self::File { path, .. } => {
+                icon::icon(mime_icon(mime_for_path(path, None, false), size)).size(size)
+            }
         }
     }
 
