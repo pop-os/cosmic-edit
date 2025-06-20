@@ -57,6 +57,9 @@ gvfs = ["cosmic-files/gvfs"]
 wgpu = ["libcosmic/wgpu", "cosmic-files/wgpu"]
 wayland = ["libcosmic/wayland", "cosmic-files/wayland"]
 
+[profile.release]
+lto = "fat"
+
 [profile.release-with-debug]
 inherits = "release"
 debug = true
