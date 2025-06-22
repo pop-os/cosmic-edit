@@ -67,6 +67,10 @@ onig_sys = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main"
 # https://github.com/smol-rs/polling/pull/235
 polling = { git = "https://github.com/jackpot51/polling.git", branch = "master" }
 
+# See https://github.com/pop-os/cosmic-edit/issues/365 & https://github.com/pop-os/cosmic-term/issues/508
+[patch.'https://github.com/pop-os/cosmic-text']
+cosmic-text = { git = "https://github.com/pop-os/cosmic-text//", rev = "b017d7c" }
+
 # [patch.'https://github.com/pop-os/libcosmic']
 # libcosmic = { path = "../libcosmic" }
 # cosmic-config = { path = "../libcosmic/cosmic-config" }
