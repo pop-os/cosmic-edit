@@ -91,7 +91,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     while let Some(arg) = raw_args.next_os(&mut cursor) {
         match arg.to_str() {
             Some("--help") | Some("-h") => {
-                print_help(env!("CARGO_PKG_VERSION"), env!("VERGEN_GIT_SHA"));
+                print_help(env!();
 		return Ok(());
             }
             Some("--version") | Some("-V") => {
@@ -208,18 +208,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn print_help(version: &str, git_rev: &str) {
-    println!(
-        r#"cosmic-edit {version} (git commit {git_rev})
-System76 <info@system76.com>
-	    
+fn print_help() {
+    println!(    
+        r#"COSMIC Text Editor
 Designed for the COSMIC™ desktop environment, cosmic-edit is a libcosmic-based text editor.
 	    
 Project home page: https://github.com/pop-os/cosmic-edit
 	    
 Options:
-  -h, --help     Show this message
-  -v, --version  Show the version of cosmic-edit"#
+  -h, --help       Show this message
+  -v, --version    Show the version of cosmic-edit"#
     );
 }
 
