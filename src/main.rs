@@ -23,7 +23,7 @@ use cosmic::{
     Application, ApplicationExt, Apply, Element,
 };
 use cosmic_files::{
-    dialog::{Dialog, DialogKind, DialogMessage, DialogResult},
+    dialog::{Dialog, DialogKind, DialogMessage, DialogResult, DialogSettings},
     mime_icon::{mime_for_path, mime_icon},
 };
 use cosmic_text::{Cursor, Edit, Family, Selection, SwashCache, SyntaxSystem, ViMode};
@@ -2090,8 +2090,7 @@ impl Application for App {
             Message::OpenFileDialog => {
                 if self.dialog_opt.is_none() {
                     let (dialog, command) = Dialog::new(
-                        DialogKind::OpenMultipleFiles,
-                        None,
+                        DialogSettings::new().kind(DialogKind::OpenMultipleFiles),
                         Message::DialogMessage,
                         Message::OpenFileResult,
                     );
@@ -2164,8 +2163,7 @@ impl Application for App {
             Message::OpenProjectDialog => {
                 if self.dialog_opt.is_none() {
                     let (dialog, command) = Dialog::new(
-                        DialogKind::OpenMultipleFolders,
-                        None,
+                        DialogSettings::new().kind(DialogKind::OpenMultipleFolders),
                         Message::DialogMessage,
                         Message::OpenProjectResult,
                     );
@@ -2390,12 +2388,15 @@ impl Application for App {
                             ),
                             None => (String::new(), None),
                         };
-                        let (dialog, command) = Dialog::new(
-                            DialogKind::SaveFile { filename },
-                            path_opt,
-                            Message::DialogMessage,
-                            move |result| Message::SaveAsResult(entity, result),
-                        );
+                        let mut settings =
+                            DialogSettings::new().kind(DialogKind::SaveFile { filename });
+                        if let Some(path) = path_opt {
+                            settings = settings.path(path);
+                        }
+                        let (dialog, command) =
+                            Dialog::new(settings, Message::DialogMessage, move |result| {
+                                Message::SaveAsResult(entity, result)
+                            });
                         self.dialog_opt = Some(dialog);
                         return command;
                     }

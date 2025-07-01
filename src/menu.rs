@@ -9,7 +9,7 @@ use cosmic::{
     theme,
     widget::{
         self, divider, horizontal_space,
-        menu::{menu_button, ItemHeight, ItemWidth, MenuBar, Tree as MenuTree},
+        menu::{menu_button, ItemHeight, ItemWidth},
         responsive_menu_bar, segmented_button,
     },
     Element,
