@@ -47,6 +47,8 @@ syntax-dark = Цёмны сінтаксіс
 syntax-light = Светлы сінтаксіс
 default-font = Шрыфт па змаўчанні
 default-font-size = Памер шрыфта па змаўчанні
+default-zoom-step = Крок маштабавання
+
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Спалучэнні клавіш
@@ -61,6 +63,7 @@ replace = Замяніць
 replace-all = Замяніць усё
 case-sensitive = З улікам рэгістра
 use-regex = Выкарыстоўваць рэгулярны выраз
+wrap-around = Перанос
 
 # Menu
 
@@ -85,7 +88,7 @@ print = Друк
 quit = Выйсці
 
 ## Edit
-edit = Рэдагаваць
+edit = Праўка
 undo = Адрабіць
 redo = Паўтарыць
 cut = Выразаць
@@ -98,7 +101,10 @@ spell-check = Праверка правапісу...
 
 ## View
 view = Выгляд
-indentation = Водступы
+zoom-in = Павялічыць
+default-size = Памер па змаўчанні
+zoom-out = Паменшыць
+indentation = Водступ
 
 ### Indentation
 automatic-indentation = Аўтаматычныя водступы
