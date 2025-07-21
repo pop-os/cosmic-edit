@@ -47,6 +47,7 @@ syntax-dark = Синтаксис темный
 syntax-light = Синтаксис светлый
 default-font = Шрифт по умолчанию
 default-font-size = Размер шрифта по умолчанию
+default-zoom-step = Шаг увеличения лупы
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Сочетания клавиш
@@ -61,6 +62,7 @@ replace = Заменить
 replace-all = Заменить все
 case-sensitive = Учитывать регистр
 use-regex = Регулярные выражения
+wrap-around = Искать везде
 
 # Menu
 
@@ -98,13 +100,16 @@ spell-check = Проверить правописание...
 
 ## View
 view = Вид
+zoom-in = Приблизить
+default-size = Размер по умолчанию
+zoom-out = Отдалить
 indentation = Отступ
 
 ### Indentation
 automatic-indentation = Автоматические отступы
-tab-width = Длинна символа Tab: {$tab_width}
-convert-indentation-to-spaces = Сконвертировать отступы в пробелы
-convert-indentation-to-tabs = Сконвертировать отступы в символы Tab
+tab-width = Длина табуляции: {$tab_width}
+convert-indentation-to-spaces = Конвертировать отступы в пробелы
+convert-indentation-to-tabs = Конвертировать отступы в табуляцию
 
 word-wrap = Перенос слов
 show-line-numbers = Показ номеров строк
