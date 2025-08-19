@@ -28,7 +28,10 @@ two-face = "0.4.3"
 # Internationalization
 icu_collator = "1.5"
 icu_provider = { version = "1.5", features = ["sync"] }
-i18n-embed = { version = "0.15", features = ["fluent-system", "desktop-requester"] }
+i18n-embed = { version = "0.15", features = [
+    "fluent-system",
+    "desktop-requester",
+] }
 i18n-embed-fl = "0.9"
 rust-embed = "8"
 
@@ -47,7 +50,7 @@ features = ["syntect", "vi"]
 git = "https://github.com/pop-os/libcosmic.git"
 default-features = false
 #TODO: a11y feature crashes file choser dialog
-features = ["multi-window", "tokio", "winit", "surface-message"]
+features = ["dbus-config", "multi-window", "tokio", "winit", "surface-message"]
 
 [target.'cfg(unix)'.dependencies]
 fork = "0.2"
