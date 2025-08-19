@@ -413,6 +413,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-executor"
+version = "1.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb812ffb58524bdd10860d7d974e2f01cc0950c2438a74ee5ec2e2280c6c4ffa"
+dependencies = [
+ "async-task",
+ "concurrent-queue",
+ "fastrand 2.3.0",
+ "futures-lite 2.6.1",
+ "pin-project-lite",
+ "slab",
+]
+
+[[package]]
 name = "async-io"
 version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -485,6 +499,24 @@ dependencies = [
  "futures-lite 1.13.0",
  "rustix 0.38.44",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "async-process"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65daa13722ad51e6ab1a1b9c01299142bc75135b337923cfa10e79bbbd669f00"
+dependencies = [
+ "async-channel",
+ "async-io 2.5.0",
+ "async-lock 3.4.1",
+ "async-signal",
+ "async-task",
+ "blocking",
+ "cfg-if",
+ "event-listener 5.4.1",
+ "futures-lite 2.6.1",
+ "rustix 1.0.8",
 ]
 
 [[package]]
@@ -1416,7 +1448,9 @@ source = "git+https://github.com/pop-os/libcosmic.git#6e7a6343981df7d86f7ab01fe1
 dependencies = [
  "atomicwrites",
  "cosmic-config-derive",
+ "cosmic-settings-daemon",
  "dirs 6.0.0",
+ "futures-util",
  "iced_futures",
  "known-folders",
  "notify 8.2.0",
@@ -1426,6 +1460,7 @@ dependencies = [
  "tokio",
  "tracing",
  "xdg",
+ "zbus 5.9.0",
 ]
 
 [[package]]
@@ -1551,6 +1586,14 @@ dependencies = [
  "wayland-protocols-wlr",
  "wayland-scanner",
  "wayland-server",
+]
+
+[[package]]
+name = "cosmic-settings-daemon"
+version = "0.1.0"
+source = "git+https://github.com/pop-os/dbus-settings-bindings#3b86984332be2c930a3536ab714b843c851fa8ca"
+dependencies = [
+ "zbus 5.9.0",
 ]
 
 [[package]]
@@ -4470,6 +4513,7 @@ dependencies = [
  "cosmic-client-toolkit",
  "cosmic-config",
  "cosmic-freedesktop-icons",
+ "cosmic-settings-daemon",
  "cosmic-theme",
  "css-color",
  "derive_setters",
@@ -8949,7 +8993,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "675d170b632a6ad49804c8cf2105d7c31eddd3312555cffd4b740e08e97c25e6"
 dependencies = [
  "async-broadcast 0.5.1",
- "async-process",
+ "async-process 1.8.1",
  "async-recursion",
  "async-trait",
  "byteorder",
@@ -8985,8 +9029,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4bb4f9a464286d42851d18a605f7193b8febaf5b0919d71c6399b7b26e5b0aad"
 dependencies = [
  "async-broadcast 0.7.2",
+ "async-executor",
+ "async-io 2.5.0",
+ "async-lock 3.4.1",
+ "async-process 2.4.0",
  "async-recursion",
+ "async-task",
  "async-trait",
+ "blocking",
  "enumflags2",
  "event-listener 5.4.1",
  "futures-core",
