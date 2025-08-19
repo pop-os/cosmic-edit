@@ -1449,7 +1449,7 @@ impl Application for App {
             .button_spacing(space_xxxs)
             .on_activate(|entity| action::cosmic(cosmic::app::Action::NavBar(entity)))
             .spacing(space_none)
-            .style(theme::SegmentedButton::TabBar)
+            .style(theme::SegmentedButton::FileNav)
             .apply(widget::container)
             .padding(space_s)
             .width(Length::Shrink);
