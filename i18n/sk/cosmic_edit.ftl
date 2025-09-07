@@ -1,116 +1,121 @@
-cosmic-text-editor = Textový Editor COSMIC
+cosmic-text-editor = Textový editor COSMIC
 new-document = Nový dokument
 open-project = Otvoriť projekt
-todo = TODO
+todo = Úloha
 
-# Context Pages
+# Kontextové stránky
 
-## About
-git-description = Git commit {$hash} z {$date}
+## O aplikácii
+git-description = Git commit {$hash} dňa {$date}
 
-## Document statistics
-document-statistics = Štatistiky dokumentu
+## Štatistika dokumentu
+document-statistics = Štatistika dokumentu
 word-count = Počet slov
-character-count = Znakov
-character-count-no-spaces = Znakov (bez medzier)
-line-count = Riadkov
+character-count = Počet znakov
+character-count-no-spaces = Počet znakov (bez medzier)
+line-count = Počet riadkov
 
-## Git management
+## Správa Git
 git-management = Správa Git
-git-management-description = Správa Git je vývojársky nástroj používaný na operácie verzovania. 
-git-management-loading = Načítať Git správu...
-stage = Pripraviť
-staged-changes = Pripravené zmeny
-unstage = Zrušiť prípravu
-unstaged-changes = Nepripravené zmeny
+git-management-description = Správa Git je vývojársky nástroj používaný na operácie verzovania.
+git-management-loading = Načítava sa správa Git...
+stage = Pridať na stage
+staged-changes = Zmeny na stage
+unstage = Odstrániť zo stage
+unstaged-changes = Zmeny mimo stage
 
-## Project search
-project-search = Nájsť projekt
+## Hľadanie v projekte
+project-search = Hľadanie v projekte
 
-## Prompt save changes
+## Výzva na uloženie zmien
 prompt-save-changes-title = Neuložené zmeny
 prompt-unsaved-changes = Máte neuložené zmeny. Uložiť?
 cancel = Zrušiť
 discard = Zahodiť zmeny
 save-all = Uložiť všetko
 
-## Settings
+## Nastavenia
 settings = Nastavenia
 
-### Appearance
+### Vzhľad
 appearance = Vzhľad
 theme = Téma
-match-desktop = Podľa systému
-dark = Tmavá
-light = Svetlá
-syntax-dark = Syntax tmavá
-syntax-light = Syntax svetlá
-default-font = Východzie písmo
-default-font-size = Východzia veľkosť písma
+match-desktop = Prispôsobiť prostrediu
+dark = Tmavý
+light = Svetlý
+syntax-dark = Tmavá syntax
+syntax-light = Svetlá syntax
+default-font = Predvolený font
+default-font-size = Predvolená veľkosť písma
+default-zoom-step = Kroky priblíženia
 
-### Keyboard shortcuts
+
+### Klávesové skratky
 keyboard-shortcuts = Klávesové skratky
-enable-vim-bindings = Zapnúť Vim ovládanie
+enable-vim-bindings = Povoliť Vim skratky
 
-# Find
-find-placeholder = Nájsť...
-find-previous = Nájsť predchádzajúce
-find-next = Nájsť následujúce
+# Hľadať
+find-placeholder = Hľadať...
+find-previous = Hľadať predchádzajúce
+find-next = Hľadať ďalšie
 replace-placeholder = Nahradiť...
 replace = Nahradiť
 replace-all = Nahradiť všetko
-case-sensitive = Rozlišovanie veľkosti písmen
-use-regex = Použiť regex
+case-sensitive = Rozlišovať veľkosť písmen
+use-regex = Použiť regulárny výraz
 wrap-around = Pokračovať od začiatku
 
 # Menu
 
-## File
+## Súbor
 file = Súbor
 new-file = Nový súbor
 new-window = Nové okno
 open-file = Otvoriť súbor...
 open-recent-file = Otvoriť nedávny súbor
-close-file = Zatvoriť súbor
+close-file = Zavrieť súbor
 menu-open-project = Otvoriť projekt...
 open-recent-project = Otvoriť nedávny projekt
-close-project = Zatvoriť projekt
+close-project = Zavrieť projekt
 save = Uložiť
 save-as = Uložiť ako...
 revert-all-changes = Vrátiť všetky zmeny
-menu-document-statistics = Štatistiky dokumentu...
+menu-document-statistics = Štatistika dokumentu...
 document-type = Typ dokumentu...
 encoding = Kódovanie...
-menu-git-management = Git správa...
-print = Tlač
+menu-git-management = Správa Git...
+print = Tlačiť
 quit = Ukončiť
 
-## Edit
+## Úpravy
 edit = Upraviť
 undo = Späť
 redo = Znovu
 cut = Vystrihnúť
 copy = Kopírovať
 paste = Prilepiť
-select-all = Vybrať všetko
-find = Nájsť
-find-in-project = Nájsť v projekte...
+select-all = Označiť všetko
+find = Hľadať
+find-in-project = Hľadať v projekte...
 spell-check = Kontrola pravopisu...
 
-## View
+## Zobraziť
 view = Zobraziť
+zoom-in = Priblížiť
+default-size = Predvolená veľkosť
+zoom-out = Oddialiť
 indentation = Odsadenie
 
-### Indentation
+### Odsadenie
 automatic-indentation = Automatické odsadenie
 tab-width = Šírka tabulátora: {$tab_width}
-convert-indentation-to-spaces = Previesť odsadenie na medzery
-convert-indentation-to-tabs = Previesť odsadenie na tabulátory
+convert-indentation-to-spaces = Konvertovať odsadenie na medzery
+convert-indentation-to-tabs = Konvertovať odsadenie na tabulátory
 
-word-wrap = Zalamovanie slov
+word-wrap = Zalomiť text
 show-line-numbers = Zobraziť čísla riadkov
 highlight-current-line = Zvýrazniť aktuálny riadok
-syntax-highlighting = Zvýraznenie syntaxe...
+syntax-highlighting = Zvýrazňovanie syntaxe...
 menu-settings = Nastavenia...
 menu-keyboard-shortcuts = Klávesové skratky...
-menu-about = O textovom editore COSMIC
+menu-about = O aplikácii Textový editor COSMIC...
