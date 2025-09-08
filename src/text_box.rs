@@ -1213,8 +1213,8 @@ where
                             let metrics = editor.with_buffer(|buffer| buffer.metrics());
                             -y * metrics.line_height
                         }
-                        ScrollDelta::Pixels { x: _, y } => y,
-                    };
+                        ScrollDelta::Pixels { x: _, y } => -y,
+                    } * 4.0;
                     editor.action(Action::Scroll { pixels });
                     status = Status::Captured;
                 }
