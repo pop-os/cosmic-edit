@@ -56,6 +56,7 @@ impl EditorTab {
             "",
             &attrs,
             Shaping::Advanced,
+            None,
         );
 
         let editor = SyntaxEditor::new(
@@ -134,19 +135,26 @@ impl EditorTab {
 
                     // Store the entire operation as a single change for undo
                     editor.start_change();
-                    
+
                     // Grab everything in the buffer
                     let cursor_start: Cursor = cosmic_text::Cursor::new(0, 0);
                     let cursor_end = editor.with_buffer(|buffer| {
                         let last_line = buffer.lines.len().saturating_sub(1);
-                        cosmic_text::Cursor::new(last_line, buffer.lines.get(last_line).map(|line| line.text().len()).unwrap_or(0))
+                        cosmic_text::Cursor::new(
+                            last_line,
+                            buffer
+                                .lines
+                                .get(last_line)
+                                .map(|line| line.text().len())
+                                .unwrap_or(0),
+                        )
                     });
-                    
+
                     // Replace everything in the buffer with the content from disk
                     editor.delete_range(cursor_start, cursor_end);
                     editor.insert_at(cursor_start, &file_content, None);
                     editor.set_cursor(cursor_start);
-                    
+
                     editor.finish_change();
                     editor.set_changed(false);
                 }

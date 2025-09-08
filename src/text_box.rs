@@ -1207,35 +1207,16 @@ where
             }
             Event::Mouse(MouseEvent::WheelScrolled { delta }) => {
                 if let Some(_p) = cursor_position.position_in(layout.bounds()) {
-                    match delta {
+                    let pixels = match delta {
                         ScrollDelta::Lines { x: _, y } => {
                             //TODO: this adjustment is just a guess!
-                            state.scroll_pixels = 0.0;
-                            let lines = (-y * 6.0) as i32;
-                            if lines != 0 {
-                                editor.action(Action::Scroll { lines });
-                            }
-                            status = Status::Captured;
-                        }
-                        ScrollDelta::Pixels { x: _, y } => {
-                            //TODO: this adjustment is just a guess!
-                            state.scroll_pixels -= y * 6.0;
-                            let mut lines = 0;
                             let metrics = editor.with_buffer(|buffer| buffer.metrics());
-                            while state.scroll_pixels <= -metrics.line_height {
-                                lines -= 1;
-                                state.scroll_pixels += metrics.line_height;
-                            }
-                            while state.scroll_pixels >= metrics.line_height {
-                                lines += 1;
-                                state.scroll_pixels -= metrics.line_height;
-                            }
-                            if lines != 0 {
-                                editor.action(Action::Scroll { lines });
-                            }
-                            status = Status::Captured;
+                            -y * metrics.line_height
                         }
-                    }
+                        ScrollDelta::Pixels { x: _, y } => y,
+                    };
+                    editor.action(Action::Scroll { pixels });
+                    status = Status::Captured;
                 }
             }
             _ => (),
@@ -1283,7 +1264,6 @@ pub struct State {
     editor_offset_x: Cell<i32>,
     is_focused: bool,
     scale_factor: Cell<f32>,
-    scroll_pixels: f32,
     scrollbar_v_rect: Cell<Rectangle<f32>>,
     scrollbar_h_rect: Cell<Option<Rectangle<f32>>>,
     handle_opt: Mutex<Option<image::Handle>>,
@@ -1299,7 +1279,6 @@ impl State {
             editor_offset_x: Cell::new(0),
             is_focused: false,
             scale_factor: Cell::new(1.0),
-            scroll_pixels: 0.0,
             scrollbar_v_rect: Cell::new(Rectangle::default()),
             scrollbar_h_rect: Cell::new(None),
             handle_opt: Mutex::new(None),
