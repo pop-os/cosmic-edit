@@ -5,22 +5,21 @@ use cosmic::widget::menu::action::MenuAction;
 use cosmic::widget::menu::key_bind::KeyBind;
 use cosmic::widget::segmented_button::Entity;
 use cosmic::{
-    action,
-    app::{context_drawer, Core, Settings, Task},
+    Application, ApplicationExt, Apply, Element, action,
+    app::{Core, Settings, Task, context_drawer},
     cosmic_config::{self, CosmicConfigEntry},
     cosmic_theme, executor,
     font::Font,
     iced::{
-        self,
+        self, Alignment, Background, Color, Length, Limits, Point, Subscription,
         advanced::graphics::text::font_system,
         clipboard, event,
         futures::{self, SinkExt},
         keyboard::{self, Modifiers},
-        stream, window, Alignment, Background, Color, Length, Limits, Point, Subscription,
+        stream, window,
     },
     style, theme,
     widget::{self, button, icon, nav_bar, segmented_button},
-    Application, ApplicationExt, Apply, Element,
 };
 use cosmic_files::{
     dialog::{Dialog, DialogKind, DialogMessage, DialogResult, DialogSettings},
@@ -38,7 +37,7 @@ use std::{
 };
 use tokio::time;
 
-use config::{AppTheme, Config, ConfigState, CONFIG_VERSION};
+use config::{AppTheme, CONFIG_VERSION, Config, ConfigState};
 mod config;
 
 use git::{GitDiff, GitDiffLine, GitRepository, GitStatus, GitStatusKind};
@@ -911,24 +910,26 @@ impl App {
             });
         }
 
-        widget::settings::view_column(vec![widget::settings::section()
-            .add(
-                widget::settings::item::builder(fl!("word-count"))
-                    .control(widget::text(word_count.to_string())),
-            )
-            .add(
-                widget::settings::item::builder(fl!("character-count"))
-                    .control(widget::text(character_count.to_string())),
-            )
-            .add(
-                widget::settings::item::builder(fl!("character-count-no-spaces"))
-                    .control(widget::text(character_count_no_spaces.to_string())),
-            )
-            .add(
-                widget::settings::item::builder(fl!("line-count"))
-                    .control(widget::text(line_count.to_string())),
-            )
-            .into()])
+        widget::settings::view_column(vec![
+            widget::settings::section()
+                .add(
+                    widget::settings::item::builder(fl!("word-count"))
+                        .control(widget::text(word_count.to_string())),
+                )
+                .add(
+                    widget::settings::item::builder(fl!("character-count"))
+                        .control(widget::text(character_count.to_string())),
+                )
+                .add(
+                    widget::settings::item::builder(fl!("character-count-no-spaces"))
+                        .control(widget::text(character_count_no_spaces.to_string())),
+                )
+                .add(
+                    widget::settings::item::builder(fl!("line-count"))
+                        .control(widget::text(line_count.to_string())),
+                )
+                .into(),
+        ])
         .into()
     }
 
@@ -1182,10 +1183,12 @@ impl App {
                 items
             }
             None => {
-                vec![search_input
-                    .on_input(Message::ProjectSearchValue)
-                    .on_submit(|_| Message::ProjectSearchSubmit)
-                    .into()]
+                vec![
+                    search_input
+                        .on_input(Message::ProjectSearchValue)
+                        .on_submit(|_| Message::ProjectSearchSubmit)
+                        .into(),
+                ]
             }
         };
 

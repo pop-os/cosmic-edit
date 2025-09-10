@@ -2,7 +2,7 @@
 
 use grep::matcher::{Match, Matcher};
 use grep::regex::RegexMatcher;
-use grep::searcher::{sinks::UTF8, Searcher};
+use grep::searcher::{Searcher, sinks::UTF8};
 use std::path::PathBuf;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

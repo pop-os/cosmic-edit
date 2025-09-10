@@ -1,29 +1,29 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::{
-    cosmic_theme::palette::{blend::Compose, WithAlpha},
+    Renderer,
+    cosmic_theme::palette::{WithAlpha, blend::Compose},
     iced::{
+        Color, Element, Length, Padding, Point, Rectangle, Size, Vector,
         advanced::graphics::text::font_system,
         event::{Event, Status},
         keyboard::{Event as KeyEvent, Modifiers},
         mouse::{self, Button, Event as MouseEvent, ScrollDelta},
-        Color, Element, Length, Padding, Point, Rectangle, Size, Vector,
     },
     iced_core::{
+        Border, Radians, Shell,
         clipboard::Clipboard,
         image,
-        keyboard::{key::Named, Key},
+        keyboard::{Key, key::Named},
         layout::{self, Layout},
         renderer::{self, Quad, Renderer as _},
         widget::{
-            self,
+            self, Id, Widget,
             operation::{self, Operation},
-            tree, Id, Widget,
+            tree,
         },
-        Border, Radians, Shell,
     },
     theme::Theme,
-    Renderer,
 };
 use cosmic_text::{
     Action, BorrowedWithFontSystem, Edit, Metrics, Motion, Scroll, Selection, ViEditor,
@@ -35,7 +35,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{line_number::LineNumberKey, LINE_NUMBER_CACHE, SWASH_CACHE};
+use crate::{LINE_NUMBER_CACHE, SWASH_CACHE, line_number::LineNumberKey};
 
 pub struct TextBox<'a, Message> {
     editor: &'a Mutex<ViEditor<'static, 'static>>,
