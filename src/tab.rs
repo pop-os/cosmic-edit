@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use cosmic::{
-    iced::{advanced::graphics::text::font_system, Point},
+    iced::{Point, advanced::graphics::text::font_system},
     widget::icon,
 };
-use cosmic_files::mime_icon::{mime_for_path, mime_icon, FALLBACK_MIME_ICON};
+use cosmic_files::mime_icon::{FALLBACK_MIME_ICON, mime_for_path, mime_icon};
 use cosmic_text::{Attrs, Buffer, Cursor, Edit, Selection, Shaping, SyntaxEditor, ViEditor, Wrap};
 use notify::Watcher;
 use regex::Regex;
@@ -16,7 +16,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{fl, git::GitDiff, Config, SYNTAX_SYSTEM};
+use crate::{Config, SYNTAX_SYSTEM, fl, git::GitDiff};
 
 pub enum Tab {
     Editor(EditorTab),
