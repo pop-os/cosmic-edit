@@ -19,7 +19,7 @@ use cosmic::{
         stream, window,
     },
     style, theme,
-    widget::{self, button, icon, nav_bar, segmented_button},
+    widget::{self, about::About, button, icon, nav_bar, segmented_button},
 };
 use cosmic_files::{
     dialog::{Dialog, DialogKind, DialogMessage, DialogResult, DialogSettings},
@@ -439,6 +439,7 @@ pub enum Find {
 
 pub struct App {
     core: Core,
+    about: About,
     nav_model: segmented_button::SingleSelectModel,
     tab_model: segmented_button::SingleSelectModel,
     config_handler: Option<cosmic_config::Config>,
@@ -847,38 +848,6 @@ impl App {
             },
             self.update_focus(),
         ])
-    }
-
-    fn about(&self) -> Element<Message> {
-        let cosmic_theme::Spacing { space_xxs, .. } = self.core().system_theme().cosmic().spacing;
-        let repository = "https://github.com/pop-os/cosmic-edit";
-        let hash = env!("VERGEN_GIT_SHA");
-        let short_hash: String = hash.chars().take(7).collect();
-        let date = env!("VERGEN_GIT_COMMIT_DATE");
-        widget::column::with_children(vec![
-                widget::svg(widget::svg::Handle::from_memory(
-                    &include_bytes!(
-                        "../res/icons/hicolor/128x128/apps/com.system76.CosmicEdit.svg"
-                    )[..],
-                ))
-                .into(),
-                widget::text::title3(fl!("cosmic-text-editor")).into(),
-                widget::button::link(repository)
-                    .on_press(Message::LaunchUrl(repository.to_string()))
-                    .padding(0)
-                    .into(),
-                widget::button::link(fl!(
-                    "git-description",
-                    hash = short_hash.as_str(),
-                    date = date
-                ))
-                    .on_press(Message::LaunchUrl(format!("{}/commits/{}", repository, hash)))
-                    .padding(0)
-                .into(),
-            ])
-        .align_x(Alignment::Center)
-        .spacing(space_xxs)
-        .into()
     }
 
     fn document_statistics(&self) -> Element<Message> {
@@ -1367,8 +1336,24 @@ impl Application for App {
             zoom_steps.push(zoom_step);
         }
 
+        let about = About::default()
+            .name(fl!("cosmic-text-editor"))
+            .icon(icon::from_name(Self::APP_ID))
+            .version(env!("CARGO_PKG_VERSION"))
+            .author("System76")
+            .license("GPL-3.0-only")
+            .developers([("Jeremy Soller", "jeremy@system76.com")])
+            .links([
+                (fl!("repository"), "https://github.com/pop-os/cosmic-edit"),
+                (
+                    fl!("support"),
+                    "https://github.com/pop-os/cosmic-edit/issues",
+                ),
+            ]);
+
         let mut app = App {
             core,
+            about,
             nav_model: nav_bar::Model::builder().build(),
             tab_model: segmented_button::Model::builder().build(),
             config_handler: flags.config_handler,
@@ -2740,8 +2725,9 @@ impl Application for App {
         }
 
         Some(match self.context_page {
-            ContextPage::About => context_drawer::context_drawer(
-                self.about(),
+            ContextPage::About => context_drawer::about(
+                &self.about,
+                Message::LaunchUrl,
                 Message::ToggleContextPage(ContextPage::About),
             ),
             ContextPage::DocumentStatistics => context_drawer::context_drawer(

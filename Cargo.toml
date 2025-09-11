@@ -6,16 +6,13 @@ edition = "2024"
 license = "GPL-3.0-only"
 rust-version = "1.85"
 
-[build-dependencies]
-vergen = { version = "8", features = ["git", "gitcl"] }
-
 [dependencies]
 dirs = "6"
-env_logger = "0.11.6"
+env_logger = "0.11.8"
 grep = "0.3.2"
 ignore = "0.4.23"
-log = "0.4.25"
-notify = "6.1.1"
+log = "0.4.28"
+notify = "8.2.0"
 open = "5.3.2"
 paste = "1.0.15"
 patch = "0.7.0"
@@ -28,11 +25,11 @@ two-face = "0.4.3"
 # Internationalization
 icu_collator = "1.5"
 icu_provider = { version = "1.5", features = ["sync"] }
-i18n-embed = { version = "0.15", features = [
+i18n-embed = { version = "0.16", features = [
     "fluent-system",
     "desktop-requester",
 ] }
-i18n-embed-fl = "0.9"
+i18n-embed-fl = "0.10"
 rust-embed = "8"
 
 [dependencies.cosmic-files]
@@ -50,7 +47,7 @@ features = ["syntect", "vi"]
 git = "https://github.com/pop-os/libcosmic.git"
 default-features = false
 #TODO: a11y feature crashes file choser dialog
-features = ["dbus-config", "multi-window", "tokio", "winit", "surface-message"]
+features = ["about", "dbus-config", "multi-window", "tokio", "winit", "surface-message"]
 
 [target.'cfg(unix)'.dependencies]
 fork = "0.2"
@@ -68,8 +65,6 @@ debug = true
 [patch.crates-io]
 onig = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
 onig_sys = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
-# https://github.com/smol-rs/polling/pull/235
-polling = { git = "https://github.com/jackpot51/polling.git", branch = "master" }
 
 # [patch.'https://github.com/pop-os/libcosmic']
 # libcosmic = { path = "../libcosmic" }
