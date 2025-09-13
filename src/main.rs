@@ -850,7 +850,7 @@ impl App {
         ])
     }
 
-    fn document_statistics(&self) -> Element<Message> {
+    fn document_statistics(&self) -> Element<'_, Message> {
         //TODO: calculate in the background
         let mut character_count = 0;
         let mut character_count_no_spaces = 0;
@@ -902,7 +902,7 @@ impl App {
         .into()
     }
 
-    fn git_management(&self) -> Element<Message> {
+    fn git_management(&self) -> Element<'_, Message> {
         let spacing = self.core().system_theme().cosmic().spacing;
 
         if let Some(project_status) = &self.git_project_status {
@@ -1082,7 +1082,7 @@ impl App {
         }
     }
 
-    fn project_search(&self) -> Element<Message> {
+    fn project_search(&self) -> Element<'_, Message> {
         let spacing = self.core().system_theme().cosmic().spacing;
 
         let search_input = widget::text_input::search_input(
@@ -1167,7 +1167,7 @@ impl App {
             .into()
     }
 
-    fn settings(&self) -> Element<Message> {
+    fn settings(&self) -> Element<'_, Message> {
         let app_theme_selected = match self.config.app_theme {
             AppTheme::Dark => 1,
             AppTheme::Light => 2,
@@ -1417,7 +1417,7 @@ impl Application for App {
     }
 
     // The default nav_bar widget needs to be condensed for cosmic-edit
-    fn nav_bar(&self) -> Option<Element<action::Action<Self::Message>>> {
+    fn nav_bar(&self) -> Option<Element<'_, action::Action<Self::Message>>> {
         if !self.core().nav_bar_active() {
             return None;
         }
@@ -1536,7 +1536,7 @@ impl Application for App {
         }
     }
 
-    fn dialog(&self) -> Option<Element<Self::Message>> {
+    fn dialog(&self) -> Option<Element<'_, Self::Message>> {
         let Some(ref dialog) = self.dialog_page_opt else {
             return None;
         };
@@ -2719,7 +2719,7 @@ impl Application for App {
         Task::none()
     }
 
-    fn context_drawer(&self) -> Option<context_drawer::ContextDrawer<Message>> {
+    fn context_drawer(&self) -> Option<context_drawer::ContextDrawer<'_, Message>> {
         if !self.core.window.show_context {
             return None;
         }
@@ -2753,7 +2753,7 @@ impl Application for App {
         })
     }
 
-    fn header_start(&self) -> Vec<Element<Message>> {
+    fn header_start(&self) -> Vec<Element<'_, Message>> {
         vec![menu_bar(
             &self.core,
             &self.config,
@@ -2763,7 +2763,7 @@ impl Application for App {
         )]
     }
 
-    fn view(&self) -> Element<Message> {
+    fn view(&self) -> Element<'_, Message> {
         let cosmic_theme::Spacing {
             space_none,
             space_xxs,
@@ -3029,7 +3029,7 @@ impl Application for App {
         content
     }
 
-    fn view_window(&self, window_id: window::Id) -> Element<Message> {
+    fn view_window(&self, window_id: window::Id) -> Element<'_, Message> {
         match &self.dialog_opt {
             Some(dialog) => dialog.view(window_id),
             None => widget::text("Unknown window ID").into(),
