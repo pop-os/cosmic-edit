@@ -47,13 +47,14 @@ features = ["syntect", "vi"]
 git = "https://github.com/pop-os/libcosmic.git"
 default-features = false
 #TODO: a11y feature crashes file choser dialog
-features = ["about", "dbus-config", "multi-window", "tokio", "winit", "surface-message"]
+features = ["about", "multi-window", "tokio", "winit", "surface-message"]
 
 [target.'cfg(unix)'.dependencies]
 fork = "0.2"
 
 [features]
-default = ["gvfs", "wgpu", "wayland"]
+default = ["dbus-config","gvfs", "wgpu", "wayland"]
+dbus-config = ["libcosmic/dbus-config"]
 gvfs = ["cosmic-files/gvfs"]
 wgpu = ["libcosmic/wgpu", "cosmic-files/wgpu"]
 wayland = ["libcosmic/wayland", "cosmic-files/wayland"]
