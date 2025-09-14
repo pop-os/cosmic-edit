@@ -1,4 +1,4 @@
-cosmic-text-editor = محرر نصوص COSMIC
+cosmic-text-editor = محرِّر نصوص COSMIC
 new-document = مستند جديد
 open-project = افتح مشروعًا
 todo = المهمَّات
@@ -6,10 +6,11 @@ todo = المهمَّات
 # Context Pages
 
 ## About
-git-description = إيداع جِت {$hash} بتاريخ {$date}
+repository = المستودع
+support = الدعم
 
 ## Document statistics
-document-statistics = إحصاءات المستند
+document-statistics = إحصائيات المستند
 word-count = عدد الكلمات
 character-count = الأحرف
 character-count-no-spaces = الأحرف (دون مسافات)
@@ -18,7 +19,7 @@ line-count = الأسطر
 ## Git management
 git-management = إدارة جِت
 git-management-description = إدارة جِت هي أداة يستخدمها المطورون لإدارة عمليات التحكم في الإصدارات.
-git-management-loading = إدارة جِت تحمَّل...
+git-management-loading = إدارة جِت تُحمَّل...
 stage = رحِّل
 staged-changes = تغييرات مرحَّلة
 unstage = ألغِ الترحيل
@@ -29,7 +30,7 @@ project-search = ابحث المشروع
 
 ## Prompt save changes
 prompt-save-changes-title = تغييرات غير محفوظة
-prompt-unsaved-changes = هناك تغييرات غير محفوظة. أأحفظ؟
+prompt-unsaved-changes = هناك تغييرات غير محفوظة. أحفظ؟
 cancel = ألغِ
 discard = أهمل التغييرات
 save-all = احفظ الكل
@@ -40,13 +41,14 @@ settings = الإعدادات
 ### Appearance
 appearance = المظهر
 theme = السمة
-match-desktop = مطابقة سطح المكتب
-dark = داكن
-light = فاتح
+match-desktop = طابق سطح المكتب
+dark = داكنة
+light = فاتحة
 syntax-dark = صياغة السمة الداكنة
 syntax-light = صياغة السمة الفاتحة
 default-font = الخط المبدئي
 default-font-size = حجم الخط المبدئي
+default-zoom-step = خطوات التحجيم
 
 ### Keyboard shortcuts
 keyboard-shortcuts = اختصارات لوحة المفاتيح
@@ -60,7 +62,8 @@ replace-placeholder = استبدل...
 replace = استبدل
 replace-all = استبدل الكل
 case-sensitive = حساس لحالة الحرف
-use-regex = استعمل التعبير النمطي
+use-regex = (regex) استعمل التعبير النمطي
+wrap-around = لف حول
 
 # Menu
 
@@ -70,14 +73,14 @@ new-file = ملف جديد
 new-window = نافذة جديدة
 open-file = افتح ملفًا...
 open-recent-file = افتح ملفًا حديثًا
-close-file = أغلق ملفًا
+close-file = أغلِق الملف
 menu-open-project = افتح مشروعًا...
 open-recent-project = افتح مشروعًا حديثًا
-close-project = أغلِق مشروعًا
+close-project = أغلِق المشروع
 save = احفظ
 save-as = احفظ باسم...
 revert-all-changes = تراجع عن كل التغييرات
-menu-document-statistics = إحصاءات المستند...
+menu-document-statistics = إحصائيات المستند...
 document-type = نوع المستند...
 encoding = الترميز...
 menu-git-management = إدارة جِت...
@@ -85,19 +88,22 @@ print = اطبع
 quit = غادِر
 
 ## Edit
-edit = تعديل
+edit = عدِّل
 undo = تراجع
 redo = أعِد
 cut = قص
 copy = انسِخ
 paste = ألصِق
-select-all = اختر الكل
+select-all = حدّد الكل
 find = اعثر
 find-in-project = اعثر بالمشروع...
 spell-check = تدقيق الإملاء...
 
 ## View
 view = عرض
+zoom-in = قرِّب
+default-size = الحجم المبدئي
+zoom-out = بعِّد
 indentation = الإزاحة
 
 ### Indentation
@@ -112,4 +118,4 @@ highlight-current-line = أبرِز السطر الحالي
 syntax-highlighting = إبراز الصياغة...
 menu-settings = الإعدادات...
 menu-keyboard-shortcuts = اختصارات لوحة المفاتيح...
-menu-about = عَنْ محرر نصوص COSMIC...
+menu-about = عَنْ محرِّر نصوص COSMIC...
