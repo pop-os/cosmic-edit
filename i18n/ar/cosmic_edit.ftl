@@ -6,7 +6,8 @@ todo = المهمَّات
 # Context Pages
 
 ## About
-git-description = إيداع جِت {$hash} بتاريخ {$date}
+repository = المستودع
+support = الدعم
 
 ## Document statistics
 document-statistics = إحصاءات المستند
