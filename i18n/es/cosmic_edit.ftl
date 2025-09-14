@@ -1,7 +1,8 @@
-cosmic-text-editor = COSMIC Text Editor
+cosmic-text-editor = Editor de texto COSMIC
 new-document = Nuevo documento
 open-project = Abrir proyecto
 todo = TODO
+close = Cerrar
 
 # Context Pages
 
