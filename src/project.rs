@@ -91,7 +91,7 @@ impl Ord for ProjectNode {
                 }
             }
         }
-        crate::localize::sorter().compare(self.name(), other.name())
+        crate::localize::LANGUAGE_SORTER.compare(self.name(), other.name())
     }
 }
 
