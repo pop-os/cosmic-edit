@@ -6,7 +6,8 @@ todo = TODO
 # Context Pages
 
 ## About
-git-description = Git commit {$hash} z {$date}
+repository = Repozytorium
+support = Wsparcie
 
 ## Document statistics
 document-statistics = Statystyki dokumentu
