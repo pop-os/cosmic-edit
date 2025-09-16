@@ -23,8 +23,7 @@ tokio = { version = "1", features = ["process", "time"] }
 syntect = "5.2.0"
 two-face = "0.4.3"
 # Internationalization
-icu_collator = "1.5"
-icu_provider = { version = "1.5", features = ["sync"] }
+icu = { version = "2.0.0", features = ["compiled_data"] }
 i18n-embed = { version = "0.16", features = [
     "fluent-system",
     "desktop-requester",
