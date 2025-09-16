@@ -22,7 +22,6 @@ git-management-loading = "Gestione git" in caricamento...
 stage = Prepara modifiche
 staged-changes = Modifiche preparate
 unstaged-changes = Modifiche non confirmate
-staged-changes = Modifiche confermate
 
 ## Project search
 project-search = Ricerca nel progetto

@@ -90,7 +90,6 @@ paste = Klistra in
 select-all = Välj alla
 find = Sök
 find-in-project = Sök i projekt...
-replace = Ersätt
 spell-check = Stavningskontroll...
 
 ## Visa

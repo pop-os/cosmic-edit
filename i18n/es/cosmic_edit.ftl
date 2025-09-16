@@ -96,7 +96,6 @@ cut = Cortar
 copy = Copiar
 paste = Pegar
 find = Buscar
-replace = Remplazar
 find-in-project = Buscar en el proyecto...
 spell-check = Corrector ortográfico...
 
