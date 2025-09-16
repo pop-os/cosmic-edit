@@ -951,7 +951,7 @@ where
         let mut status = Status::Ignored;
         match event {
             Event::Keyboard(KeyEvent::KeyPressed {
-                key: Key::Named(key),
+                modified_key: Key::Named(key),
                 modifiers,
                 ..
             }) if state.is_focused && !matches!(key, Named::Space) => match key {
@@ -1017,9 +1017,6 @@ where
                 }
                 _ => (),
             },
-            Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
-                state.modifiers = modifiers;
-            }
             Event::Keyboard(KeyEvent::KeyPressed { text, .. }) if state.is_focused => {
                 let character = text.unwrap_or_default().chars().next().unwrap_or_default();
                 // Only parse keys when Super, Ctrl, and Alt are not pressed
@@ -1029,6 +1026,9 @@ where
                     }
                     status = Status::Captured;
                 }
+            }
+            Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
+                state.modifiers = modifiers;
             }
             Event::Mouse(MouseEvent::ButtonPressed(button)) => {
                 if let Some(p) = cursor_position.position_in(layout.bounds()) {
