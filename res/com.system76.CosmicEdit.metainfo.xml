@@ -16,6 +16,7 @@
   <name xml:lang="ru">Текстовый редактор COSMIC</name>
   <name xml:lang="sk">COSMIC Textový editor</name>
   <name xml:lang="es">Editor de texto</name>
+  <name xml:lang="it">Editor di testo</name>
   <summary>Text editor for the COSMIC desktop</summary>
   <summary xml:lang="ar">محرِّر نصوص لسطح مكتب كُوزمِك</summary>
   <summary xml:lang="pl">Edytor tekstu pulpitu COSMIC</summary>
@@ -24,6 +25,7 @@
   <summary xml:lang="ru">Текстовый редактор для оболочки COSMIC</summary>
   <summary xml:lang="sk">Textový editor pre pracovné prostredie COSMIC</summary>
   <summary xml:lang="es">Editor de texto de escritorio COSMIC</summary>
+  <summary xml:lang="it">Editor di testo di COSMIC</summary>
   <description>
     <p>Text editor that provides advanced features with high performance</p>
     <p xml:lang="ar">محرِّر نصوص يوفر ميزات متقدمة بأداء عالٍ</p>
@@ -33,6 +35,7 @@
     <p xml:lang="ru">Текстовый редактор который предоставляет продвинутые возможности с высокой производительностью</p>
     <p xml:lang="sk">Textový editor, ktorý poskytuje pokročilé funkcie s vysokým výkonom</p>
     <p xml:lang="es">Editor de texto que provee funcionalidades avanzadas con alto rendimiento</p>
+    <p xml:lang="it">Editor di testo con funzionalità avanzate ad alte prestazioni</p>
     <ul>
         <li>Written in Rust for performance and safety</li>
         <li xml:lang="ar">مكتوب بلغة Rust من أجل الأداء والأمان</li>
@@ -42,7 +45,8 @@
         <li xml:lang="ru">Написан на Rust для производительности и безопасности</li>
         <li xml:lang="sk">Napísané v jazyku Rust pre výkon a bezpečnosť</li>
         <li xml:lang="es">Escrito en Rust por rendimiento y seguridad</li>
-        <li>Syntax highlighting built in for most languages</li>
+        <li xml:lang="it">Scritto in Rust per maggore velocità e sicurezza</li>
+      <li>Syntax highlighting built in for most languages</li>
         <li xml:lang="ar">إبراز بناء الجملة مدمج لمعظم اللغات</li>
         <li xml:lang="pl">Wbudowane podświetlanie składni dla większości języków</li>
         <li xml:lang="hu">Szintaxiskiemelés a legtöbb nyelvhez</li>
@@ -50,7 +54,7 @@
         <li xml:lang="ru">Подсветка синтаксиса встроена для большинства языков</li>
         <li xml:lang="sk">Vstavané zvýrazňovanie syntaxe pre väčšinu jazykov</li>
         <li xml:lang="es">Resaltado de sintaxis incorporado para la mayoría de lenguajes</li>
-        <li>Provides project-based editing</li>
+      <li>Provides project-based editing</li>
         <li xml:lang="ar">يوفر تحريرًا قائمًا على المشاريع</li>
         <li xml:lang="pl">Możliwość edycji projektów</li>
         <li xml:lang="hu">Projektalapú szerkesztést biztosít</li>

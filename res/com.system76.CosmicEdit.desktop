@@ -10,6 +10,7 @@ Name[pt]=Editor de Texto
 Name[ru]=Текстовый редактор COSMIC
 Name[sk]=Textový editor COSMIC
 Name[es]=Editor de texto COSMIC
+Name[it]=Editor di testo
 Exec=cosmic-edit %F
 Terminal=false
 Type=Application
