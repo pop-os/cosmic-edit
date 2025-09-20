@@ -9,7 +9,7 @@
   <url type="homepage">https://github.com/pop-os/cosmic-edit</url>
   <url type="bugtracker">https://github.com/pop-os/cosmic-edit</url>
   <name>COSMIC Text Editor</name>
-  <name xml:lang="ar">محرِّر نصوص كُوزمِك</name>
+  <name xml:lang="ar">محرِّر نصوص COSMIC</name>
   <name xml:lang="pl">Edytor tekstu COSMIC</name>
   <name xml:lang="hu">COSMIC Szövegszerkesztő</name>
   <name xml:lang="pt_BR">Editor de Texto</name>
@@ -18,7 +18,7 @@
   <name xml:lang="es">Editor de texto</name>
   <name xml:lang="it">Editor di testo</name>
   <summary>Text editor for the COSMIC desktop</summary>
-  <summary xml:lang="ar">محرِّر نصوص لسطح مكتب كُوزمِك</summary>
+  <summary xml:lang="ar">محرِّر نصوص لسطح مكتب COSMIC</summary>
   <summary xml:lang="pl">Edytor tekstu pulpitu COSMIC</summary>
   <summary xml:lang="hu">Szövegszerkesztő a COSMIC asztali környezethez</summary>
   <summary xml:lang="pt_BR">Editor de texto do desktop COSMIC</summary>
