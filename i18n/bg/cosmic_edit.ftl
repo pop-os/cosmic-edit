@@ -5,10 +5,13 @@ todo = Задачи
 
 # Context Pages
 
+
 ## About
-git-description = Git подаване {$hash} на {$date}
+
+git-description = Git подаване { $hash } на { $date }
 
 ## Document statistics
+
 document-statistics = Статистики за документа
 word-count = Брой думи
 character-count = Знаци
@@ -16,6 +19,7 @@ character-count-no-spaces = Знаци (без интервали)
 line-count = Редове
 
 ## Git management
+
 git-management = Управление на Git
 git-management-description = Git управлението е инструмент за разработчици, използван за операции по контрол на версиите.
 git-management-loading = Зареждане на управлението на Git...
@@ -25,9 +29,11 @@ unstage = Изваждане от индекса
 unstaged-changes = Промени извън индекса
 
 ## Project search
+
 project-search = Търсене на проект
 
 ## Prompt save changes
+
 prompt-save-changes-title = Незапазени промени
 prompt-unsaved-changes = Имате незапазени промени. Искате ли да ги запазите?
 cancel = Отказване
@@ -35,9 +41,11 @@ discard = Отхвърляне на промените
 save-all = Запазване на всичко
 
 ## Settings
+
 settings = Настройки
 
 ### Appearance
+
 appearance = Външен вид
 theme = Тема
 match-desktop = Системен
@@ -49,11 +57,10 @@ default-font = Стандартен шрифт
 default-font-size = Стандартен размер на шрифт
 default-zoom-step = Стандартен мащаб
 
-
 ### Keyboard shortcuts
+
 keyboard-shortcuts = Клавишни комбинации
 enable-vim-bindings = Включване на клавишните комбинации на Vim
-
 # Find
 find-placeholder = Търсене...
 find-previous = Търсене на предишното
@@ -67,7 +74,9 @@ wrap-around = След края — от началото
 
 # Menu
 
+
 ## File
+
 file = Файл
 new-file = Нов файл
 new-window = Нов прозорец
@@ -88,6 +97,7 @@ print = Печат
 quit = Спиране на програмата
 
 ## Edit
+
 edit = Редактиране
 undo = Отменяне
 redo = Повтаряне
@@ -100,6 +110,7 @@ find-in-project = Търсене в проект...
 spell-check = Проверка на правописа...
 
 ## View
+
 view = Изглед
 zoom-in = Увеличаване
 default-size = Стандартен размер
@@ -107,11 +118,11 @@ zoom-out = Намаляване
 indentation = Отстъп
 
 ### Indentation
+
 automatic-indentation = Автоматично отстъпване
-tab-width = Широчина на табулацията: {$tab_width}
+tab-width = Широчина на табулацията: { $tab_width }
 convert-indentation-to-spaces = Преобразуване на отстъпите в интервали
 convert-indentation-to-tabs = Преобразуване на отстъпите в табулации
-
 word-wrap = Пренос на думи
 show-line-numbers = Показване на номерата на редовете
 highlight-current-line = Оцветяване на текущия ред
@@ -119,3 +130,5 @@ syntax-highlighting = Оцветяване на синтаксиса...
 menu-settings = Настройки...
 menu-keyboard-shortcuts = Клавишни комбинации...
 menu-about = Относно „COSMIC Текстов редактор“...
+repository = Хранилище
+support = Поддръжка
