@@ -5,10 +5,13 @@ todo = TODO
 
 # Context Pages
 
+
 ## About
-git-description = Git commit {$hash} de {$date}
+
+git-description = Git commit { $hash } de { $date }
 
 ## Document statistics
+
 document-statistics = Estatísticas do documento
 word-count = Contagem de palavras
 character-count = Caracteres
@@ -16,6 +19,7 @@ character-count-no-spaces = Caracteres (sem espaços)
 line-count = Linhas
 
 ## Git management
+
 git-management = Gestor do Git
 git-management-description = O gestor do Git é uma ferramenta de desenvolvedor usada para operações de controle de versão.
 git-management-loading = Carregando o gestor do Git...
@@ -25,9 +29,11 @@ unstage = Remover do stage
 unstaged-changes = Alterações fora do stage
 
 ## Project search
+
 project-search = Localizar no projeto
 
 ## Prompt save changes
+
 prompt-save-changes-title = Alterações não salvas
 prompt-unsaved-changes = Você possui alterações não salvas. Deseja salvar?
 cancel = Cancelar
@@ -35,9 +41,11 @@ discard = Descartar alterações
 save-all = Salvar tudo
 
 ## Settings
+
 settings = Configurações
 
 ## Appearance
+
 appearance = Aparência
 theme = Tema
 match-desktop = Estilo do sistema
@@ -49,11 +57,10 @@ default-font = Fonte padrão
 default-font-size = Tamanho padrão da fonte
 default-zoom-step = Etapas de zoom
 
-
 ### Keyboard shortcuts
+
 keyboard-shortcuts = Atalhos do teclado
 enable-vim-bindings = Habilitar atalhos do Vim
-
 # Find
 find-placeholder = Localizar...
 find-previous = Localizar o anterior
@@ -67,7 +74,9 @@ wrap-around = Envolver ao redor
 
 # Menu
 
+
 ## File
+
 file = Arquivo
 new-file = Novo arquivo
 new-window = Nova janela
@@ -88,6 +97,7 @@ print = Imprimir
 quit = Sair
 
 ## Edit
+
 edit = Editar
 undo = Desfazer
 redo = Refazer
@@ -100,6 +110,7 @@ find-in-project = Localizar no projeto...
 spell-check = Verificação ortográfica...
 
 ## View
+
 view = Exibir
 zoom-in = Aumentar o zoom
 default-size = Tamanho padrão
@@ -107,11 +118,11 @@ zoom-out = Diminuir o zoom
 indentation = Recuo de texto
 
 ### Indentation
+
 automatic-indentation = Recuo automático
-tab-width = Largura da tabulação: {$tab_width}
+tab-width = Largura da tabulação: { $tab_width }
 convert-indentation-to-spaces = Converter recuo para espaços
 convert-indentation-to-tabs = Converter recuo para tabulações
-
 word-wrap = Quebra de linha
 show-line-numbers = Mostrar números das linhas
 highlight-current-line = Destacar linha atual
@@ -119,3 +130,5 @@ syntax-highlighting = Destaque de sintaxe...
 menu-settings = Configurações...
 menu-keyboard-shortcuts = Atalhos do teclado...
 menu-about = Sobre o Editor de Texto
+repository = Repositório
+support = Suporte
