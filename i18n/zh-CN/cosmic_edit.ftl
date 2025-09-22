@@ -5,10 +5,13 @@ todo = 待办事项
 
 # Context Pages
 
+
 ## About
-git-description = Git 提交 {$hash} 于 {$date}
+
+git-description = Git 提交 { $hash } 于 { $date }
 
 ## Document statistics
+
 document-statistics = 文件统计
 word-count = 字数
 character-count = 字符数
@@ -16,6 +19,7 @@ character-count-no-spaces = 字符数（不含空格）
 line-count = 行数
 
 ## Git management
+
 git-management = Git 管理
 git-management-description = Git 管理是一个用于版本控制操作的开发工具。
 git-management-loading = 正在加载 Git 管理...
@@ -25,9 +29,11 @@ unstage = 取消暂存
 unstaged-changes = 未暂存的更改
 
 ## Project search
+
 project-search = 项目搜索
 
 ## Prompt save changes
+
 prompt-save-changes-title = 未保存的更改
 prompt-unsaved-changes = 您有未保存的更改。是否保存？
 cancel = 取消
@@ -35,9 +41,11 @@ discard = 放弃更改
 save-all = 全部保存
 
 ## Settings
+
 settings = 设置
 
 ### Appearance
+
 appearance = 外观
 theme = 主题
 match-desktop = 匹配桌面
@@ -50,9 +58,9 @@ default-font-size = 默认字体大小
 default-zoom-step = 缩放步长
 
 ### Keyboard shortcuts
+
 keyboard-shortcuts = 键盘快捷键
 enable-vim-bindings = 启用 Vim 绑定
-
 # Find
 find-placeholder = 查找...
 find-previous = 查找上一个
@@ -66,7 +74,9 @@ wrap-around = 循环查找
 
 # Menu
 
+
 ## File
+
 file = 文件
 new-file = 新建文件
 new-window = 新建窗口
@@ -87,6 +97,7 @@ print = 打印
 quit = 退出
 
 ## Edit
+
 edit = 编辑
 undo = 撤销
 redo = 重做
@@ -99,6 +110,7 @@ find-in-project = 在项目中查找...
 spell-check = 拼写检查...
 
 ## View
+
 view = 视图
 zoom-in = 放大
 default-size = 默认大小
@@ -106,11 +118,11 @@ zoom-out = 缩小
 indentation = 缩进
 
 ### Indentation
+
 automatic-indentation = 自动缩进
-tab-width = Tab 宽度：{$tab_width}
+tab-width = Tab 宽度：{ $tab_width }
 convert-indentation-to-spaces = 将缩进转换为空格
 convert-indentation-to-tabs = 将缩进转换为 Tab
-
 word-wrap = 自动换行
 show-line-numbers = 显示行号
 highlight-current-line = 高亮当前行
@@ -118,3 +130,5 @@ syntax-highlighting = 语法高亮...
 menu-settings = 设置...
 menu-keyboard-shortcuts = 键盘快捷键...
 menu-about = 关于 COSMIC 文本编辑器...
+repository = 仓库
+support = 支持
