@@ -5,10 +5,13 @@ todo = TODO
 
 # Context Pages
 
+
 ## About
-git-description = Git commit {$hash} op {$date}
+
+git-description = Git commit { $hash } op { $date }
 
 ## Document statistics
+
 document-statistics = Document statistieken
 word-count = Aantal woorden
 character-count = Tekens
@@ -16,6 +19,7 @@ character-count-no-spaces = Tekens (zonder spaties)
 line-count = Regels
 
 ## Git management
+
 git-management = Git-beheer
 git-management-description = Git-beheer is een hulpmiddel voor ontwikkelaars dat wordt gebruikt voor versiebeheer.
 git-management-loading = Git-beheer wordt geladen...
@@ -25,9 +29,11 @@ unstage = Niet voorbereiden
 unstaged-changes = Niet-voorbereide wijzigingen
 
 ## Project search
+
 project-search = Project zoeken
 
 ## Prompt save changes
+
 prompt-save-changes-title = Wijzigingen niet opgeslagen
 prompt-unsaved-changes = Er zijn wijzigingen die niet zijn opgeslagen. Opslaan?
 cancel = Annuleren
@@ -35,9 +41,11 @@ discard = Wijzigingen verwerpen
 save-all = Alles opslaan
 
 ## Settings
+
 settings = Instellingen
 
 ## Appearance
+
 appearance = Weergave
 theme = Thema
 match-desktop = Systeemstandaard
@@ -49,11 +57,10 @@ default-font = Standaard lettertype
 default-font-size = Standaard lettertypegrootte
 default-zoom-step = Zoom-stapgrootte
 
-
 ### Keyboard shortcuts
+
 keyboard-shortcuts = Toetsenbord snelkoppelingen
 enable-vim-bindings = Vim-snelkoppelingen inschakelen
-
 # Find
 find-placeholder = Zoeken...
 find-previous = Vorige zoeken
@@ -67,7 +74,9 @@ wrap-around = Achterwaarts vervangen
 
 # Menu
 
+
 ## File
+
 file = Bestand
 new-file = Nieuw bestand
 new-window = Nieuw venster
@@ -88,6 +97,7 @@ print = Afdrukken
 quit = Afsluiten
 
 ## Edit
+
 edit = Bewerken
 undo = Ongedaan maken
 redo = Opnieuw doen
@@ -100,6 +110,7 @@ find-in-project = Project doorzoeken...
 spell-check = Spellingscontrole...
 
 ## View
+
 view = Beeld
 zoom-in = Inzoomen
 default-size = Normaal zoomniveau
@@ -107,11 +118,11 @@ zoom-out = Uitzoomen
 indentation = Inspringing
 
 ### Indentation
+
 automatic-indentation = Automatische inspringing
-tab-width = Tab breedte: {$tab_width}
+tab-width = Tab breedte: { $tab_width }
 convert-indentation-to-spaces = Inspringing omzetten in spaties
 convert-indentation-to-tabs = Inspringing omzetten in tabs
-
 word-wrap = Woordomloop
 show-line-numbers = Toon regelnummers
 highlight-current-line = Markeer huidige regel
@@ -119,3 +130,4 @@ syntax-highlighting = Syntaxiskleuring...
 menu-settings = Instellingen...
 menu-keyboard-shortcuts = Toetsenbord snelkoppelingen...
 menu-about = Over COSMIC-tekstbewerker...
+open-recent-file = Recent bestand openen
