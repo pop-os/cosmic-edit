@@ -7,8 +7,8 @@ todo = TODO
 
 
 ## About
-
-git-description = Git commit { $hash } del { $date }
+repository = Repository
+support = Supporto
 
 ## Document statistics
 
@@ -56,8 +56,8 @@ default-font = Font predefinito
 default-font-size = Dimensione font predefinita
 default-zoom-step = Quantità zoom
 
-### Keyboard shortcuts
 
+### Keyboard shortcuts
 keyboard-shortcuts =
     Scorciatoie da tastiera
     enable-vim-bindings = Abilita scorciatoie VIM
