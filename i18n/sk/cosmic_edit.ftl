@@ -5,10 +5,13 @@ todo = Úloha
 
 # Kontextové stránky
 
+
 ## O aplikácii
-git-description = Git commit {$hash} dňa {$date}
+
+git-description = Git commit { $hash } dňa { $date }
 
 ## Štatistika dokumentu
+
 document-statistics = Štatistika dokumentu
 word-count = Počet slov
 character-count = Počet znakov
@@ -16,6 +19,7 @@ character-count-no-spaces = Počet znakov (bez medzier)
 line-count = Počet riadkov
 
 ## Správa Git
+
 git-management = Správa Git
 git-management-description = Správa Git je vývojársky nástroj používaný na operácie verzovania.
 git-management-loading = Načítava sa správa Git...
@@ -25,9 +29,11 @@ unstage = Odstrániť zo stage
 unstaged-changes = Zmeny mimo stage
 
 ## Hľadanie v projekte
+
 project-search = Hľadanie v projekte
 
 ## Výzva na uloženie zmien
+
 prompt-save-changes-title = Neuložené zmeny
 prompt-unsaved-changes = Máte neuložené zmeny. Uložiť?
 cancel = Zrušiť
@@ -35,9 +41,11 @@ discard = Zahodiť zmeny
 save-all = Uložiť všetko
 
 ## Nastavenia
+
 settings = Nastavenia
 
 ### Vzhľad
+
 appearance = Vzhľad
 theme = Téma
 match-desktop = Prispôsobiť prostrediu
@@ -49,11 +57,10 @@ default-font = Predvolený font
 default-font-size = Predvolená veľkosť písma
 default-zoom-step = Kroky priblíženia
 
-
 ### Klávesové skratky
+
 keyboard-shortcuts = Klávesové skratky
 enable-vim-bindings = Povoliť Vim skratky
-
 # Hľadať
 find-placeholder = Hľadať...
 find-previous = Hľadať predchádzajúce
@@ -67,7 +74,9 @@ wrap-around = Pokračovať od začiatku
 
 # Menu
 
+
 ## Súbor
+
 file = Súbor
 new-file = Nový súbor
 new-window = Nové okno
@@ -88,6 +97,7 @@ print = Tlačiť
 quit = Ukončiť
 
 ## Úpravy
+
 edit = Upraviť
 undo = Späť
 redo = Znovu
@@ -100,6 +110,7 @@ find-in-project = Hľadať v projekte...
 spell-check = Kontrola pravopisu...
 
 ## Zobraziť
+
 view = Zobraziť
 zoom-in = Priblížiť
 default-size = Predvolená veľkosť
@@ -107,11 +118,11 @@ zoom-out = Oddialiť
 indentation = Odsadenie
 
 ### Odsadenie
+
 automatic-indentation = Automatické odsadenie
-tab-width = Šírka tabulátora: {$tab_width}
+tab-width = Šírka tabulátora: { $tab_width }
 convert-indentation-to-spaces = Konvertovať odsadenie na medzery
 convert-indentation-to-tabs = Konvertovať odsadenie na tabulátory
-
 word-wrap = Zalomiť text
 show-line-numbers = Zobraziť čísla riadkov
 highlight-current-line = Zvýrazniť aktuálny riadok
@@ -119,3 +130,5 @@ syntax-highlighting = Zvýrazňovanie syntaxe...
 menu-settings = Nastavenia...
 menu-keyboard-shortcuts = Klávesové skratky...
 menu-about = O aplikácii Textový editor COSMIC...
+repository = Repozitár
+support = Podpora
