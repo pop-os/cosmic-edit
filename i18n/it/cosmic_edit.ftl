@@ -1,53 +1,47 @@
-cosmic-text-editor = COSMIC Text Editor
+cosmic-text-editor = Editor di testo COSMIC
 new-document = Nuovo documento
 open-project = Apri progetto
 todo = TODO
 
 # Context Pages
 
-
 ## About
 repository = Repository
 support = Supporto
 
 ## Document statistics
-
 document-statistics = Statistiche documento
 word-count = Conteggio parole
 character-count = Caratteri
 character-count-no-spaces = Caratteri (senza spazi)
-line-count = Linee
+line-count = Righe
 
 ## Git management
-
 git-management = Gestione Git
-git-management-description = "Gestione git" è un tool per sviluppatori, usato per le operazioni di controllo versione.
-git-management-loading = "Gestione git" in caricamento...
+git-management-description = Gestione Git è uno strumento per sviluppatori, usato per le operazioni di controllo versione.
+git-management-loading = Caricamento Gestione Git...
 stage = Prepara modifiche
 staged-changes = Modifiche preparate
-unstaged-changes = Modifiche non confirmate
+unstage = Rimuovi modifiche
+unstaged-changes = Modifiche non preparate
 
 ## Project search
-
 project-search = Ricerca nel progetto
 
 ## Prompt save changes
-
 prompt-save-changes-title = Modifiche non salvate
-prompt-unsaved-changes = Hai delle modifiche non salvate, vuoi salvarle?
+prompt-unsaved-changes = Hai delle modifiche non salvate. Vuoi salvarle?
 cancel = Annulla
 discard = Ignora modifiche
 save-all = Salva tutto
 
 ## Settings
-
 settings = Impostazioni
 
 ## Appearance
-
 appearance = Aspetto
 theme = Tema
-match-desktop = Sistema
+match-desktop = Predefinito di sistema
 dark = Scuro
 light = Chiaro
 syntax-dark = Sintassi scura
@@ -58,30 +52,28 @@ default-zoom-step = Quantità zoom
 
 
 ### Keyboard shortcuts
-keyboard-shortcuts =
-    Scorciatoie da tastiera
-    enable-vim-bindings = Abilita scorciatoie VIM
+keyboard-shortcuts = Scorciatoie da tastiera
+enable-vim-bindings = Abilita comandi Vim
+
 # Find
 find-placeholder = Trova...
 find-previous = Trova precedente
-find-next = Trove successivo
+find-next = Trova successivo
 replace-placeholder = Sostituisci...
 replace = Sostituisci
 replace-all = Sostituisci tutto
-case-sensitive = Case sensitive
-use-regex = Usa REGEX
-wrap-around = Wrap Around
+case-sensitive = Maiuscole/minuscole
+use-regex = Usa espressione regolare
+wrap-around = Continua dalla fine
 
 # Menu
 
-
 ## File
-
 file = File
 new-file = Nuovo file
 new-window = Nuova finestra
 open-file = Apri file...
-open-recent-file = Apri recente
+open-recent-file = Apri file recente
 close-file = Chiudi file
 menu-open-project = Apri progetto...
 open-recent-project = Apri progetto recente
@@ -97,7 +89,6 @@ print = Stampa
 quit = Esci
 
 ## Edit
-
 edit = Modifica
 undo = Annulla
 redo = Ripeti
@@ -110,7 +101,6 @@ find-in-project = Trova nel progetto...
 spell-check = Controllo ortografico...
 
 ## View
-
 view = Visualizza
 zoom-in = Aumenta zoom
 default-size = Dimensione predefinita
@@ -118,15 +108,15 @@ zoom-out = Diminuisci zoom
 indentation = Indentazione
 
 ### Indentation
-
 automatic-indentation = Indentazione automatica
-tab-width = Larghezza tabulazione: { $tab_width }
+tab-width = Larghezza tabulazione: {$tab_width}
 convert-indentation-to-spaces = Converti indentazione in spazi
 convert-indentation-to-tabs = Converti indentazione in tabulazioni
-word-wrap = "a capo" automatico
-show-line-numbers = Mostra numeri linea
-highlight-current-line = Evidenzia linea corrente
+
+word-wrap = A capo automatico
+show-line-numbers = Mostra numeri di riga
+highlight-current-line = Evidenzia la riga corrente
 syntax-highlighting = Evidenziazione sintassi...
 menu-settings = Impostazioni...
 menu-keyboard-shortcuts = Scorciatoie da tastiera...
-menu-about = Informazioni su "COSMIC - Editor di testo"
+menu-about = Informazioni su Editor di testo COSMIC
