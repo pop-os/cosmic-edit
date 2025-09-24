@@ -55,7 +55,7 @@ enable-vim-bindings = Aktivera Vimbindningar
 # Sök
 find-placeholder = Sök...
 find-previous = Sök föregående
-find-next = Sök nästa
+find-next = Hitta nästa
 replace-placeholder = Ersätt...
 replace = Ersätt
 replace-all = Ersätt alla
@@ -111,7 +111,7 @@ indentation = Indrag
 ### Indentation
 
 automatic-indentation = Automatiska indrag
-tab-width = Tab width: { $tab_width }
+tab-width = Tab bredd: { $tab_width }
 convert-indentation-to-spaces = Konvertera indrag till mellanslag
 convert-indentation-to-tabs = Konvertera indrag till tabbar
 word-wrap = Ordlinding
@@ -120,9 +120,11 @@ highlight-current-line = Markera aktuell rad
 syntax-highlighting = Syntax markering...
 menu-settings = Inställningar...
 menu-keyboard-shortcuts = Tangentbordsgenvägar...
-menu-about = Om COSMIC Textredigerare
+menu-about = Om COSMIC Textredigerare…
 cosmic-text-editor = COSMIC Textredigerare
 repository = Arkiv
 support = Support
 git-management-description = Githantering är ett utvecklar verktyg som används för versionshantering.
 git-management-loading = Laddar Githantering...
+stage = Köa
+unstage = Av-köa
