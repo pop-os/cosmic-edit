@@ -1,4 +1,4 @@
-cosmic-text-editor = COSMIC-tekstbewerker
+cosmic-text-editor = COSMIC Tekstbewerker
 new-document = Nieuw document
 open-project = Open project
 todo = TODO
@@ -131,3 +131,4 @@ menu-settings = Instellingen...
 menu-keyboard-shortcuts = Toetsenbord snelkoppelingen...
 menu-about = Over COSMIC-tekstbewerker...
 open-recent-file = Recent bestand openen
+support = Ondersteuning

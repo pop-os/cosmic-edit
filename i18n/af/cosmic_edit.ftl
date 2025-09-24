@@ -1,0 +1,15 @@
+cosmic-text-editor = COSMIC Redigeerder
+new-document = Nuwe dokument
+open-project = Oop projek
+support = Ondersteuning
+document-statistics = Dokumentstatistieke
+word-count = Aantal woorde
+line-count = Aantal reëls
+cancel = Kanselleer
+settings = Instellings
+theme = Tema
+light = Lig
+dark = Donker
+find-placeholder = Soek…
+document-type = Dokumenttipe…
+find = Soek
