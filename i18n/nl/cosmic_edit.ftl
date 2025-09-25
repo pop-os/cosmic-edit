@@ -22,8 +22,8 @@ line-count = Regels
 
 git-management = Git-beheer
 git-management-description = Git-beheer is een hulpmiddel voor ontwikkelaars dat wordt gebruikt voor versiebeheer.
-git-management-loading = Git-beheer laden…
-stage = Voorbereiden
+git-management-loading = Git-beheer wordt geladen…
+stage = Bereid voor
 staged-changes = Voorbereide wijzigingen
 unstage = Niet voorbereiden
 unstaged-changes = Niet-voorbereide wijzigingen
