@@ -1,7 +1,7 @@
 cosmic-text-editor = COSMIC Tekstbewerker
 new-document = Nieuw document
 open-project = Open project
-todo = TODO
+todo = Te doen
 
 # Context Pages
 
@@ -12,17 +12,17 @@ git-description = Git commit { $hash } op { $date }
 
 ## Document statistics
 
-document-statistics = Document statistieken
+document-statistics = Documentstatistieken
 word-count = Aantal woorden
-character-count = Tekens
-character-count-no-spaces = Tekens (zonder spaties)
+character-count = Lettertekens
+character-count-no-spaces = Lettertekens (zonder spaties)
 line-count = Regels
 
 ## Git management
 
 git-management = Git-beheer
 git-management-description = Git-beheer is een hulpmiddel voor ontwikkelaars dat wordt gebruikt voor versiebeheer.
-git-management-loading = Git-beheer wordt geladen...
+git-management-loading = Git-beheer laden…
 stage = Voorbereiden
 staged-changes = Voorbereide wijzigingen
 unstage = Niet voorbereiden
@@ -132,3 +132,4 @@ menu-keyboard-shortcuts = Toetsenbord snelkoppelingen...
 menu-about = Over COSMIC-tekstbewerker...
 open-recent-file = Recent bestand openen
 support = Ondersteuning
+repository = Archief
