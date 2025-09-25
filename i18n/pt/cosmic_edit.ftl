@@ -1,4 +1,4 @@
-cosmic-text-editor = COSMIC Text Editor
+cosmic-text-editor = Editor de Texto COSMIC
 new-document = Novo documento
 open-project = Abrir projeto
 todo = Afazer
@@ -38,7 +38,7 @@ prompt-save-changes-title = Alterações não guardadas
 prompt-unsaved-changes = As alterações não foram guardadas. Guardar?
 cancel = Cancelar
 discard = Descartar as alterações
-save-all = Salvar todas
+save-all = Guardar tudo
 
 ## Settings
 
@@ -48,7 +48,7 @@ settings = Definições
 
 appearance = Aparência
 theme = Tema
-match-desktop = Acompanhar o ambiente de trabalho
+match-desktop = Estilo do sistema
 dark = Escuro
 light = Claro
 syntax-dark = Sintaxe escura
@@ -97,7 +97,7 @@ quit = Sair
 ## Edit
 
 edit = Editar
-undo = Desfazer
+undo = Anular
 redo = Refazer
 cut = Cortar
 copy = Copiar
