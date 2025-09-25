@@ -1,0 +1,14 @@
+cosmic-text-editor = COSMIC Tekstbewurker
+new-document = Nij dokumint
+open-project = Iepen projekt
+support = Stipe
+word-count = Wurdtal
+character-count = Lettertekens
+character-count-no-spaces = Lettertekens (sûnder spaasjes)
+line-count = Rigels
+git-management-loading = Git-behear wurdt laden…
+todo = Te dwaan
+repository = Argyf
+document-statistics = Dokumintstatistiken
+git-management = Git-behear
+git-management-description = Git-behear is in ûntwikkeldersark dat brûkt wurdt foar ferzjebehear.
