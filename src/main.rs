@@ -35,7 +35,7 @@ use std::{
     process,
     sync::{Mutex, OnceLock},
 };
-use tokio::time;
+use tokio::{task, time};
 
 use config::{AppTheme, CONFIG_VERSION, Config, ConfigState};
 mod config;
@@ -342,6 +342,7 @@ pub enum Message {
     DefaultZoomStep(usize),
     DialogCancel,
     DialogMessage(DialogMessage),
+    DocumentStats { id: u64, stats: DocumentStatistics },
     Find(Option<bool>),
     FindCaseSensitive(bool),
     FindNext,
@@ -424,6 +425,36 @@ pub enum ContextPage {
     Settings,
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct DocumentStatistics {
+    character_count: usize,
+    character_count_no_spaces: usize,
+    line_count: usize,
+    word_count: usize,
+}
+
+fn calculate_document_statistics(lines: Vec<String>) -> DocumentStatistics {
+    let mut stats = DocumentStatistics::default();
+    stats.line_count = lines.len();
+
+    for line in lines {
+        let mut last_was_whitespace = true;
+        for ch in line.chars() {
+            stats.character_count += 1;
+            let is_whitespace = ch.is_whitespace();
+            if !is_whitespace {
+                stats.character_count_no_spaces += 1;
+                if last_was_whitespace {
+                    stats.word_count += 1;
+                }
+            }
+            last_was_whitespace = is_whitespace;
+        }
+    }
+
+    stats
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum DialogPage {
     PromptSaveClose(segmented_button::Entity),
@@ -471,6 +502,11 @@ pub struct App {
     project_search_result: Option<ProjectSearchResult>,
     watcher_opt: Option<notify::RecommendedWatcher>,
     modifiers: Modifiers,
+    document_stats: Option<DocumentStatistics>,
+    document_stats_pending: Option<u64>,
+    document_stats_request_target: Option<Entity>,
+    document_stats_dirty: bool,
+    document_stats_request_id: u64,
 }
 
 impl App {
@@ -828,6 +864,8 @@ impl App {
     pub fn update_tab(&mut self) -> Task<Message> {
         self.update_nav_bar_active();
 
+        self.document_stats_dirty = true;
+
         let title = match self.active_tab() {
             Some(tab) => {
                 if let Tab::Editor(inner) = tab {
@@ -839,6 +877,14 @@ impl App {
             None => "No Open File".to_string(),
         };
 
+        match self.active_tab() {
+            Some(Tab::Editor(_)) => {}
+            _ => {
+                self.document_stats = None;
+                self.document_stats_request_target = None;
+            }
+        }
+
         let window_title = format!("{title} - {}", fl!("cosmic-text-editor"));
         Task::batch([
             if let Some(window_id) = self.core.main_window_id() {
@@ -847,55 +893,106 @@ impl App {
                 Task::none()
             },
             self.update_focus(),
+            self.request_document_statistics_if_needed(),
         ])
     }
 
-    fn document_statistics(&self) -> Element<'_, Message> {
-        //TODO: calculate in the background
-        let mut character_count = 0;
-        let mut character_count_no_spaces = 0;
-        let mut line_count = 0;
-        let mut word_count = 0;
+    fn request_document_statistics_if_needed(&mut self) -> Task<Message> {
+        if !(self.core.window.show_context && self.context_page == ContextPage::DocumentStatistics)
+        {
+            return Task::none();
+        }
 
-        if let Some(Tab::Editor(tab)) = self.active_tab() {
+        if self.document_stats_pending.is_some() {
+            return Task::none();
+        }
+
+        if !self.document_stats_dirty && self.document_stats.is_some() {
+            return Task::none();
+        }
+
+        let active_entity = self.tab_model.active();
+        let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(active_entity) else {
+            self.document_stats = None;
+            self.document_stats_dirty = false;
+            self.document_stats_request_target = None;
+            return Task::none();
+        };
+
+        let lines: Vec<String> = {
             let editor = tab.editor.lock().unwrap();
             editor.with_buffer(|buffer| {
-                line_count = buffer.lines.len();
-                for line in buffer.lines.iter() {
-                    let mut last_whitespace = true;
-                    //TODO: do graphemes?
-                    for c in line.text().chars() {
-                        character_count += 1;
-                        let is_whitespace = c.is_whitespace();
-                        if !is_whitespace {
-                            character_count_no_spaces += 1;
-                            if last_whitespace {
-                                word_count += 1;
-                            }
-                        }
-                        last_whitespace = is_whitespace;
+                buffer
+                    .lines
+                    .iter()
+                    .map(|line| line.text().to_owned())
+                    .collect()
+            })
+        };
+
+        let request_id = self.document_stats_request_id.wrapping_add(1);
+        self.document_stats_request_id = request_id;
+        self.document_stats_pending = Some(request_id);
+        self.document_stats_request_target = Some(active_entity);
+        self.document_stats_dirty = false;
+
+        Task::perform(
+            async move {
+                match task::spawn_blocking(move || calculate_document_statistics(lines)).await {
+                    Ok(stats) => stats,
+                    Err(err) => {
+                        log::error!("failed to calculate document statistics: {}", err);
+                        DocumentStatistics::default()
                     }
                 }
-            });
-        }
+            },
+            move |stats| {
+                action::app(Message::DocumentStats {
+                    id: request_id,
+                    stats,
+                })
+            },
+        )
+    }
+
+    fn document_statistics(&self) -> Element<'_, Message> {
+        let stats_opt = self.document_stats.as_ref();
+        let placeholder = if stats_opt.is_none() && self.document_stats_pending.is_some() {
+            "…"
+        } else {
+            "-"
+        };
+
+        let word_count = stats_opt
+            .map(|stats| stats.word_count.to_string())
+            .unwrap_or_else(|| placeholder.to_string());
+        let character_count = stats_opt
+            .map(|stats| stats.character_count.to_string())
+            .unwrap_or_else(|| placeholder.to_string());
+        let character_count_no_spaces = stats_opt
+            .map(|stats| stats.character_count_no_spaces.to_string())
+            .unwrap_or_else(|| placeholder.to_string());
+        let line_count = stats_opt
+            .map(|stats| stats.line_count.to_string())
+            .unwrap_or_else(|| placeholder.to_string());
 
         widget::settings::view_column(vec![
             widget::settings::section()
                 .add(
                     widget::settings::item::builder(fl!("word-count"))
-                        .control(widget::text(word_count.to_string())),
+                        .control(widget::text(word_count)),
                 )
                 .add(
                     widget::settings::item::builder(fl!("character-count"))
-                        .control(widget::text(character_count.to_string())),
+                        .control(widget::text(character_count)),
                 )
                 .add(
                     widget::settings::item::builder(fl!("character-count-no-spaces"))
-                        .control(widget::text(character_count_no_spaces.to_string())),
+                        .control(widget::text(character_count_no_spaces)),
                 )
                 .add(
                     widget::settings::item::builder(fl!("line-count"))
-                        .control(widget::text(line_count.to_string())),
+                        .control(widget::text(line_count)),
                 )
                 .into(),
         ])
@@ -1385,6 +1482,11 @@ impl Application for App {
             project_search_result: None,
             watcher_opt: None,
             modifiers: Modifiers::empty(),
+            document_stats: None,
+            document_stats_pending: None,
+            document_stats_request_target: None,
+            document_stats_dirty: true,
+            document_stats_request_id: 0,
         };
 
         // Do not show nav bar by default. Will be opened by open_project if needed
@@ -1797,6 +1899,23 @@ impl Application for App {
             Message::DialogMessage(dialog_message) => {
                 if let Some(dialog) = &mut self.dialog_opt {
                     return dialog.update(dialog_message);
+                }
+            }
+            Message::DocumentStats { id, stats } => {
+                if self.document_stats_pending == Some(id) {
+                    self.document_stats_pending = None;
+                    let target = self.document_stats_request_target;
+                    self.document_stats_request_target = None;
+
+                    if target == Some(self.tab_model.active()) {
+                        self.document_stats = Some(stats);
+                    } else {
+                        self.document_stats_dirty = true;
+                    }
+
+                    if self.document_stats_dirty {
+                        return self.request_document_statistics_if_needed();
+                    }
                 }
             }
             Message::Find(find_opt) => {
@@ -2490,6 +2609,10 @@ impl Application for App {
                     }
                     self.tab_model.text_set(entity, title);
                 }
+                if self.tab_model.is_active(entity) {
+                    self.document_stats_dirty = true;
+                    return self.request_document_statistics_if_needed();
+                }
             }
             Message::TabClose(entity) => {
                 match self.tab_model.data_mut::<Tab>(entity) {
@@ -2613,13 +2736,20 @@ impl Application for App {
                 }
 
                 // Execute commands for specific pages
-                if self.core.window.show_context && self.context_page == ContextPage::GitManagement
-                {
-                    return self.update(Message::UpdateGitProjectStatus);
+                let mut tasks = Vec::new();
+                if self.core.window.show_context {
+                    if self.context_page == ContextPage::GitManagement {
+                        tasks.push(self.update(Message::UpdateGitProjectStatus));
+                    }
+                    tasks.push(self.update_focus());
+                    if self.context_page == ContextPage::DocumentStatistics {
+                        self.document_stats_dirty = true;
+                        tasks.push(self.request_document_statistics_if_needed());
+                    }
+                } else {
+                    tasks.push(self.update_focus());
                 }
-
-                // Ensure focus of correct input
-                return self.update_focus();
+                return Task::batch(tasks);
             }
             Message::ToggleHighlightCurrentLine => {
                 config_set!(highlight_current_line, !self.config.highlight_current_line);
