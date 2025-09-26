@@ -47,6 +47,7 @@ syntax-dark = Comhréir Dorcha
 syntax-light = Solas comhréir
 default-font = Cló réamhshocraithe
 default-font-size = Méid cló réamhshocraithe
+default-zoom-step = Súmáil céimeanna
 
 ### Keyboard shortcuts
 keyboard-shortcuts = Aicearraí méarchláir
@@ -99,6 +100,9 @@ spell-check = Seiceáil litrithe...
 
 ## View
 view = Amharc
+zoom-in = Zúmáil isteach
+default-size = Méid réamhshocraithe
+zoom-out = Zúmáil amach
 indentation = Cuir eangach
 
 ### Indentation
