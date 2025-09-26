@@ -1,6 +1,6 @@
 cosmic-text-editor = COSMIC Tekstbewurker
 new-document = Nij dokumint
-open-project = Iepen projekt
+open-project = Iepen in projekt
 support = Stipe
 word-count = Wurdtal
 character-count = Lettertekens
@@ -12,3 +12,6 @@ repository = Argyf
 document-statistics = Dokumintstatistiken
 git-management = Git-behear
 git-management-description = Git-behear is in ûntwikkeldersark dat brûkt wurdt foar ferzjebehear.
+cancel = Annulearje
+settings = Ynstellings
+match-desktop = Systeemstandert
