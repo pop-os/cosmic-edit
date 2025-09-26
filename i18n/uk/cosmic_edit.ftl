@@ -5,10 +5,13 @@ todo = ЗРОБИТИ
 
 # Context Pages
 
+
 ## About
-git-description = Git commit {$hash} за {$date}
+
+git-description = Git commit { $hash } за { $date }
 
 ## Document statistics
+
 document-statistics = Статистика документа
 word-count = Кількість слів
 character-count = Символів
@@ -16,6 +19,7 @@ character-count-no-spaces = Символів (без пропусків)
 line-count = Рядків
 
 ## Git management
+
 git-management = Керування Git
 git-management-description = Керування Git — це інструмент розробника для керування версіями.
 git-management-loading = Завантажується керування Git...
@@ -25,9 +29,11 @@ unstage = Прибрати з індексу
 unstaged-changes = Неіндексовані зміни
 
 ## Project search
+
 project-search = Пошук у проєкті
 
 ## Prompt save changes
+
 prompt-save-changes-title = Незбережені зміни
 prompt-unsaved-changes = У вас є незбережені зміни. Зберегти їх?
 cancel = Скасувати
@@ -35,23 +41,25 @@ discard = Відкинути зміни
 save-all = Зберегти всі
 
 ## Settings
+
 settings = Налаштування
 
 ## Appearance
+
 appearance = Зовнішній вигляд
 theme = Тема
 match-desktop = Системна
 dark = Темна
 light = Світла
 syntax-dark = Синтаксис темної теми
-syntax-light = Синтаксис світлої теми
+syntax-light = Підсвічування коду
 default-font = Типовий шрифт
 default-font-size = Типовий розмір шрифту
 
 ### Keyboard shortcuts
+
 keyboard-shortcuts = Клавіатурні скорочення
 enable-vim-bindings = Увімкнути режим Vim
-
 # Find
 find-placeholder = Знайти...
 find-previous = Знайти попередній
@@ -64,7 +72,9 @@ use-regex = Використовувати регулярні вирази
 
 # Menu
 
+
 ## File
+
 file = Файл
 new-file = Новий файл
 new-window = Нове вікно
@@ -85,6 +95,7 @@ print = Друк
 quit = Вийти
 
 ## Edit
+
 edit = Зміни
 undo = Скасувати
 redo = Повторити
@@ -97,19 +108,28 @@ find-in-project = Пошук у проєкті...
 spell-check = Перевірка орфографії...
 
 ## View
+
 view = Вигляд
 indentation = Відступ
 
 ### Indentation
+
 automatic-indentation = Автоматичні відступи
-tab-width = Ширина табуляції: {$tab_width}
+tab-width = Ширина табуляції: { $tab_width }
 convert-indentation-to-spaces = Перетворити відступи на пропуски
 convert-indentation-to-tabs = Перетворити відступи на табуляцію
-
 word-wrap = Перенесення слів
 show-line-numbers = Показувати номери рядків
 highlight-current-line = Підсвічувати поточний рядок
 syntax-highlighting = Підсвічування синтаксису...
 menu-settings = Налаштування...
 menu-keyboard-shortcuts = Гарячі клавіші...
-menu-about = Про текстовий редактор COSMIC
+menu-about = Про текстовий редактор COSMIC...
+repository = Репозиторій
+support = Підтримка
+open-recent-file = Відкрити нещодавній файл
+default-zoom-step = Крок зміни розміру шрифта
+zoom-in = Збільшити шрифт
+default-size = Стандартний розмір
+zoom-out = Зменшити шрифт
+wrap-around = Циклічний пошук
