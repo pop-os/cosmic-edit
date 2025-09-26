@@ -4,10 +4,13 @@ open-project = Abrir proyecto
 
 # Context Pages
 
+
 ## About
-git-description = «Commit» {$hash} de Git del {$date}
+
+git-description = «Commit» { $hash } de Git del { $date }
 
 ## Document statistics
+
 document-statistics = Estadísticas del documento
 word-count = Número de palabras
 character-count = Número de caracteres
@@ -15,6 +18,7 @@ character-count-no-spaces = Caracteres (sin contar espacios)
 line-count = Número de líneas
 
 ## Git management
+
 git-management = Git management
 git-management-description = Git management (gestión de Git) es una herramienta para desarrolladores utilizada para operaciones de control de versiones.
 git-management-loading = Cargando Git management...
@@ -24,9 +28,11 @@ unstage = Quitar de la etapa
 unstaged-changes = Cambios quitados de la etapa
 
 ## Project search
+
 project-search = Búsqueda del proyecto
 
 ## Prompt save changes
+
 prompt-save-changes-title = Cambios no guardados
 prompt-unsaved-changes = Tienes cambios no guardados. ¿Guardar?
 cancel = Cancelar
@@ -34,9 +40,11 @@ discard = Descartar cambios
 save-all = Guardar todo
 
 ## Settings
+
 settings = Configuración
 
 ### Appearance
+
 appearance = Apariencia
 theme = Tema
 match-desktop = Igual que el escritorio
@@ -48,9 +56,9 @@ default-font = Fuente predeterminada
 default-font-size = Tamaño de fuente predeterminado
 
 ### Keyboard shortcuts
+
 keyboard-shortcuts = Atajos de teclado
 enable-vim-bindings = Activar atajos de teclado de Vim
-
 # Find
 find-placeholder = Buscar...
 find-previous = Buscar anterior
@@ -63,7 +71,9 @@ use-regex = Usar expresiones regulares
 
 # Menu
 
+
 ## File
+
 file = Archivo
 new-file = Nuevo archivo
 new-window = Nueva ventana
@@ -84,6 +94,7 @@ print = Imprimir
 quit = Cerrar
 
 ## Edit
+
 edit = Editar
 undo = Deshacer
 redo = Rehacer
@@ -96,15 +107,16 @@ find-in-project = Buscar en el proyecto...
 spell-check = Corrección ortográfica...
 
 ## View
+
 view = Ver
 indentation = Sangría
 
 ### Indentation
+
 automatic-indentation = Sangría automática
-tab-width = Ancho de tabulación: {$tab_width}
+tab-width = Ancho de tabulación: { $tab_width }
 convert-indentation-to-spaces = Convertir sangría a espacios
 convert-indentation-to-tabs = Convertir sangría a tabulaciones
-
 word-wrap = Ajuste de línea
 show-line-numbers = Mostrar números de línea
 highlight-current-line = Resaltar línea actual
@@ -112,3 +124,6 @@ syntax-highlighting = Resaltado de sintaxis...
 menu-settings = Configuración...
 menu-keyboard-shortcuts = Atajos de teclado...
 menu-about = Acerca del editor de texto de COSMIC...
+repository = Repositorio
+todo = Tareas pendientes
+support = Apoyo
