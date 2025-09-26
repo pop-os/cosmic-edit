@@ -1,6 +1,6 @@
 cosmic-text-editor = COSMIC Tekstbewerker
 new-document = Nieuw document
-open-project = Open project
+open-project = Open een project
 todo = Te doen
 
 # Context Pages
@@ -30,7 +30,7 @@ unstaged-changes = Niet-voorbereide wijzigingen
 
 ## Project search
 
-project-search = Project zoeken
+project-search = Zoek in het project
 
 ## Prompt save changes
 
@@ -94,7 +94,7 @@ document-type = Documenttype...
 encoding = Tekenset...
 menu-git-management = Git-beheer...
 print = Afdrukken
-quit = Afsluiten
+quit = Sluit
 
 ## Edit
 
