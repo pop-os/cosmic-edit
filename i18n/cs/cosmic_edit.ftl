@@ -50,7 +50,7 @@ quit = Ukončit
 
 ## Edit
 
-edit = Upravit
+edit = Úpravy
 undo = Vrátit
 redo = Opakovat
 cut = Vyjmout
@@ -62,7 +62,7 @@ spell-check = Kontrola pravopisu...
 
 ## View
 
-view = Zobrazit
+view = Zobrazení
 indentation = Odsazení
 
 ### Indentation
@@ -89,7 +89,7 @@ cancel = Zrušit
 discard = Zahodit změny
 save-all = Uložit vše
 dark = Tmavé
-light = Světlý
+light = Světlé
 default-zoom-step = Kroky přiblížení
 find-placeholder = Najít...
 find-previous = Najít předchozí
