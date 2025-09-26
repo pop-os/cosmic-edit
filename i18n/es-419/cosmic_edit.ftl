@@ -50,8 +50,8 @@ theme = Tema
 match-desktop = Igual que el escritorio
 dark = Oscuro
 light = Claro
-syntax-dark = Sintaxis oscura
-syntax-light = Sintaxis clara
+syntax-dark = Sintaxis en tema oscuro
+syntax-light = Sintaxis en tema claro
 default-font = Fuente predeterminada
 default-font-size = Tamaño de fuente predeterminado
 
@@ -89,9 +89,9 @@ revert-all-changes = Deshacer todos los cambios
 menu-document-statistics = Estadísticas del documento...
 document-type = Tipo del documento...
 encoding = Codificando...
-menu-git-management = Git management...
+menu-git-management = Gestión de Git...
 print = Imprimir
-quit = Cerrar
+quit = Salir
 
 ## Edit
 
@@ -127,3 +127,8 @@ menu-about = Acerca del editor de texto de COSMIC...
 repository = Repositorio
 todo = Tareas pendientes
 support = Apoyo
+default-zoom-step = Granularidad de ampliación
+wrap-around = Envolver
+zoom-in = Ampliar
+default-size = Tamaño predeterminado
+zoom-out = Disminuir
