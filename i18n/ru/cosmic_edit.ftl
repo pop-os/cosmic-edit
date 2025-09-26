@@ -5,10 +5,13 @@ todo = TODO
 
 # Context Pages
 
+
 ## About
-git-description = Git-коммит {$hash} от {$date}
+
+git-description = Git-коммит { $hash } от { $date }
 
 ## Document statistics
+
 document-statistics = Статистика документа
 word-count = Число слов
 character-count = Символов
@@ -16,43 +19,48 @@ character-count-no-spaces = Символов (без пробелов)
 line-count = Строк
 
 ## Git management
+
 git-management = Управление Git
-git-management-description = Управление Git - это инструмент разработчика, используемый для контроля версий.
-git-management-loading = Загружается Управление Git...
+git-management-description = Управление Git — это инструмент разработчика, используемый для контроля версий.
+git-management-loading = Загрузка управления Git...
 stage = Проиндексировать
 unstaged-changes = Не проиндексированные изменения
 unstage = Отменить индексацию
 staged-changes = Проиндексированные изменения
 
 ## Project search
+
 project-search = Поиск проекта
 
 ## Prompt save changes
+
 prompt-save-changes-title = Несохраненные изменения
-prompt-unsaved-changes = У вас есть несохраненные изменения. Сохранить их?
+prompt-unsaved-changes = У вас есть несохранённые изменения. Сохранить их?
 cancel = Отмена
 discard = Отменить изменения
 save-all = Сохранить все
 
 ## Settings
+
 settings = Параметры
 
 ## Appearance
+
 appearance = Внешний вид
 theme = Тема
 match-desktop = Как в системе
-dark = Темная
+dark = Тёмная
 light = Светлая
 syntax-dark = Синтаксис темный
 syntax-light = Синтаксис светлый
 default-font = Шрифт по умолчанию
 default-font-size = Размер шрифта по умолчанию
-default-zoom-step = Шаг увеличения лупы
+default-zoom-step = Шаг масштабирования
 
 ### Keyboard shortcuts
+
 keyboard-shortcuts = Сочетания клавиш
 enable-vim-bindings = Привязки клавиш Vim
-
 # Find
 find-placeholder = Найти...
 find-previous = Найти ранее
@@ -66,7 +74,9 @@ wrap-around = Искать везде
 
 # Menu
 
+
 ## File
+
 file = Файл
 new-file = Новый файл
 new-window = Новое окно
@@ -84,9 +94,10 @@ document-type = Тип документа...
 encoding = Кодировка...
 menu-git-management = Управление Git...
 print = Печать
-quit = Завершить
+quit = Выйти
 
 ## Edit
+
 edit = Правка
 undo = Отменить
 redo = Повторить
@@ -99,6 +110,7 @@ find-in-project = Найти в проекте...
 spell-check = Проверить правописание...
 
 ## View
+
 view = Вид
 zoom-in = Приблизить
 default-size = Размер по умолчанию
@@ -106,15 +118,17 @@ zoom-out = Отдалить
 indentation = Отступ
 
 ### Indentation
+
 automatic-indentation = Автоматические отступы
-tab-width = Длина табуляции: {$tab_width}
+tab-width = Длина табуляции: { $tab_width }
 convert-indentation-to-spaces = Конвертировать отступы в пробелы
 convert-indentation-to-tabs = Конвертировать отступы в табуляцию
-
 word-wrap = Перенос слов
 show-line-numbers = Показ номеров строк
 highlight-current-line = Подсветка текущей строки
 syntax-highlighting = Подсветка синтаксиса...
 menu-settings = Параметры...
 menu-keyboard-shortcuts = Сочетания клавиш...
-menu-about = О Текстовом редакторе COSMIC
+menu-about = О Текстовом редакторе COSMIC...
+support = Поддержка
+repository = Репозиторий
