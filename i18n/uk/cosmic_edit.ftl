@@ -130,6 +130,6 @@ support = Підтримка
 open-recent-file = Відкрити нещодавній файл
 default-zoom-step = Крок зміни розміру шрифта
 zoom-in = Збільшити шрифт
-default-size = Стандартний розмір
+default-size = Типовий розмір
 zoom-out = Зменшити шрифт
 wrap-around = Циклічний пошук
