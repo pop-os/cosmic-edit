@@ -51,8 +51,8 @@ theme = Téama
 match-desktop = Meaitseáil le deasc
 dark = Dorcha
 light = Solas
-syntax-dark = Comhréir Dorcha
-syntax-light = Solas comhréire
+syntax-dark = Comhréir dorcha
+syntax-light = Comhréir solas
 default-font = Cló réamhshocraithe
 default-font-size = Méid cló réamhshocraithe
 
