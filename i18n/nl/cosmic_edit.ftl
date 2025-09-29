@@ -62,9 +62,9 @@ default-zoom-step = Zoom-stapgrootte
 keyboard-shortcuts = Toetsenbord snelkoppelingen
 enable-vim-bindings = Vim-snelkoppelingen inschakelen
 # Find
-find-placeholder = Zoeken...
-find-previous = Vorige zoeken
-find-next = Volgende zoeken
+find-placeholder = Zoek…
+find-previous = Zoek vorige
+find-next = Zoek volgende
 replace-placeholder = Vervangen...
 replace = Vervangen
 replace-all = Alles vervangen
@@ -98,14 +98,14 @@ quit = Sluit
 
 ## Edit
 
-edit = Bewerken
+edit = Bewerk
 undo = Ongedaan maken
 redo = Opnieuw doen
 cut = Knippen
-copy = Kopiëren
-paste = Plakken
-select-all = Alles selecteren
-find = Zoeken
+copy = Kopieer
+paste = Plak
+select-all = Selecteer alles
+find = Zoek
 find-in-project = Project doorzoeken...
 spell-check = Spellingscontrole...
 
