@@ -20,8 +20,8 @@ line-count = Número de líneas
 ## Git management
 
 git-management = Gestión de Git
-git-management-description = Git management (gestión de Git) es una herramienta para desarrolladores utilizada para operaciones de control de versiones.
-git-management-loading = Cargando Git management...
+git-management-description = La gestión de Git es una herramienta para desarrolladores utilizada para operaciones de control de versiones.
+git-management-loading = Cargando la gestión de Git...
 stage = Etapa
 staged-changes = Cambios en etapa
 unstage = Quitar de la etapa
@@ -91,7 +91,7 @@ document-type = Tipo del documento...
 encoding = Codificando...
 menu-git-management = Gestión de Git...
 print = Imprimir
-quit = Salir
+quit = Cerrar
 
 ## Edit
 
