@@ -21,7 +21,7 @@ line-count = Linhas
 ## Git management
 
 git-management = Gestor do Git
-git-management-description = O gestor do Git é uma ferramenta de desenvolvedor usada para operações de controle de versão.
+git-management-description = O gestor do Git é uma ferramenta de desenvolvedores usada para operações de controle de versão.
 git-management-loading = Carregando o gestor do Git...
 stage = Adicionar em stage
 staged-changes = Alterações em stage
