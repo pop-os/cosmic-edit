@@ -36,7 +36,7 @@ project-search = Пошук праекта
 
 prompt-save-changes-title = Незахаваныя змены
 prompt-unsaved-changes = У вас ёсць незахаваныя змены. Захаваць?
-cancel = Адмяніць
+cancel = Скасаваць
 discard = Адхіліць змены
 save-all = Захаваць усё
 

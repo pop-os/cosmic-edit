@@ -1,14 +1,17 @@
-cosmic-text-editor = COSMICテキストデータ
+cosmic-text-editor = COSMICテキストエディター
 new-document = 新しいドキュメント
-open-project = プロジェクトを開く...
-todo = 今後追加
+open-project = プロジェクトを開く
+todo = ToDo
 
 # Context Pages
 
+
 ## About
-git-description = {$date}の{$hash}というGitコミット
+
+git-description = { $date }の{ $hash }というGitコミット
 
 ## Document statistics
+
 document-statistics = 統計
 word-count = 単語数
 character-count = 文字数
@@ -16,8 +19,9 @@ character-count-no-spaces = 文字数（スペース除く）
 line-count = 行数
 
 ## Git management
+
 git-management = Gitの操作
-git-management-description = Gitの操作はバージョンコントロールための開発ツールです。
+git-management-description = Git管理はバージョン管理操作のための開発者向けツールです。
 git-management-loading = Gitの操作を読み込んでいます...
 stage = 変更をステージ
 staged-changes = コミットされる変更
@@ -25,9 +29,11 @@ unstage = 変更をアンステージ
 unstaged-changes = コミットされない変更
 
 ## Project search
+
 project-search = プロジェクトの検索
 
 ## Prompt save changes
+
 prompt-save-changes-title = 未保存の変更
 prompt-unsaved-changes = 未保存の変更があります。保存しますか？
 cancel = キャンセル
@@ -35,23 +41,25 @@ discard = 保存しない
 save-all = すべてを保存
 
 ## Settings
+
 settings = 設定
 
 ### Appearance
+
 appearance = 外観
 theme = テーマ
 match-desktop = システム設定に従う
 dark = ダーク
 light = ライト
-syntax-dark = ダークテーマのシンタックス
-syntax-light = ライトテーマのシンタックス
+syntax-dark = 構文強調 ダーク
+syntax-light = 構文強調 ライト
 default-font = デフォルトのフォント
 default-font-size = デフォルトのフォントサイズ
 
 ### Keyboard shortcuts
+
 keyboard-shortcuts = キーボードショートカット
 enable-vim-bindings = Vimのキーバインドを有効にする
-
 # Find
 find-placeholder = 検索...
 find-previous = 前を検索
@@ -64,7 +72,9 @@ use-regex = 正規表現を使用
 
 # Menu
 
+
 ## File
+
 file = ファイル
 new-file = 新しいファイル
 new-window = 新しいウィンドウ
@@ -85,6 +95,7 @@ print = 印刷
 quit = 終了
 
 ## Edit
+
 edit = 編集
 undo = 元に戻す
 redo = やり直す
@@ -97,15 +108,16 @@ find-in-project = プロジェクト内を検索...
 spell-check = スペルチェック...
 
 ## View
+
 view = 表示
-indentation = 字下げ
+indentation = インデント
 
 ### Indentation
-automatic-indentation = 自動的に字下げ
-tab-width = タブ幅: {$tab_width}
-convert-indentation-to-spaces = 字下げをスペース化
-convert-indentation-to-tabs = 字下げをタブ化
 
+automatic-indentation = 自動インデント
+tab-width = タブ幅: { $tab_width }
+convert-indentation-to-spaces = インデントをスペースに変換
+convert-indentation-to-tabs = インデントをタブに変換
 word-wrap = ワードラップ
 show-line-numbers = 行番号を表示
 highlight-current-line = 現在の行をハイライト
@@ -113,3 +125,10 @@ syntax-highlighting = シンタックスハイライト...
 menu-settings = 設定...
 menu-keyboard-shortcuts = キーボードショートカット...
 menu-about = COSMICテキストデータについて...
+repository = リポジトリ
+support = サポート
+default-zoom-step = ズームステップ
+wrap-around = ラップアラウンド
+zoom-in = ズームイン
+default-size = 規定のサイズ
+zoom-out = ズームアウト

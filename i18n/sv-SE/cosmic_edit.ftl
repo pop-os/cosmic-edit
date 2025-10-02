@@ -16,7 +16,7 @@ line-count = Rader
 ## Git hantering
 
 git-management = Githantering
-unstaged-changes = Oscenerade förändringar
+unstaged-changes = Icke köade ändringar
 staged-changes = Iscensatta förändringar
 
 ## Projektsök
