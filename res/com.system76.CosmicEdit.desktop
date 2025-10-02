@@ -2,6 +2,7 @@
 [Desktop Entry]
 Name=COSMIC Text Editor
 Name[ar]=محرِّر نصوص COSMIC 
+Name[cs]=Textový editor COSMIC
 Name[zh_CN]=COSMIC 文本编辑器
 Name[pl]=Edytor Tekstu COSMIC
 Name[pt_BR]=Editor de Texto
@@ -21,6 +22,7 @@ Icon=com.system76.CosmicEdit
 Categories=COSMIC;Utility;TextEditor;
 Keywords=Text;Editor;
 Keywords[ar]=نص;محرر;
+Keywords[cs]=Text;Editor;Poznámky;
 Keywords[pl]=Edytor;Tekstu;
 Keywords[pt_BR]=Texto;Editor;Notas;
 Keywords[hu]=szöveg;szerkesztő;
