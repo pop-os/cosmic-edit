@@ -10,6 +10,7 @@
   <url type="bugtracker">https://github.com/pop-os/cosmic-edit</url>
   <name>COSMIC Text Editor</name>
   <name xml:lang="ar">محرِّر نصوص COSMIC</name>
+  <name xml:lang="cs">Textový editor COSMIC</name>
   <name xml:lang="pl">Edytor tekstu COSMIC</name>
   <name xml:lang="hu">COSMIC Szövegszerkesztő</name>
   <name xml:lang="pt_BR">Editor de Texto</name>
@@ -19,6 +20,7 @@
   <name xml:lang="it">Editor di testo</name>
   <summary>Text editor for the COSMIC desktop</summary>
   <summary xml:lang="ar">محرِّر نصوص لسطح مكتب COSMIC</summary>
+  <summary xml:lang="cs">Textový editor pro pracovní prostředí COSMIC</summary>
   <summary xml:lang="pl">Edytor tekstu pulpitu COSMIC</summary>
   <summary xml:lang="hu">Szövegszerkesztő a COSMIC asztali környezethez</summary>
   <summary xml:lang="pt_BR">Editor de texto do desktop COSMIC</summary>
@@ -29,6 +31,7 @@
   <description>
     <p>Text editor that provides advanced features with high performance</p>
     <p xml:lang="ar">محرِّر نصوص يوفر ميزات متقدمة بأداء عالٍ</p>
+    <p xml:lang="cs">Textový editor, který poskytuje pokročilé funkce s vysokým výkonem</p>
     <p xml:lang="pl">Edytor tekstu oferujący zaawansowane funkcje i wysoką wydajność</p>
     <p xml:lang="pt_BR">Editor de texto que fornece funcionalidades avançadas com alta performance</p>
     <p xml:lang="hu">Nagy teljesítményű szövegszerkesztő fejlett funkciókkal</p>
@@ -39,6 +42,7 @@
     <ul>
         <li>Written in Rust for performance and safety</li>
         <li xml:lang="ar">مكتوب بلغة Rust من أجل الأداء والأمان</li>
+        <li xml:lang="cs">Napsané v jazyce Rust pro výkon a bezpečnost</li>
         <li xml:lang="pl">Napisany w Ruście dla wydajności i bezpieczeństwa</li>
         <li xml:lang="hu">Rustban írva a teljesítmény és biztonság érdekében</li>
         <li xml:lang="pt_BR">Escrito em Rust visando performance e segurança</li>
@@ -48,6 +52,7 @@
         <li xml:lang="it">Scritto in Rust per maggore velocità e sicurezza</li>
       <li>Syntax highlighting built in for most languages</li>
         <li xml:lang="ar">إبراز بناء الجملة مدمج لمعظم اللغات</li>
+        <li xml:lang="cs">Vestavěné zvýrazňování syntaxe pro většinu jazyků</li>
         <li xml:lang="pl">Wbudowane podświetlanie składni dla większości języków</li>
         <li xml:lang="hu">Szintaxiskiemelés a legtöbb nyelvhez</li>
         <li xml:lang="pt_BR">Realce de sintaxe embutido para a maioria das linguagens</li>
@@ -56,6 +61,7 @@
         <li xml:lang="es">Resaltado de sintaxis incorporado para la mayoría de lenguajes</li>
       <li>Provides project-based editing</li>
         <li xml:lang="ar">يوفر تحريرًا قائمًا على المشاريع</li>
+        <li xml:lang="cs">Umožňuje úpravy založené na projektech</li>
         <li xml:lang="pl">Możliwość edycji projektów</li>
         <li xml:lang="hu">Projektalapú szerkesztést biztosít</li>
         <li xml:lang="pt_BR">Fornece edição baseada em projeto</li>
@@ -64,6 +70,7 @@
         <li xml:lang="es">Provee edición basada por proyecto</li>
         <li>Integrated git management</li>
         <li xml:lang="ar">إدارة Git مدمجة</li>
+        <li xml:lang="cs">Integrovaná správa git</li>
         <li xml:lang="pl">Wbudowane zarządzanie repozytoriami git</li>
         <li xml:lang="hu">Integrált Git-kezelő</li>
         <li xml:lang="pt_BR">Gerenciador Git integrado</li>
