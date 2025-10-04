@@ -8,7 +8,6 @@ todo = TODO
 
 ## About
 
-git-description = { $date } tarihli { $hash } numaralı git işlemesi
 
 ## Document statistics
 

@@ -8,7 +8,6 @@ todo = TODO
 
 ## About
 
-git-description = Git commit { $hash } de { $date }
 
 ## Document statistics
 

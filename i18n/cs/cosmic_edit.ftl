@@ -37,7 +37,6 @@ file = Soubor
 new-file = Nový soubor
 new-window = Nové okno
 open-file = Otevřít soubor...
-open-recent = Otevřít nedávný
 todo = TODO
 save = Uložit
 save-as = Uložit jako...

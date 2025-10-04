@@ -8,7 +8,6 @@ todo = ЗРОБИТИ
 
 ## About
 
-git-description = Git commit { $hash } за { $date }
 
 ## Document statistics
 
@@ -79,7 +78,6 @@ file = Файл
 new-file = Новий файл
 new-window = Нове вікно
 open-file = Відкрити файл...
-open-recent = Відкрити нещодавній файл
 close-file = Закрити файл
 menu-open-project = Відкрити проєкт...
 open-recent-project = Відкрити нещодавній проєкт

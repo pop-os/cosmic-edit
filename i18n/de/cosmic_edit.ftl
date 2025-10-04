@@ -5,10 +5,12 @@ todo = TODO
 
 # Kontextseiten
 
+
 ## Über
-git-description = Git-Commit {$hash} am {$date}
+
 
 ## Dokument-Statistiken
+
 document-statistics = Dokument-Statistiken
 word-count = Wörter
 character-count = Zeichen
@@ -16,6 +18,7 @@ character-count-no-spaces = Zeichen (ohne Leerzeichen)
 line-count = Zeilen
 
 ## Git-Verwaltung
+
 git-management = Git-Verwaltung
 git-management-description = Git-Verwaltung ist ein Entwicklerwerkzeug für die Versionskontrolle.
 git-management-loading = Git-Verwaltung wird geladen...
@@ -25,9 +28,11 @@ unstage = Nicht vormerken
 unstaged-changes = Nicht vorgemerkte Änderungen
 
 ## Projektsuche
+
 project-search = Projektsuche
 
 ## Aufforderung zum Speichern von Änderungen
+
 prompt-save-changes-title = Ungespeicherte Änderungen
 prompt-unsaved-changes = Es existieren ungespeicherte Änderungen. Speichern?
 cancel = Abbrechen
@@ -35,9 +40,11 @@ discard = Änderungen verwerfen
 save-all = Alles speichern
 
 ## Einstellungen
+
 settings = Einstellungen
 
 ## Aussehen
+
 appearance = Aussehen
 theme = Thema
 match-desktop = An Desktop anpassen
@@ -49,11 +56,10 @@ default-font = Standard-Schriftart
 default-font-size = Standard-Schriftgröße
 default-zoom-step = Zoomstufen
 
-
 ### Tastenkombinationen
+
 keyboard-shortcuts = Tastenkombinationen
 enable-vim-bindings = Vim-Kombinationen aktivieren
-
 # Suchen
 find-placeholder = Suchen...
 find-previous = Vorherigen suchen
@@ -67,7 +73,9 @@ wrap-around = Umlauf
 
 # Menü
 
+
 ## Datei
+
 file = Datei
 new-file = Neue Datei
 new-window = Neues Fenster
@@ -88,6 +96,7 @@ print = Drucken
 quit = Beenden
 
 ## Bearbeiten
+
 edit = Bearbeiten
 undo = Rückgängig
 redo = Wiederholen
@@ -100,6 +109,7 @@ find-in-project = Im Projekt suchen...
 spell-check = Rechtschreibprüfung...
 
 ## Ansicht
+
 view = Ansicht
 zoom-in = Hineinzoomen
 default-size = Standardgröße
@@ -107,11 +117,11 @@ zoom-out = Herauszoomen
 indentation = Einrückung
 
 ### Einrückung
+
 automatic-indentation = Automatische Einrückung
-tab-width = Tabulator-Breite: {$tab_width}
+tab-width = Tabulator-Breite: { $tab_width }
 convert-indentation-to-spaces = Einrückung in Leerzeichen umwandeln
 convert-indentation-to-tabs = Einrückung in Tabulatoren umwandeln
-
 word-wrap = Zeilenumbruch
 show-line-numbers = Zeilennummern anzeigen
 highlight-current-line = Aktuelle Zeile hervorheben
