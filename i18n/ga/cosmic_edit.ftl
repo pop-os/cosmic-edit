@@ -8,7 +8,6 @@ todo = LE DÉANAMH
 
 ## About
 
-git-description = Git tiomantas { $hash } ar { $date }
 
 ## Document statistics
 

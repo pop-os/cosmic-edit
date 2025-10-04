@@ -2,14 +2,12 @@ cosmic-text-editor = Editor de texto COSMIC
 new-document = Nuevo documento
 open-project = Abrir proyecto
 todo = TODO
-close = Cerrar
 
 # Context Pages
 
 
 ## About
 
-git-description = Git Commit: { $hash } - Fecha: { $date }
 
 ## Document statistics
 
@@ -27,7 +25,6 @@ git-management-loading = Cargando la gestión de Git...
 stage = Etapa
 unstaged-changes = Cambios no confirmados
 staged-changes = Cambios confirmados
-unstagged-changes = Cambios rectificados
 
 ## Project search
 
@@ -82,7 +79,6 @@ file = Archivo
 new-file = Nuevo archivo
 new-window = Nueva ventana
 open-file = Abrir archivo...
-open-recent = Abrir reciente
 close-file = Cerrar archivo
 menu-open-project = Abrir proyecto...
 open-recent-project = Abrir proyecto reciente
