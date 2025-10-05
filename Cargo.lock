@@ -1460,6 +1460,7 @@ dependencies = [
  "syntect",
  "tokio",
  "two-face",
+ "unicode-segmentation",
 ]
 
 [[package]]

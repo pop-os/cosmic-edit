@@ -27,6 +27,7 @@ use cosmic_files::{
 };
 use cosmic_text::{Cursor, Edit, Family, Selection, SwashCache, SyntaxSystem, ViMode};
 use serde::{Deserialize, Serialize};
+use unicode_segmentation::UnicodeSegmentation;
 use std::{
     any::TypeId,
     collections::HashMap,
@@ -868,11 +869,13 @@ impl App {
             editor.with_buffer(|buffer| {
                 line_count = buffer.lines.len();
                 for line in buffer.lines.iter() {
+                    let text = line.text();
                     let mut last_whitespace = true;
-                    //TODO: do graphemes?
-                    for c in line.text().chars() {
+                    
+                    // Count graphemes instead of Unicode scalar values for accurate character count
+                    for grapheme in text.graphemes(true) {
                         character_count += 1;
-                        let is_whitespace = c.is_whitespace();
+                        let is_whitespace = grapheme.chars().all(|c| c.is_whitespace());
                         if !is_whitespace {
                             character_count_no_spaces += 1;
                             if last_whitespace {
