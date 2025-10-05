@@ -79,6 +79,12 @@ pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
     icon_cache.get(name, size)
 }
 
+/// Creates monospace attributes for text rendering.
+/// This centralizes the creation of monospace font attributes to avoid duplication.
+pub fn monospace_attrs() -> cosmic_text::Attrs<'static> {
+    cosmic_text::Attrs::new().family(Family::Monospace)
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(all(unix, not(target_os = "redox")))]
     match fork::daemon(true, true) {
@@ -1298,8 +1304,7 @@ impl Application for App {
         let font_names = {
             let mut font_names = Vec::new();
             let mut font_system = font_system().write().unwrap();
-            //TODO: do not repeat, used in Tab::new
-            let attrs = cosmic_text::Attrs::new().family(Family::Monospace);
+            let attrs = monospace_attrs();
             for face in font_system.raw().db().faces() {
                 if attrs.matches(face) && face.monospaced {
                     //TODO: get localized name if possible

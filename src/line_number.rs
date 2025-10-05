@@ -1,5 +1,5 @@
 use cosmic_text::{
-    Align, Attrs, AttrsList, BufferLine, Family, FontSystem, LayoutLine, LineEnding, Shaping, Wrap,
+    Align, AttrsList, BufferLine, FontSystem, LayoutLine, LineEnding, Shaping, Wrap,
 };
 use std::collections::HashMap;
 
@@ -27,8 +27,7 @@ impl LineNumberCache {
 
     pub fn get(&mut self, font_system: &mut FontSystem, key: LineNumberKey) -> &Vec<LayoutLine> {
         self.cache.entry(key).or_insert_with(|| {
-            //TODO: do not repeat, used in App::init
-            let attrs = Attrs::new().family(Family::Monospace);
+            let attrs = crate::monospace_attrs();
             let text = format!("{:width$}", key.number, width = key.width);
             let mut buffer_line = BufferLine::new(
                 text,

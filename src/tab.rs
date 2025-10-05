@@ -47,8 +47,7 @@ pub struct EditorTab {
 
 impl EditorTab {
     pub fn new(config: &Config) -> Self {
-        //TODO: do not repeat, used in App::init
-        let attrs = Attrs::new().family(cosmic_text::Family::Monospace);
+        let attrs = crate::monospace_attrs();
         let zoom_adj = Default::default();
         let mut buffer = Buffer::new_empty(config.metrics(zoom_adj));
         buffer.set_text(
