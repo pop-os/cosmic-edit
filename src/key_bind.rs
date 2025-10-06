@@ -30,6 +30,7 @@ pub fn key_binds() -> HashMap<KeyBind, Action> {
     bind!([Ctrl], Key::Character("n".into()), NewWindow);
     bind!([Ctrl], Key::Character("o".into()), OpenFileDialog);
     bind!([Ctrl, Shift], Key::Character("O".into()), OpenProjectDialog);
+    bind!([Ctrl], Key::Character("p".into()), PrintDialog);
     bind!([Ctrl], Key::Character("q".into()), Quit);
     bind!([Ctrl, Shift], Key::Character("Z".into()), Redo);
     bind!([Ctrl], Key::Character("s".into()), Save);
