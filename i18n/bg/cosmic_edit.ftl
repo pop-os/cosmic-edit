@@ -8,7 +8,6 @@ todo = Задачи
 
 ## About
 
-git-description = Git подаване { $hash } на { $date }
 
 ## Document statistics
 

@@ -5,10 +5,12 @@ todo = TODO
 
 # Context Pages
 
+
 ## About
-git-description = Commit Git {$hash} din {$date}
+
 
 ## Document statistics
+
 document-statistics = Statistici document
 word-count = Număr de cuvinte
 character-count = Caractere
@@ -16,6 +18,7 @@ character-count-no-spaces = Caractere (fără spații)
 line-count = Linii
 
 ## Git management
+
 git-management = Management Git
 git-management-description = Managementul Git este un instrument pentru dezvoltatori folosit pentru operațiuni de control al versiunilor.
 git-management-loading = Se încarcă managementul Git...
@@ -25,9 +28,11 @@ unstage = Demarchează
 unstaged-changes = Modificări nemarcate
 
 ## Project search
+
 project-search = Căutare în proiect
 
 ## Prompt save changes
+
 prompt-save-changes-title = Modificări nesalvate
 prompt-unsaved-changes = Ai modificări nesalvate. Salvezi?
 cancel = Anulează
@@ -35,9 +40,11 @@ discard = Renunță la modificări
 save-all = Salvează tot
 
 ## Settings
+
 settings = Setări
 
 ### Appearance
+
 appearance = Aspect
 theme = Temă
 match-desktop = Potrivește cu desktopul
@@ -49,11 +56,10 @@ default-font = Font implicit
 default-font-size = Mărime font implicită
 default-zoom-step = Pași de zoom
 
-
 ### Keyboard shortcuts
+
 keyboard-shortcuts = Scurtături tastatură
 enable-vim-bindings = Activează comenzile Vim
-
 # Find
 find-placeholder = Caută...
 find-previous = Caută anteriorul
@@ -67,7 +73,9 @@ wrap-around = Căutare circulară
 
 # Menu
 
+
 ## File
+
 file = Fișier
 new-file = Fișier nou
 new-window = Fereastră nouă
@@ -88,6 +96,7 @@ print = Tipărește
 quit = Închide
 
 ## Edit
+
 edit = Editare
 undo = Anulează
 redo = Refă
@@ -100,6 +109,7 @@ find-in-project = Caută în proiect...
 spell-check = Verificare ortografică...
 
 ## View
+
 view = Vizualizare
 zoom-in = Mărește
 default-size = Mărime implicită
@@ -107,11 +117,11 @@ zoom-out = Micșorează
 indentation = Indentare
 
 ### Indentation
+
 automatic-indentation = Indentare automată
-tab-width = Lățime tab: {$tab_width}
+tab-width = Lățime tab: { $tab_width }
 convert-indentation-to-spaces = Conversie indentare în spații
 convert-indentation-to-tabs = Conversie indentare în taburi
-
 word-wrap = Încadrare cuvinte
 show-line-numbers = Afișează numerele liniilor
 highlight-current-line = Evidențiază linia curentă

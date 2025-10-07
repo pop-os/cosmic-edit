@@ -8,7 +8,6 @@ todo = Teendők
 
 ## About
 
-git-description = Git commit { $hash } ekkor: { $date }
 
 ## Document statistics
 

@@ -8,7 +8,6 @@ todo = 待办事项
 
 ## About
 
-git-description = Git 提交 { $hash } 于 { $date }
 
 ## Document statistics
 

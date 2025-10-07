@@ -8,7 +8,6 @@ todo = Afazer
 
 ## About
 
-git-description = Git commit { $hash } em { $date }
 
 ## Document statistics
 

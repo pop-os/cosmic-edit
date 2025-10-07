@@ -8,7 +8,6 @@ todo = Te doen
 
 ## About
 
-git-description = Git commit { $hash } op { $date }
 
 ## Document statistics
 
@@ -81,7 +80,6 @@ file = Bestand
 new-file = Nieuw bestand
 new-window = Nieuw venster
 open-file = Bestand openen...
-open-recent = Recent bestand openen
 close-file = Bestand sluiten
 menu-open-project = Project openen...
 open-recent-project = Recent project openen
