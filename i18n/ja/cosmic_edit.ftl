@@ -8,7 +8,6 @@ todo = ToDo
 
 ## About
 
-git-description = { $date }の{ $hash }というGitコミット
 
 ## Document statistics
 
@@ -52,7 +51,7 @@ match-desktop = システム設定に従う
 dark = ダーク
 light = ライト
 syntax-dark = 構文強調 ダーク
-syntax-light = 構文強調 ライト
+syntax-light = 構文強調 ライト
 default-font = デフォルトのフォント
 default-font-size = デフォルトのフォントサイズ
 
@@ -65,7 +64,7 @@ find-placeholder = 検索...
 find-previous = 前を検索
 find-next = 次を検索
 replace-placeholder = 置き換える...
-replace = 置き換える
+replace = 置換
 replace-all = すべてを置き換える
 case-sensitive = 大文字と小文字を区別
 use-regex = 正規表現を使用

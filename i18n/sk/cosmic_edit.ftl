@@ -8,7 +8,6 @@ todo = Úloha
 
 ## O aplikácii
 
-git-description = Git commit { $hash } dňa { $date }
 
 ## Štatistika dokumentu
 

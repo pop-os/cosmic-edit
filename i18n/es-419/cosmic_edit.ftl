@@ -7,7 +7,6 @@ open-project = Abrir proyecto
 
 ## About
 
-git-description = «Commit» { $hash } de Git del { $date }
 
 ## Document statistics
 

@@ -5,10 +5,12 @@ todo = لیست کارها
 
 # Context Pages
 
+
 ## About
-git-description = کامیت گیت {$hash} در {$date}
+
 
 ## Document statistics
+
 document-statistics = آمار سند
 word-count = تعداد کلمات
 character-count = حروف
@@ -16,6 +18,7 @@ character-count-no-spaces = حروف (بدون فاصله)
 line-count = خطوط
 
 ## Git management
+
 git-management = مدیریت گیت
 git-management-description = مدیریت گیت ابزاری برای توسعه‌دهندگان است که برای عملیات کنترل نسخه استفاده می‌شود.
 git-management-loading = در حال بارگذاری مدیریت گیت...
@@ -25,9 +28,11 @@ unstage = لغو آماده‌سازی
 unstaged-changes = تغییرات آماده‌نشده
 
 ## Project search
+
 project-search = جستجوی پروژه
 
 ## Prompt save changes
+
 prompt-save-changes-title = تغییرات ذخیره‌نشده
 prompt-unsaved-changes = تغییرات ذخیره نشده دارید. ذخیره شود؟
 cancel = لغو
@@ -35,9 +40,11 @@ discard = نادیده گرفتن تغییرات
 save-all = ذخیره همه
 
 ## Settings
+
 settings = تنظیمات
 
 ### Appearance
+
 appearance = ظاهر
 theme = تم
 match-desktop = مطابق دسکتاپ
@@ -49,11 +56,10 @@ default-font = فونت پیش‌فرض
 default-font-size = اندازه فونت پیش‌فرض
 default-zoom-step = گام‌های بزرگ‌نمایی
 
-
 ### Keyboard shortcuts
+
 keyboard-shortcuts = میانبرهای صفحه‌کلید
 enable-vim-bindings = فعال‌سازی میانبرهای Vim
-
 # Find
 find-placeholder = جستجو...
 find-previous = جستجوی قبلی
@@ -67,7 +73,9 @@ wrap-around = جستجوی چرخشی
 
 # Menu
 
+
 ## File
+
 file = پرونده
 new-file = پرونده جدید
 new-window = پنجره جدید
@@ -88,6 +96,7 @@ print = چاپ
 quit = خروج
 
 ## Edit
+
 edit = ویرایش
 undo = بازگردانی
 redo = انجام دوباره
@@ -100,6 +109,7 @@ find-in-project = جستجو در پروژه...
 spell-check = بررسی املا...
 
 ## View
+
 view = نمایش
 zoom-in = بزرگ‌نمایی
 default-size = اندازه پیش‌فرض
@@ -107,11 +117,11 @@ zoom-out = کوچک‌نمایی
 indentation = تورفتگی
 
 ### Indentation
+
 automatic-indentation = تورفتگی خودکار
-tab-width = پهنای تب: {$tab_width}
+tab-width = پهنای تب: { $tab_width }
 convert-indentation-to-spaces = تبدیل تورفتگی به فاصله
 convert-indentation-to-tabs = تبدیل تورفتگی به تب
-
 word-wrap = شکستن خطوط
 show-line-numbers = نمایش شماره خطوط
 highlight-current-line = برجسته کردن خط فعلی

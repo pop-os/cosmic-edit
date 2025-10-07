@@ -5,10 +5,12 @@ todo = करने के लिए
 
 # Context Pages
 
+
 ## About
-git-description = {$date} को {$hash} पर Git कमिट
+
 
 ## Document statistics
+
 document-statistics = दस्तावेज़ आँकड़े
 word-count = शब्दों की संख्या
 character-count = अक्षरों की संख्या
@@ -16,6 +18,7 @@ character-count-no-spaces = अक्षरों की संख्या (स
 line-count = पंक्तियाँ
 
 ## Git management
+
 git-management = Git प्रबंधन
 git-management-description = Git प्रबंधन एक डेवलपर टूल है जो संस्करण नियंत्रण कार्यों के लिए उपयोग किया जाता है।
 git-management-loading = Git प्रबंधन लोड हो रहा है...
@@ -25,9 +28,11 @@ unstage = स्टेज से हटाएँ
 unstaged-changes = बिना स्टेज की गई चीज़ें
 
 ## Project search
+
 project-search = प्रोजेक्ट खोज
 
 ## Prompt save changes
+
 prompt-save-changes-title = बिना सहेजे हुए बदलाव
 prompt-unsaved-changes = आपके पास बिना सहेजे हुए बदलाव हैं। सहेजना है?
 cancel = रद्द करो
@@ -35,9 +40,11 @@ discard = बदलाव को खारिज करें
 save-all = सब कुछ सहेजें
 
 ## Settings
+
 settings = सेटिंग्स
 
 ### Appearance
+
 appearance = दिखावट
 theme = थीम
 match-desktop = डेस्कटॉप से मेल करें
@@ -49,9 +56,9 @@ default-font = डिफ़ॉल्ट फ़ॉन्ट
 default-font-size = डिफ़ॉल्ट फ़ॉन्ट आकार
 
 ### Keyboard shortcuts
+
 keyboard-shortcuts = कीबोर्ड शॉर्टकट्स
 enable-vim-bindings = Vim बाइंडिंग्स सक्षम करें
-
 # Find
 find-placeholder = खोजें...
 find-previous = पिछला खोजें
@@ -64,7 +71,9 @@ use-regex = Regex का उपयोग करें
 
 # Menu
 
+
 ## File
+
 file = फ़ाइल
 new-file = नई फ़ाइल
 new-window = नई विंडो
@@ -85,6 +94,7 @@ print = प्रिंट करें
 quit = बंद करें
 
 ## Edit
+
 edit = संपादित करें
 undo = पूर्ववत करें
 redo = फिर से करें
@@ -97,15 +107,16 @@ find-in-project = प्रोजेक्ट में खोजें...
 spell-check = वर्तनी की जांच...
 
 ## View
+
 view = दृश्य
 indentation = इंडेंटेशन
 
 ### Indentation
+
 automatic-indentation = स्वचालित इंडेंटेशन
-tab-width = टैब चौड़ाई: {$tab_width}
+tab-width = टैब चौड़ाई: { $tab_width }
 convert-indentation-to-spaces = इंडेंटेशन को स्पेस में बदलें
 convert-indentation-to-tabs = इंडेंटेशन को टैब्स में बदलें
-
 word-wrap = वर्ड रैप
 show-line-numbers = पंक्ति संख्या दिखाएँ
 highlight-current-line = वर्तमान पंक्ति को हाइलाइट करें

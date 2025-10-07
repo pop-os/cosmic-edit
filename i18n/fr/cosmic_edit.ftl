@@ -5,10 +5,12 @@ todo = À faire
 
 # Context Pages
 
+
 ## About
-git-description = Git commit {$hash} le {$date}
+
 
 ## Document statistics
+
 document-statistics = Statistiques du document
 word-count = Nombre de mots
 character-count = Caractères
@@ -16,6 +18,7 @@ character-count-no-spaces = Caractères (sans espaces)
 line-count = Lignes
 
 ## Git management
+
 git-management = Gestion de Git
 git-management-description = Git est un outil de développement utilisé pour les opérations de gestion de versions.
 git-management-loading = Chargement de Git...
@@ -25,9 +28,11 @@ unstage = Désindexer
 unstaged-changes = Modifications non indexées
 
 ## Project search
+
 project-search = Recherche de projets
 
 ## Prompt save changes
+
 prompt-save-changes-title = Modifications non sauvegardées
 prompt-unsaved-changes = Vous avez des modifications non sauvegardées. Sauvegarder ?
 cancel = Annuler
@@ -35,9 +40,11 @@ discard = Abandonner les modifications
 save-all = Tout enregistrer
 
 ## Settings
+
 settings = Paramètres
 
 ## Appearance
+
 appearance = Apparence
 theme = Thème
 match-desktop = Assortir au bureau
@@ -49,9 +56,9 @@ default-font = Police par défaut
 default-font-size = Taille de la police par défaut
 
 ### Keyboard shortcuts
+
 keyboard-shortcuts = Raccourcis clavier
 enable-vim-bindings = Activer les raccourcis Vim
-
 # Find
 find-placeholder = Rechercher...
 find-previous = Chercher précédent
@@ -65,7 +72,9 @@ wrap-around = Retour à la ligne
 
 # Menu
 
+
 ## File
+
 file = Fichier
 new-file = Nouveau fichier
 new-window = Nouvelle fenêtre
@@ -86,6 +95,7 @@ print = Imprimer
 quit = Quitter
 
 ## Edit
+
 edit = Modifier
 undo = Annuler
 redo = Rétablir
@@ -98,15 +108,16 @@ find-in-project = Rechercher dans le projet...
 spell-check = Vérification orthographique...
 
 ## View
+
 view = Affichage
 indentation = Indentation
 
 ### Indentation
-automatic-indentation = Indentation automatique 
-tab-width = Largeur de la tabulation : {$tab_width}
+
+automatic-indentation = Indentation automatique
+tab-width = Largeur de la tabulation : { $tab_width }
 convert-indentation-to-spaces = Convertir l'indentation en espaces
 convert-indentation-to-tabs = Convertir l'indentation en tabulations
-
 word-wrap = Retour à la ligne
 show-line-numbers = Afficher les numéros de ligne
 highlight-current-line = Surligner la ligne actuelle

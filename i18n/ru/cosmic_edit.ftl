@@ -8,7 +8,6 @@ todo = TODO
 
 ## About
 
-git-description = Git-коммит { $hash } от { $date }
 
 ## Document statistics
 
