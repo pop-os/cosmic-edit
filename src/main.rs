@@ -11,7 +11,7 @@ use cosmic::{
     cosmic_theme, executor,
     font::Font,
     iced::{
-        self, Alignment, Background, Color, Length, Limits, Point, Subscription,
+        Alignment, Background, Color, Length, Limits, Point, Subscription,
         advanced::graphics::text::font_system,
         clipboard, event,
         futures::{self, SinkExt},
@@ -3202,10 +3202,16 @@ impl Application for App {
             },
         ];
 
-        if let Some(auto_scroll) = self.auto_scroll {
+        if let Some(auto_scroll_value) = self.auto_scroll {
             subscriptions.push(
-                iced::time::every(time::Duration::from_millis(10))
-                    .map(move |_| Message::Scroll(auto_scroll)),
+                Subscription::run_with_id(
+                    ("auto_scroll", auto_scroll_value.to_bits()),
+                    futures::stream::unfold(auto_scroll_value, |state| async move {
+                        tokio::time::sleep(time::Duration::from_millis(10)).await;
+                        Some((state, state))
+                    }),
+                )
+                .map(|value| Message::Scroll(value)),
             );
         }
 
