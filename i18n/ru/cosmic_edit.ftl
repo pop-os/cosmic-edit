@@ -45,7 +45,7 @@ settings = Параметры
 
 ## Appearance
 
-appearance = Внешний вид
+appearance = Оформление
 theme = Тема
 match-desktop = Как в системе
 dark = Тёмная
@@ -111,9 +111,9 @@ spell-check = Проверить правописание...
 ## View
 
 view = Вид
-zoom-in = Приблизить
+zoom-in = Увеличить
 default-size = Размер по умолчанию
-zoom-out = Отдалить
+zoom-out = Уменьшить
 indentation = Отступ
 
 ### Indentation

@@ -21,10 +21,10 @@ line-count = Número de líneas
 git-management = Gestión de Git
 git-management-description = La gestión de Git es una herramienta para desarrolladores utilizada para operaciones de control de versiones.
 git-management-loading = Cargando la gestión de Git...
-stage = Etapa
-staged-changes = Cambios en etapa
-unstage = Quitar de la etapa
-unstaged-changes = Cambios quitados de la etapa
+stage = Añadir al área de preparación
+staged-changes = Modificaciones en el área de preparación
+unstage = Quitar del área de preparación
+unstaged-changes = Modificaciones fuera del área de preparación
 
 ## Project search
 
