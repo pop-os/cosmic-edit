@@ -152,7 +152,30 @@ impl EditorTab {
                     // Replace everything in the buffer with the content from disk
                     editor.delete_range(cursor_start, cursor_end);
                     editor.insert_at(cursor_start, &file_content, None);
-                    editor.set_cursor(cursor_start);
+
+                    // Adjust cursor to closest position
+                    let mut cursor = editor.cursor();
+                    editor.with_buffer(|buffer| {
+                        cursor.line = cursor.line.min(buffer.lines.len().saturating_sub(1));
+                        cursor.index = if let Some(line) = buffer.lines.get(cursor.line) {
+                            let mut closest = line.text().len();
+                            for (i, _) in line.text().char_indices().rev() {
+                                if i >= cursor.index {
+                                    closest = i;
+                                } else {
+                                    // i < cursor.index
+                                    if cursor.index - i < closest - cursor.index {
+                                        closest = i;
+                                    }
+                                    break;
+                                }
+                            }
+                            closest
+                        } else {
+                            0
+                        }
+                    });
+                    editor.set_cursor(cursor);
 
                     editor.finish_change();
                     editor.set_changed(false);

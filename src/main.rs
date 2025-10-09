@@ -27,7 +27,6 @@ use cosmic_files::{
 };
 use cosmic_text::{Cursor, Edit, Family, Selection, SwashCache, SyntaxSystem, ViMode};
 use serde::{Deserialize, Serialize};
-use unicode_segmentation::UnicodeSegmentation;
 use std::{
     any::TypeId,
     collections::HashMap,
@@ -37,6 +36,7 @@ use std::{
     sync::{Mutex, OnceLock},
 };
 use tokio::time;
+use unicode_segmentation::UnicodeSegmentation;
 
 use config::{AppTheme, CONFIG_VERSION, Config, ConfigState};
 mod config;
@@ -871,7 +871,7 @@ impl App {
                 for line in buffer.lines.iter() {
                     let text = line.text();
                     let mut last_whitespace = true;
-                    
+
                     // Count graphemes instead of Unicode scalar values for accurate character count
                     for grapheme in text.graphemes(true) {
                         character_count += 1;
