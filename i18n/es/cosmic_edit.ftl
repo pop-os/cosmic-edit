@@ -22,9 +22,9 @@ line-count = Líneas
 git-management = Gestión de Git
 git-management-description = La gestión de Git es una herramienta para desarrolladores utilizada para las operaciones de control de versión.
 git-management-loading = Cargando la gestión de Git...
-stage = Etapa
-unstaged-changes = Cambios no confirmados
-staged-changes = Cambios confirmados
+stage = Añadir al área de preparación
+unstaged-changes = Modificaciones fuera del área de preparación
+staged-changes = Modificaciones en el área de preparación
 
 ## Project search
 
@@ -128,3 +128,6 @@ menu-keyboard-shortcuts = Atajos de teclado...
 menu-about = Sobre el COSMIC Text Editor...
 open-recent-file = Abrir archivo reciente
 select-all = Seleccionar todo
+repository = Repositorio
+support = Apoyo
+unstage = Quitar del área de preparación
