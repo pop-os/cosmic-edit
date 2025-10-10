@@ -1,66 +1,75 @@
 use ashpd::desktop::print::{Orientation, PageSetup, PrintProxy, Settings};
-use cosmic_text::{Buffer, Scroll, fontdb};
+use cosmic_text::{Buffer, LayoutGlyph, LayoutRun, Scroll, fontdb};
 use printpdf::*;
 use std::{
-    cmp,
     collections::HashMap,
     error::Error,
     fs,
     io::{self, Write},
-    ops::Range,
+    mem,
     sync::Arc,
 };
 
 use crate::{fl, font_system};
 
-struct Run {
+struct Span {
     font: FontId,
-    font_size: Pt,
-    range: Range<usize>,
+    font_size_pt: Pt,
+    font_size_px: Px,
+    codepoints: Vec<(i64, u16, char)>,
+    x: i64,
 }
-impl Run {
-    fn new(font: FontId, font_size: Pt) -> Self {
+
+impl Span {
+    fn new(font: FontId, font_size_pt: Pt, font_size_px: Px) -> Self {
         Self {
             font,
-            font_size,
-            range: Default::default(),
+            font_size_pt,
+            font_size_px,
+            codepoints: Vec::new(),
+            x: 0,
         }
     }
 
-    fn glyph(&mut self, font: FontId, start: usize, end: usize, text: &str, ops: &mut Vec<Op>) {
+    fn glyph(&mut self, font: FontId, glyph: &LayoutGlyph, run: &LayoutRun, ops: &mut Vec<Op>) {
         if font != self.font {
-            // Flush and set font if it changed
-            self.flush(text, ops);
+            // Flush and set font size if it changed
+            self.flush(run, ops);
             self.font = font;
             ops.push(Op::SetFontSize {
                 font: self.font.clone(),
-                size: self.font_size,
+                size: self.font_size_pt,
             });
         }
 
-        if self.range.is_empty() {
-            // Set range if empty
-            self.range = start..end;
-        } else if start > self.range.end || end < self.range.start {
-            // Flush and reset range if glyph out of range
-            self.flush(text, ops);
-            self.range = start..end;
-        } else {
-            // Expand range to include glyph
-            self.range.start = cmp::min(self.range.start, start);
-            self.range.end = cmp::max(self.range.end, end);
+        let em_1000 = |x: f32| -> i64 { ((x * 1000.0) / (self.font_size_px.0) as f32) as i64 };
+        let glyph_x = em_1000(glyph.x);
+        // TODO: glyphs can share chars and one glyph can reference multiple chars
+        for (i, c) in run.text[glyph.start..glyph.end].char_indices() {
+            if i == 0 {
+                self.codepoints.push((self.x - glyph_x, glyph.glyph_id, c));
+            } else {
+                eprintln!("extra char {:?}", c);
+            }
+        }
+        self.x = glyph_x + em_1000(glyph.w);
+    }
+
+    fn flush(&mut self, run: &LayoutRun, ops: &mut Vec<Op>) {
+        if !self.codepoints.is_empty() {
+            let mut codepoints = Vec::new();
+            mem::swap(&mut codepoints, &mut self.codepoints);
+            ops.push(Op::WriteCodepointsWithKerning {
+                font: self.font.clone(),
+                cpk: codepoints,
+            });
         }
     }
 
-    fn flush(&mut self, text: &str, ops: &mut Vec<Op>) {
-        if !self.range.is_empty() {
-            let string = text[self.range.clone()].to_string();
-            self.range = Default::default();
-            ops.push(Op::WriteText {
-                font: self.font.clone(),
-                items: vec![TextItem::Text(string)],
-            });
-        }
+    fn line(&mut self, run: &LayoutRun, ops: &mut Vec<Op>) {
+        self.flush(run, ops);
+        ops.push(Op::AddLineBreak);
+        self.x = 0;
     }
 }
 
@@ -81,45 +90,38 @@ fn generate_pdf<W: Write>(buffer: &mut Buffer, page_setup: &PageSetup, w: &mut W
     let inner_width_px = inner_width_mm.into_pt().into_px(dpi);
     let inner_height_px = inner_height_mm.into_pt().into_px(dpi);
     let metrics = buffer.metrics();
-    let font_size = Px(metrics.font_size as usize).into_pt(dpi);
+    let font_size_px = Px(metrics.font_size as usize);
+    let font_size_pt = font_size_px.into_pt(dpi);
     let line_height = Px(metrics.line_height as usize).into_pt(dpi);
-    let (buffer_width, buffer_height, matrix) =
+    let (buffer_width, buffer_height, translate_x, translate_y, rotate) =
         match page_setup.orientation.unwrap_or(Orientation::Portrait) {
             Orientation::Portrait => (
                 inner_width_px.0 as f32,
                 inner_height_px.0 as f32,
-                TextMatrix::TranslateRotate(
-                    Pt::from(margin_left),
-                    Pt::from(outer_height - margin_top) - line_height,
-                    0.0,
-                ),
+                Pt::from(margin_left),
+                Pt::from(outer_height - margin_top) - line_height,
+                0.0,
             ),
             Orientation::Landscape => (
                 inner_height_px.0 as f32,
                 inner_width_px.0 as f32,
-                TextMatrix::TranslateRotate(
-                    Pt::from(margin_top) + line_height,
-                    Pt::from(margin_left),
-                    90.0,
-                ),
+                Pt::from(margin_top) + line_height,
+                Pt::from(margin_left),
+                90.0,
             ),
             Orientation::ReversePortrait => (
                 inner_width_px.0 as f32,
                 inner_height_px.0 as f32,
-                TextMatrix::TranslateRotate(
-                    Pt::from(outer_width - margin_left),
-                    Pt::from(margin_top) + line_height,
-                    180.0,
-                ),
+                Pt::from(outer_width - margin_left),
+                Pt::from(margin_top) + line_height,
+                180.0,
             ),
             Orientation::ReverseLandscape => (
                 inner_height_px.0 as f32,
                 inner_width_px.0 as f32,
-                TextMatrix::TranslateRotate(
-                    Pt::from(outer_width - margin_left) - line_height,
-                    Pt::from(outer_height - margin_top),
-                    270.0,
-                ),
+                Pt::from(outer_width - margin_left) - line_height,
+                Pt::from(outer_height - margin_top),
+                270.0,
             ),
         };
 
@@ -136,11 +138,13 @@ fn generate_pdf<W: Write>(buffer: &mut Buffer, page_setup: &PageSetup, w: &mut W
         let mut ops = vec![
             Op::SaveGraphicsState,
             Op::StartTextSection,
-            Op::SetTextMatrix { matrix },
+            Op::SetTextMatrix {
+                matrix: TextMatrix::TranslateRotate(translate_x, translate_y, rotate),
+            },
             Op::SetLineHeight { lh: line_height },
         ];
 
-        let mut current_run = Run::new(FontId(String::new()), font_size);
+        let mut span = Span::new(FontId(String::new()), font_size_pt, font_size_px);
         let mut lines = 0;
         let mut height = 0.0;
         for run in buffer.layout_runs().skip(skip) {
@@ -170,12 +174,11 @@ fn generate_pdf<W: Write>(buffer: &mut Buffer, page_setup: &PageSetup, w: &mut W
 
                 //TODO: what to do with missing font?
                 if let Some(font) = font_opt {
-                    current_run.glyph(font, glyph.start, glyph.end, &run.text, &mut ops);
+                    span.glyph(font, &glyph, &run, &mut ops);
                 }
             }
 
-            current_run.flush(&run.text, &mut ops);
-            ops.push(Op::AddLineBreak);
+            span.line(&run, &mut ops);
         }
 
         if lines == 0 {
@@ -192,7 +195,10 @@ fn generate_pdf<W: Write>(buffer: &mut Buffer, page_setup: &PageSetup, w: &mut W
     }
 
     let mut warnings = Vec::new();
-    doc.save_writer(w, &PdfSaveOptions::default(), &mut warnings);
+    let mut options = PdfSaveOptions::default();
+    //TODO: subsetting breaks glyph ids
+    options.subset_fonts = false;
+    doc.save_writer(w, &options, &mut warnings);
     //println!("{:#?}", warnings);
 }
 
@@ -226,12 +232,10 @@ pub(crate) async fn print(mut buffer: Arc<Buffer>) -> Result<(), Box<dyn Error>>
     })
     .await??;
 
-    dbg!(
-        proxy
-            .print(window_id, &title, &file, token_opt, modal)
-            .await?
-            .response()
-    )?;
+    proxy
+        .print(window_id, &title, &file, token_opt, modal)
+        .await?
+        .response()?;
 
     Ok(())
 }
