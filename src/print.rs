@@ -195,10 +195,7 @@ fn generate_pdf<W: Write>(buffer: &mut Buffer, page_setup: &PageSetup, w: &mut W
     }
 
     let mut warnings = Vec::new();
-    let mut options = PdfSaveOptions::default();
-    //TODO: subsetting breaks glyph ids
-    options.subset_fonts = false;
-    doc.save_writer(w, &options, &mut warnings);
+    doc.save_writer(w, &PdfSaveOptions::default(), &mut warnings);
     //println!("{:#?}", warnings);
 }
 
