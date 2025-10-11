@@ -31,6 +31,10 @@ i18n-embed = { version = "0.16", features = [
 ] }
 i18n-embed-fl = "0.10"
 rust-embed = "8"
+# print feature
+ashpd = { version = "0.12", optional = true }
+printpdf = { git = "https://github.com/fschutt/printpdf.git", default-features = false, optional = true }
+tempfile = { version = "3", optional = true }
 
 [dependencies.cosmic-files]
 git = "https://github.com/pop-os/cosmic-files.git"
@@ -53,9 +57,10 @@ features = ["about", "multi-window", "tokio", "winit", "surface-message"]
 fork = "0.2"
 
 [features]
-default = ["dbus-config", "gvfs", "wgpu", "wayland"]
+default = ["dbus-config", "gvfs", "print", "wgpu", "wayland"]
 dbus-config = ["libcosmic/dbus-config"]
 gvfs = ["cosmic-files/gvfs"]
+print = ["dep:ashpd", "dep:printpdf", "dep:tempfile"]
 wgpu = ["libcosmic/wgpu", "cosmic-files/wgpu"]
 wayland = ["libcosmic/wayland", "cosmic-files/wayland"]
 
@@ -66,6 +71,10 @@ debug = true
 [patch.crates-io]
 onig = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
 onig_sys = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
+
+# https://github.com/fschutt/printpdf/pull/242
+[patch.'https://github.com/fschutt/printpdf']
+printpdf = { git = "https://github.com/jackpot51/printpdf" }
 
 # [patch.'https://github.com/pop-os/libcosmic']
 # libcosmic = { path = "../libcosmic" }
