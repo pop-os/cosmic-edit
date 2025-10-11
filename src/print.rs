@@ -86,7 +86,7 @@ fn generate_pdf<W: Write>(buffer: &mut Buffer, page_setup: &PageSetup, w: &mut W
     let margin_right = Mm(page_setup.margin_right.unwrap_or(25.4) as f32);
     let inner_width_mm = outer_width - margin_left - margin_right;
     let inner_height_mm = outer_height - margin_top - margin_bottom;
-    let dpi = 96.0;
+    let dpi = 144.0;
     let inner_width_px = inner_width_mm.into_pt().into_px(dpi);
     let inner_height_px = inner_height_mm.into_pt().into_px(dpi);
     let metrics = buffer.metrics();
