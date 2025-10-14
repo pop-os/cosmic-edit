@@ -31,7 +31,7 @@ use std::{
     any::TypeId,
     collections::HashMap,
     env, fs, io,
-    path::{Path, PathBuf},
+    path::{self, Path, PathBuf},
     process,
     sync::{Mutex, OnceLock},
 };
@@ -648,10 +648,13 @@ impl App {
             Some(path) => {
                 let canonical = match fs::canonicalize(&path) {
                     Ok(ok) => ok,
-                    Err(err) => {
-                        log::error!("failed to canonicalize {:?}: {}", path, err);
-                        return None;
-                    }
+                    Err(err) => match path::absolute(&path) {
+                        Ok(ok) => ok,
+                        Err(_) => {
+                            log::error!("failed to canonicalize {:?}: {}", path, err);
+                            return None;
+                        }
+                    },
                 };
 
                 //TODO: allow files to be open multiple times

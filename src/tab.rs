@@ -10,8 +10,8 @@ use notify::Watcher;
 use regex::Regex;
 use std::{
     fs,
-    io::Write,
-    path::PathBuf,
+    io::{self, Write},
+    path::{self, PathBuf},
     process::{Command, Stdio},
     sync::{Arc, Mutex},
 };
@@ -101,20 +101,30 @@ impl EditorTab {
         let mut editor = self.editor.lock().unwrap();
         let mut font_system = font_system().write().unwrap();
         let mut editor = editor.borrow_with(font_system.raw());
-        match editor.load_text(&path, self.attrs.clone()) {
+        let absolute = match fs::canonicalize(&path) {
+            Ok(ok) => ok,
+            Err(err) => match path::absolute(&path) {
+                Ok(ok) => ok,
+                Err(_) => {
+                    log::error!("failed to canonicalize {:?}: {}", path, err);
+                    path
+                }
+            },
+        };
+        match editor.load_text(&absolute, self.attrs.clone()) {
             Ok(()) => {
-                log::info!("opened {:?}", path);
-                self.path_opt = match fs::canonicalize(&path) {
-                    Ok(ok) => Some(ok),
-                    Err(err) => {
-                        log::error!("failed to canonicalize {:?}: {}", path, err);
-                        Some(path)
-                    }
-                };
+                log::info!("opened {:?}", absolute);
+                self.path_opt = Some(absolute);
             }
             Err(err) => {
-                log::error!("failed to open {:?}: {}", path, err);
-                self.path_opt = None;
+                if err.kind() == io::ErrorKind::NotFound {
+                    log::warn!("opened non-existant file {:?}", absolute);
+                    self.path_opt = Some(absolute);
+                    editor.set_changed(true);
+                } else {
+                    log::error!("failed to open {:?}: {}", absolute, err);
+                    self.path_opt = None;
+                }
             }
         }
     }
