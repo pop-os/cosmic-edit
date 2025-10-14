@@ -4,7 +4,9 @@ todo = TODO
 
 # Context Pages
 
+
 ## Document statistics
+
 document-statistics = Статистике документа
 word-count = Број речи
 character-count = Знакови
@@ -12,17 +14,21 @@ character-count-no-spaces = Знакови (без размака)
 line-count = Редови
 
 ## Git management
+
 git-management = Гит управљање
 unstaged-changes = Нестејџоване промене
 staged-changes = Стејџоване промене
 
 ## Project search
+
 project-search = Претрага пројекта
 
 ## Settings
+
 settings = Подешавања
 
 ## Appearance
+
 appearance = Изглед
 theme = Тема
 match-desktop = Као систем
@@ -34,9 +40,9 @@ default-font = Подразумевани фонт
 default-font-size = Подразумевана величина фонта
 
 ### Keyboard shortcuts
+
 keyboard-shortcuts = Пречице на тастатури
 enable-vim-bindings = Омогући Vim режим
-
 # Find
 find-placeholder = Пронађи...
 find-previous = Пронађи претходно
@@ -47,7 +53,9 @@ replace-all = Замени све
 
 # Menu
 
+
 ## File
+
 file = Датотека
 new-file = Нова датотека
 new-window = Нови прозор
@@ -68,8 +76,9 @@ print = Штампај
 quit = Изађи
 
 ## Edit
+
 edit = Уреди
-undo = Поништи
+undo = Поништи промену
 redo = Понови
 cut = Исеци
 copy = Копирај
@@ -80,15 +89,16 @@ find-in-project = Пронађи у пројекту...
 spell-check = Провера правописа...
 
 ## View
+
 view = Приказ
 indentation = Увлачење
 
 ### Indentation
+
 automatic-indentation = Аутоматско увлачење
-tab-width = Ширина табулатора: {$tab_width}
+tab-width = Ширина табулатора: { $tab_width }
 convert-indentation-to-spaces = Претвори увлачење у размаке
 convert-indentation-to-tabs = Претвори увлачење у табулаторе
-
 word-wrap = Заокруживање речи
 show-line-numbers = Прикажи бројеве редова
 highlight-current-line = Истакни тренутни ред
@@ -96,3 +106,11 @@ syntax-highlighting = Истицање синтаксе...
 menu-settings = Подешавања...
 menu-keyboard-shortcuts = Пречице на тастатури...
 menu-about = О COSMIC уређивачу текста
+cosmic-text-editor = COSMIC Уређивач Текста
+cancel = Прекини
+repository = Репозиторијум
+support = Подршка
+git-management-description = Git уређивач је алат за развој софтвера који се користи за верзионисање софвера.
+git-management-loading = Учитавање Git управљивача...
+stage = Припреми
+unstage = Поништи припрему

@@ -37,7 +37,7 @@ project-search = البحث عن مشروع
 
 prompt-save-changes-title = تغييرات غير محفوظة
 prompt-unsaved-changes = هناك تغييرات غير محفوظة. أحفظ؟
-cancel = إلغاء
+cancel = ألغِ
 discard = تجاهل التغييرات
 save-all = احفظ الكل
 
@@ -48,20 +48,20 @@ settings = الإعدادات
 ### Appearance
 
 appearance = المظهر
-theme = الثيم
+theme = سمة
 match-desktop = مطابقة مع سطح المكتب
 dark = داكن
 light = فاتح
 syntax-dark = صيغة الثيم الداكن
 syntax-light = صيغة الثيم الفاتح
-default-font = الخط الافتراضي
+default-font = الخط المبدئي
 default-font-size = حجم الخط الافتراضي
 default-zoom-step = خطوات التكبير
 
 ### Keyboard shortcuts
 
 keyboard-shortcuts = اختصارات لوحة المفاتيح
-enable-vim-bindings = تمكين ارتباط مفاتيح Vim
+enable-vim-bindings = فعِّل ارتباط مفاتيح Vim
 # Find
 find-placeholder = ابحث عن...
 find-previous = ابحث عن السابق
@@ -95,7 +95,7 @@ document-type = نوع المستند...
 encoding = الترميز...
 menu-git-management = إدارة Git...
 print = اطبع
-quit = خروج
+quit = أنهِ
 
 ## Edit
 
