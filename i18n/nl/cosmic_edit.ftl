@@ -29,7 +29,7 @@ unstaged-changes = Niet-geïndexeerde wijzigingen
 
 ## Project search
 
-project-search = Zoek in het project
+project-search = Doorzoek project
 
 ## Prompt save changes
 
@@ -130,3 +130,4 @@ menu-keyboard-shortcuts = Sneltoetsen…
 menu-about = Over COSMIC-tekstbewerker...
 open-recent-file = Open recent bestand
 support = Ondersteuning
+repository = Repository
