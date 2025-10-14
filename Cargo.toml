@@ -32,7 +32,7 @@ i18n-embed = { version = "0.16", features = [
 i18n-embed-fl = "0.10"
 rust-embed = "8"
 # print feature
-ashpd = { version = "0.12", optional = true }
+ashpd = { git = "https://github.com/jackpot51/ashpd.git", optional = true }
 printpdf = { git = "https://github.com/fschutt/printpdf.git", default-features = false, optional = true }
 tempfile = { version = "3", optional = true }
 
