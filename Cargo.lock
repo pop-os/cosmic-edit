@@ -403,6 +403,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ashpd"
+version = "0.13.0"
+source = "git+https://github.com/jackpot51/ashpd.git#702486b2df6a68ce7812742baf9aefe21660f829"
+dependencies = [
+ "enumflags2",
+ "fastrand 2.3.0",
+ "futures-channel",
+ "futures-util",
+ "serde",
+ "serde_repr",
+ "tokio",
+ "url",
+ "zbus 5.11.0",
+]
+
+[[package]]
 name = "async-broadcast"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1478,7 +1494,7 @@ dependencies = [
 name = "cosmic-edit"
 version = "0.1.0"
 dependencies = [
- "ashpd 0.12.0",
+ "ashpd 0.13.0",
  "cosmic-files",
  "cosmic-syntax-theme",
  "cosmic-text",
