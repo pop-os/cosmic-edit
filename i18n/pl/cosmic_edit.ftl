@@ -22,7 +22,7 @@ line-count = Linie
 ## Git management
 
 git-management = Zarządzanie git
-git-management-description = Zarządzanie git jest narzędziem programistycznym używanym do kontroli werji oprogramowania.
+git-management-description = Zarządzanie git jest narzędziem programistycznym używanym do kontroli wersji oprogramowania.
 git-management-loading = Ładowanie menedżera Git...
 stage = Przemieść
 staged-changes = Przemieszczone zmiany
@@ -31,7 +31,7 @@ unstaged-changes = Nieprzemieszczone zmiany
 
 ## Project search
 
-project-search = Wyszukiwanie w Projekcie
+project-search = Wyszukiwanie w projekcie
 
 ## Prompt save changes
 
@@ -56,7 +56,7 @@ syntax-dark = Ciemna składnia
 syntax-light = Jasna składnia
 default-font = Domyślna czcionka
 default-font-size = Domyślny rozmiar czcionki
-default-zoom-step = Rozmiar kroków powiększania
+default-zoom-step = Stopniowanie powiększania
 
 ### Keyboard shortcuts
 
@@ -64,12 +64,12 @@ keyboard-shortcuts = Skróty klawiszowe
 enable-vim-bindings = Włącz tryb Vim
 # Find
 find-placeholder = Szukaj…
-find-previous = Szukaj poprzedni
-find-next = Szukaj następny
+find-previous = Znajdź poprzedni
+find-next = Znajdź następny
 replace-placeholder = Zastąp…
 replace = Zastąp
 replace-all = Zastąp wszystkie
-case-sensitive = Uwzględnienie wielkości liter
+case-sensitive = Rozróżnia wielkość liter
 use-regex = Użyj wyrażenia regularnego
 
 # Menu
@@ -92,7 +92,7 @@ revert-all-changes = Usuń zmiany
 menu-document-statistics = Statystyki dokumentu…
 document-type = Typ dokumentu…
 encoding = Kodowanie…
-menu-git-management = Zarządzanie Git…
+menu-git-management = Zarządzanie git…
 print = Drukuj
 quit = Zamknij
 
@@ -112,9 +112,9 @@ spell-check = Sprawdź ortografię…
 ## View
 
 view = Widok
-zoom-in = Pomniejsz
+zoom-in = Zbliż
 default-size = Domyślny rozmiar
-zoom-out = Powiększ
+zoom-out = Oddal
 indentation = Wcięcia
 
 ### Indentation
@@ -123,11 +123,11 @@ automatic-indentation = Automatyczne wcięcia
 tab-width = Szerokość tabulacji: { $tab_width }
 convert-indentation-to-spaces = Konwertuj wcięcia na spacje
 convert-indentation-to-tabs = Konwertuj wcięcia na tabulację
-word-wrap = Zawijanie słów
+word-wrap = Zawijaj słowa
 show-line-numbers = Pokaż numery linii
 highlight-current-line = Podświetl aktualną linię
 syntax-highlighting = Podświetlanie składni…
 menu-settings = Ustawienia…
 menu-keyboard-shortcuts = Skróty klawiszowe…
 menu-about = O Edytorze Tekstu COSMIC...
-wrap-around = Obieganie wokół
+wrap-around = Zawiń wokoło
