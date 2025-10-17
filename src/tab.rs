@@ -18,6 +18,17 @@ use std::{
 
 use crate::{Config, SYNTAX_SYSTEM, fl, git::GitDiff};
 
+fn editor_text(editor: &ViEditor<'static, 'static>) -> String {
+    editor.with_buffer(|buffer| {
+        let mut text = String::new();
+        for line in buffer.lines.iter() {
+            text.push_str(line.text());
+            text.push_str(line.ending().as_str());
+        }
+        text
+    })
+}
+
 pub enum Tab {
     Editor(EditorTab),
     GitDiff(GitDiffTab),
@@ -142,6 +153,12 @@ impl EditorTab {
                 Ok(file_content) => {
                     log::info!("reloaded {:?}", path);
 
+                    //TODO: compare using line iterator to prevent allocations
+                    if file_content == editor_text(&editor) {
+                        log::info!("text not changed");
+                        return;
+                    }
+
                     // Store the entire operation as a single change for undo
                     editor.start_change();
 
@@ -205,15 +222,7 @@ impl EditorTab {
     pub fn save(&mut self) {
         if let Some(path) = &self.path_opt {
             let mut editor = self.editor.lock().unwrap();
-            let mut text = String::new();
-
-            editor.with_buffer(|buffer| {
-                for line in buffer.lines.iter() {
-                    text.push_str(line.text());
-                    text.push_str(line.ending().as_str());
-                }
-            });
-
+            let text = editor_text(&editor);
             match fs::write(path, &text) {
                 Ok(()) => {
                     editor.save_point();
