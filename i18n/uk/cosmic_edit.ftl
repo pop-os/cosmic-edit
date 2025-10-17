@@ -11,7 +11,7 @@ todo = ЗРОБИТИ
 
 ## Document statistics
 
-document-statistics = Статистика документа
+document-statistics = Статистики документа
 word-count = Кількість слів
 character-count = Символів
 character-count-no-spaces = Символів (без пропусків)
@@ -22,14 +22,14 @@ line-count = Рядків
 git-management = Керування Git
 git-management-description = Керування Git — це інструмент розробника для керування версіями.
 git-management-loading = Завантажується керування Git...
-stage = Додати до індексу
-staged-changes = Індексовані зміни
-unstage = Прибрати з індексу
-unstaged-changes = Неіндексовані зміни
+stage = Індексувати
+staged-changes = Проіндексовані зміни
+unstage = Деіндексувати
+unstaged-changes = Непроіндексовані зміни
 
 ## Project search
 
-project-search = Пошук у проєкті
+project-search = Пошук проєкту
 
 ## Prompt save changes
 
@@ -95,7 +95,7 @@ quit = Вийти
 ## Edit
 
 edit = Зміни
-undo = Скасувати
+undo = Відмінити
 redo = Повторити
 cut = Вирізати
 copy = Копіювати
