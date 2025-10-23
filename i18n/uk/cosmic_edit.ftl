@@ -47,18 +47,18 @@ settings = Налаштування
 
 appearance = Зовнішній вигляд
 theme = Тема
-match-desktop = Системна
+match-desktop = Відповідно системі
 dark = Темна
 light = Світла
-syntax-dark = Синтаксис темної теми
-syntax-light = Підсвічування коду
-default-font = Типовий шрифт
-default-font-size = Типовий розмір шрифту
+syntax-dark = Темний синтаксис
+syntax-light = Світлий синтаксис
+default-font = Стандартний шрифт
+default-font-size = Стандартний розмір шрифту
 
 ### Keyboard shortcuts
 
 keyboard-shortcuts = Клавіатурні скорочення
-enable-vim-bindings = Увімкнути режим Vim
+enable-vim-bindings = Прив’язки клавіш Vim
 # Find
 find-placeholder = Знайти...
 find-previous = Знайти попередній
@@ -66,7 +66,7 @@ find-next = Знайти наступний
 replace-placeholder = Замінити...
 replace = Замінити
 replace-all = Замінити всі
-case-sensitive = З урахуванням регістру
+case-sensitive = Чутливість до регістру літер
 use-regex = Використовувати регулярні вирази
 
 # Menu
@@ -85,25 +85,25 @@ close-project = Закрити проєкт
 save = Зберегти
 save-as = Зберегти як…
 revert-all-changes = Скасувати всі зміни
-menu-document-statistics = Статистика документа...
+menu-document-statistics = Статистики документа...
 document-type = Тип документа...
 encoding = Кодування...
 menu-git-management = Керування Git...
-print = Друк
+print = Друкувати
 quit = Вийти
 
 ## Edit
 
-edit = Зміни
+edit = Редагувати
 undo = Відмінити
 redo = Повторити
 cut = Вирізати
 copy = Копіювати
 paste = Вставити
 select-all = Вибрати все
-find = Пошук
-find-in-project = Пошук у проєкті...
-spell-check = Перевірка орфографії...
+find = Знайти
+find-in-project = Знайти у проєкті...
+spell-check = Перевірка правопису...
 
 ## View
 
@@ -112,22 +112,22 @@ indentation = Відступ
 
 ### Indentation
 
-automatic-indentation = Автоматичні відступи
+automatic-indentation = Автоматичний відступ
 tab-width = Ширина табуляції: { $tab_width }
 convert-indentation-to-spaces = Перетворити відступи на пропуски
-convert-indentation-to-tabs = Перетворити відступи на табуляцію
+convert-indentation-to-tabs = Перетворити відступи на табуляції
 word-wrap = Перенесення слів
 show-line-numbers = Показувати номери рядків
 highlight-current-line = Підсвічувати поточний рядок
 syntax-highlighting = Підсвічування синтаксису...
 menu-settings = Налаштування...
-menu-keyboard-shortcuts = Гарячі клавіші...
+menu-keyboard-shortcuts = Сполучення клавіш...
 menu-about = Про текстовий редактор COSMIC...
 repository = Репозиторій
 support = Підтримка
 open-recent-file = Відкрити нещодавній файл
-default-zoom-step = Крок зміни розміру шрифта
-zoom-in = Збільшити шрифт
-default-size = Типовий розмір
-zoom-out = Зменшити шрифт
+default-zoom-step = Зміна масштабу
+zoom-in = Збільшити
+default-size = Стандартний розмір
+zoom-out = Зменшити
 wrap-around = Циклічний пошук
