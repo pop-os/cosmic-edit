@@ -351,6 +351,7 @@ pub enum Message {
     DialogMessage(DialogMessage),
     Find(Option<bool>),
     FindCaseSensitive(bool),
+    FindFocused(bool),
     FindNext,
     FindPrevious,
     FindReplace,
@@ -466,7 +467,7 @@ pub struct App {
     auto_scroll: Option<f32>,
     dialog_opt: Option<Dialog<Message>>,
     dialog_page_opt: Option<DialogPage>,
-    find_opt: Option<bool>,
+    find_opt: Option<FindField>,
     find_replace_id: widget::Id,
     find_replace_value: String,
     find_search_id: widget::Id,
@@ -478,6 +479,12 @@ pub struct App {
     project_search_result: Option<ProjectSearchResult>,
     watcher_opt: Option<notify::RecommendedWatcher>,
     modifiers: Modifiers,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct FindField {
+    replace: bool,
+    has_focus: bool,
 }
 
 impl App {
@@ -780,7 +787,12 @@ impl App {
                 }
                 _ => Task::none(),
             }
-        } else if self.find_opt.is_some() {
+        } else if self.find_opt.is_some_and(
+            |FindField {
+                 replace: _,
+                 has_focus,
+             }| has_focus,
+        ) {
             widget::text_input::focus(self.find_search_id.clone())
         } else {
             widget::text_input::focus(self.text_box_id.clone())
@@ -1811,7 +1823,10 @@ impl Application for App {
                 }
             }
             Message::Find(find_opt) => {
-                self.find_opt = find_opt;
+                self.find_opt = find_opt.map(|f| FindField {
+                    replace: f,
+                    has_focus: true,
+                });
 
                 // Focus correct input
                 return self.update_focus();
@@ -1937,6 +1952,14 @@ impl Application for App {
             Message::FindWrapAround(find_wrap_around) => {
                 config_set!(find_wrap_around, find_wrap_around);
                 return self.update_config();
+            }
+            Message::FindFocused(has_focus) => {
+                if let Some(f) = self.find_opt.as_mut() {
+                    *f = FindField {
+                        replace: f.replace,
+                        has_focus,
+                    };
+                }
             }
             Message::GitProjectStatus(project_status) => {
                 self.git_project_status = Some(project_status);
@@ -2809,6 +2832,7 @@ impl Application for App {
             Some(Tab::Editor(tab)) => {
                 let mut text_box = text_box(&tab.editor, self.config.metrics(tab.zoom_adj()))
                     .id(self.text_box_id.clone())
+                    .on_focus(Message::FindFocused(false))
                     .on_auto_scroll(Message::AutoScroll)
                     .on_changed(Message::TabChanged(tab_id))
                     .has_context_menu(tab.context_menu.is_some())
@@ -2918,7 +2942,11 @@ impl Application for App {
             None => {}
         }
 
-        if let Some(replace) = &self.find_opt {
+        if let Some(FindField {
+            replace,
+            has_focus: _,
+        }) = &self.find_opt
+        {
             let find_input =
                 widget::text_input::text_input(fl!("find-placeholder"), &self.find_search_value)
                     .id(self.find_search_id.clone())
@@ -2930,6 +2958,7 @@ impl Application for App {
                             Message::FindNext
                         }
                     })
+                    .on_focus(Message::FindFocused(true))
                     .width(Length::Fixed(320.0))
                     .trailing_icon(
                         button::custom(icon_cache_get("edit-clear-symbolic", 16))
