@@ -44,6 +44,7 @@ pub struct TextBox<'a, Message> {
     padding: Padding,
     on_auto_scroll: Option<Box<dyn Fn(Option<f32>) -> Message + 'a>>,
     on_changed: Option<Message>,
+    on_focus: Option<Message>,
     click_timing: Duration,
     has_context_menu: bool,
     on_context_menu: Option<Box<dyn Fn(Option<Point>) -> Message + 'a>>,
@@ -63,6 +64,7 @@ where
             padding: Padding::new(0.0),
             on_auto_scroll: None,
             on_changed: None,
+            on_focus: None,
             click_timing: Duration::from_millis(500),
             has_context_menu: false,
             on_context_menu: None,
@@ -116,6 +118,11 @@ where
 
     pub fn line_numbers(mut self) -> Self {
         self.line_numbers = true;
+        self
+    }
+
+    pub fn on_focus(mut self, on_focus: Message) -> Self {
+        self.on_focus = Some(on_focus);
         self
     }
 }
@@ -948,6 +955,13 @@ where
             }
         }
 
+        if let Some(on_focus) = self.on_focus.as_ref()
+            && state.emit_focus
+        {
+            state.emit_focus = false;
+            shell.publish(on_focus.clone());
+        }
+
         let mut status = Status::Ignored;
         match event {
             Event::Keyboard(KeyEvent::KeyPressed {
@@ -1033,6 +1047,10 @@ where
             Event::Mouse(MouseEvent::ButtonPressed(button)) => {
                 if let Some(p) = cursor_position.position_in(layout.bounds()) {
                     state.is_focused = true;
+
+                    if let Some(on_focus) = self.on_focus.as_ref() {
+                        shell.publish(on_focus.clone());
+                    }
 
                     // Handle left click drag
                     if let Button::Left = button {
@@ -1263,6 +1281,7 @@ pub struct State {
     dragging: Option<Dragging>,
     editor_offset_x: Cell<i32>,
     is_focused: bool,
+    emit_focus: bool,
     scale_factor: Cell<f32>,
     scrollbar_v_rect: Cell<Rectangle<f32>>,
     scrollbar_h_rect: Cell<Option<Rectangle<f32>>>,
@@ -1278,6 +1297,7 @@ impl State {
             dragging: None,
             editor_offset_x: Cell::new(0),
             is_focused: false,
+            emit_focus: false,
             scale_factor: Cell::new(1.0),
             scrollbar_v_rect: Cell::new(Rectangle::default()),
             scrollbar_h_rect: Cell::new(None),
@@ -1293,6 +1313,7 @@ impl operation::Focusable for State {
 
     fn focus(&mut self) {
         self.is_focused = true;
+        self.emit_focus = true;
     }
 
     fn unfocus(&mut self) {
