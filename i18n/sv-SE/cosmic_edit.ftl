@@ -8,7 +8,7 @@ todo = TODO
 ## Dokument statistik
 
 document-statistics = Dokumentstatistik
-word-count = Ordräknare
+word-count = Antal ord
 character-count = Tecken
 character-count-no-spaces = Tecken (utan mellanslag)
 line-count = Rader
@@ -16,8 +16,8 @@ line-count = Rader
 ## Git hantering
 
 git-management = Githantering
-unstaged-changes = Icke köade ändringar
-staged-changes = Iscensatta förändringar
+unstaged-changes = Icke-köade ändringar
+staged-changes = Köade ändringar
 
 ## Projektsök
 
@@ -40,28 +40,28 @@ settings = Inställningar
 appearance = Utseende
 theme = Tema
 match-desktop = Matcha skrivbordet
-dark = Mörk
-light = Ljus
+dark = Mörkt
+light = Ljust
 syntax-dark = Syntax mörk
 syntax-light = Syntax ljus
-default-font = Standard teckensnitt
-default-font-size = Standard teckensnittsstorlek
-default-zoom-step = Zoom steg
+default-font = Standardteckensnitt
+default-font-size = Standardteckenstorlek
+default-zoom-step = Zoom-steg
 
 ### Tangentbordsgenvägar
 
 keyboard-shortcuts = Tangentbordsgenvägar
 enable-vim-bindings = Aktivera Vimbindningar
 # Sök
-find-placeholder = Sök...
+find-placeholder = Sök…
 find-previous = Sök föregående
-find-next = Hitta nästa
+find-next = Sök nästa
 replace-placeholder = Ersätt...
-replace = Ersätt
+replace = Byt ut
 replace-all = Ersätt alla
 case-sensitive = Skiftlägeskänslig
 use-regex = Använd regex
-wrap-around = Linda runt
+wrap-around = Omslutande
 
 # Meny
 
@@ -83,7 +83,7 @@ revert-all-changes = Återställ alla ändringar
 menu-document-statistics = Dokumentstatistik...
 document-type = Dokument typ...
 encoding = Kodning...
-menu-git-management = Git hantering...
+menu-git-management = Githantering...
 print = Skriv ut
 quit = Avsluta
 
@@ -104,7 +104,7 @@ spell-check = Stavningskontroll...
 
 view = Visa
 zoom-in = Zooma in
-default-size = Standard storlek
+default-size = Standardstorlek
 zoom-out = Zooma ut
 indentation = Indrag
 
@@ -114,17 +114,17 @@ automatic-indentation = Automatiska indrag
 tab-width = Tab-bredd: { $tab_width }
 convert-indentation-to-spaces = Konvertera indrag till mellanslag
 convert-indentation-to-tabs = Konvertera indrag till tabbar
-word-wrap = Ordlinding
+word-wrap = Radbrytning
 show-line-numbers = Visa radnummer
 highlight-current-line = Markera aktuell rad
-syntax-highlighting = Syntax markering...
-menu-settings = Inställningar...
+syntax-highlighting = Syntaxmarkering...
+menu-settings = Inställningar…
 menu-keyboard-shortcuts = Tangentbordsgenvägar...
 menu-about = Om COSMIC Textredigerare…
 cosmic-text-editor = COSMIC Textredigerare
 repository = Källkod
 support = Support
-git-management-description = Githantering är ett utvecklar verktyg som används för versionshantering.
+git-management-description = Githantering är ett utvecklarverktyg som används för versionshantering.
 git-management-loading = Laddar Githantering...
 stage = Köa
-unstage = Av-köa
+unstage = Ta bort från kö
