@@ -11,7 +11,7 @@ use cosmic::{
         mouse::{self, Button, Event as MouseEvent, ScrollDelta},
     },
     iced_core::{
-        Border, Radians, Shell,
+        Border, Shell,
         clipboard::Clipboard,
         image,
         keyboard::{Key, key::Named},
@@ -35,7 +35,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{LINE_NUMBER_CACHE, SWASH_CACHE, line_number::LineNumberKey};
+use crate::{LINE_NUMBER_CACHE, line_number::LineNumberKey};
 
 pub struct TextBox<'a, Message> {
     editor: &'a Mutex<ViEditor<'static, 'static>>,
@@ -135,97 +135,6 @@ where
     Message: Clone,
 {
     TextBox::new(editor, metrics)
-}
-
-struct Canvas {
-    w: i32,
-    h: i32,
-}
-
-struct Offset {
-    x: i32,
-    y: i32,
-}
-
-/// This function is called canvas.x * canvas.y number of times
-/// each time the text is scrolled or the canvas is resized.
-/// If the canvas is moved, it's not called as the pixel buffer
-/// is the same, it's just translated for the screen's x, y.
-/// canvas is the location of the pixel in the canvas.
-/// Screen is the location of the pixel on the screen.
-// TODO: improve performance
-fn draw_rect(
-    buffer: &mut [u32],
-    canvas: Canvas,
-    offset: Canvas,
-    screen: Offset,
-    cosmic_color: cosmic_text::Color,
-) {
-    // Grab alpha channel and green channel
-    let mut color = cosmic_color.0 & 0xFF00FF00;
-    // Shift red channel
-    color |= (cosmic_color.0 & 0x00FF0000) >> 16;
-    // Shift blue channel
-    color |= (cosmic_color.0 & 0x000000FF) << 16;
-
-    let alpha = (color >> 24) & 0xFF;
-    match alpha {
-        0 => {
-            // Do not draw if alpha is zero.
-        }
-        255 => {
-            // Handle overwrite
-            for x in screen.x..screen.x + offset.w {
-                if x < 0 || x >= canvas.w {
-                    // Skip if y out of bounds
-                    continue;
-                }
-
-                for y in screen.y..screen.y + offset.h {
-                    if y < 0 || y >= canvas.h {
-                        // Skip if x out of bounds
-                        continue;
-                    }
-
-                    let line_offset = y as usize * canvas.w as usize;
-                    let offset = line_offset + x as usize;
-                    buffer[offset] = color;
-                }
-            }
-        }
-        _ => {
-            let n_alpha = 255 - alpha;
-            for y in screen.y..screen.y + offset.h {
-                if y < 0 || y >= canvas.h {
-                    // Skip if y out of bounds
-                    continue;
-                }
-
-                let line_offset = y as usize * canvas.w as usize;
-                for x in screen.x..screen.x + offset.w {
-                    if x < 0 || x >= canvas.w {
-                        // Skip if x out of bounds
-                        continue;
-                    }
-
-                    // Alpha blend with current value
-                    let offset = line_offset + x as usize;
-                    let current = buffer[offset];
-                    if current & 0xFF000000 == 0 {
-                        // Overwrite if buffer empty
-                        buffer[offset] = color;
-                    } else {
-                        let rb = ((n_alpha * (current & 0x00FF00FF))
-                            + (alpha * (color & 0x00FF00FF)))
-                            >> 8;
-                        let ag = (n_alpha * ((current & 0xFF00FF00) >> 8))
-                            + (alpha * (0x01000000 | ((color & 0x0000FF00) >> 8)));
-                        buffer[offset] = (rb & 0x00FF00FF) | (ag & 0xFF00FF00);
-                    }
-                }
-            }
-        }
-    }
 }
 
 impl<'a, Message> Widget<Message, cosmic::Theme, Renderer> for TextBox<'a, Message>
@@ -382,7 +291,7 @@ where
         let mut font_system = font_system().write().unwrap();
 
         // Calculate line number information
-        let (line_number_chars, editor_offset_x) = if self.line_numbers {
+        let (_line_number_chars, editor_offset_x) = if self.line_numbers {
             // Calculate number of characters needed in line number
             let mut line_number_chars = 1;
             let mut line_count = editor.with_buffer(|buffer| buffer.lines.len());
@@ -438,261 +347,254 @@ where
 
         let mut handle_opt = state.handle_opt.lock().unwrap();
         if editor.redraw() || handle_opt.is_none() {
-            // Draw to pixel buffer
-            let mut pixels_u8 = vec![0; image_w as usize * image_h as usize * 4];
-            {
-                let mut swash_cache = SWASH_CACHE.get().unwrap().lock().unwrap();
-
-                let pixels = unsafe {
-                    std::slice::from_raw_parts_mut(
-                        pixels_u8.as_mut_ptr() as *mut u32,
-                        pixels_u8.len() / 4,
-                    )
-                };
-
-                if self.line_numbers {
-                    let (gutter, gutter_foreground) = {
-                        let convert_color = |color: syntect::highlighting::Color| {
-                            cosmic_text::Color::rgba(color.r, color.g, color.b, color.a)
-                        };
-                        let syntax_theme = editor.theme();
-                        let gutter = syntax_theme
-                            .settings
-                            .gutter
-                            .map_or(editor.background_color(), convert_color);
-                        let gutter_foreground = syntax_theme
-                            .settings
-                            .gutter_foreground
-                            .map_or(editor.foreground_color(), convert_color);
-                        (gutter, gutter_foreground)
-                    };
-
-                    // Ensure fill with gutter color
-                    draw_rect(
-                        pixels,
-                        Canvas {
-                            w: image_w,
-                            h: image_h,
-                        },
-                        Canvas {
-                            w: editor_offset_x,
-                            h: image_h,
-                        },
-                        Offset { x: 0, y: 0 },
-                        gutter,
-                    );
-
-                    // Draw line numbers
-                    //TODO: move to cosmic-text?
-                    editor.with_buffer(|buffer| {
-                        let mut line_number_cache =
-                            LINE_NUMBER_CACHE.get().unwrap().lock().unwrap();
-                        let mut last_line_number = 0;
-                        for run in buffer.layout_runs() {
-                            let line_number = run.line_i.saturating_add(1);
-                            if line_number == last_line_number {
-                                // Skip duplicate lines
-                                continue;
-                            } else {
-                                last_line_number = line_number;
-                            }
-
-                            if let Some(layout_line) = line_number_cache
-                                .get(
-                                    font_system.raw(),
-                                    LineNumberKey {
-                                        number: line_number,
-                                        width: line_number_chars,
-                                    },
-                                )
-                                .first()
-                            {
-                                // These values must be scaled since layout is done at font size 1.0
-                                let max_ascent = layout_line.max_ascent * metrics.font_size;
-                                let max_descent = layout_line.max_descent * metrics.font_size;
-
-                                // This code comes from cosmic_text::LayoutRunIter
-                                let glyph_height = max_ascent + max_descent;
-                                let centering_offset = (metrics.line_height - glyph_height) / 2.0;
-                                let line_y = run.line_top + centering_offset + max_ascent;
-
-                                for layout_glyph in layout_line.glyphs.iter() {
-                                    let physical_glyph =
-                                        layout_glyph.physical((0., line_y), metrics.font_size);
-
-                                    swash_cache.with_pixels(
-                                        font_system.raw(),
-                                        physical_glyph.cache_key,
-                                        gutter_foreground,
-                                        |x, y, color| {
-                                            draw_rect(
-                                                pixels,
-                                                Canvas {
-                                                    w: image_w,
-                                                    h: image_h,
-                                                },
-                                                Canvas { w: 1, h: 1 },
-                                                Offset {
-                                                    x: physical_glyph.x + x,
-                                                    y: physical_glyph.y + y,
-                                                },
-                                                color,
-                                            );
-                                        },
-                                    );
-                                }
-                            }
-                        }
-                    });
+            // GPU rendering - skip pixel buffer creation and calculate scrollbar positions
+            editor.with_buffer(|buffer| {
+                let mut start_line_opt = None;
+                let mut end_line = 0;
+                let mut max_line_width = 0.0;
+                for run in buffer.layout_runs() {
+                    end_line = run.line_i;
+                    if start_line_opt.is_none() {
+                        start_line_opt = Some(end_line);
+                    }
+                    if run.line_w > max_line_width {
+                        max_line_width = run.line_w;
+                    }
                 }
 
-                if self.highlight_current_line {
-                    let line_highlight = {
-                        let convert_color = |color: syntect::highlighting::Color| {
-                            cosmic_text::Color::rgba(color.r, color.g, color.b, color.a)
-                        };
-                        let syntax_theme = editor.theme();
-                        //TODO: ideal fallback for line highlight color
-                        syntax_theme
-                            .settings
-                            .line_highlight
-                            .map_or(editor.background_color(), convert_color)
-                    };
+                let start_line = start_line_opt.unwrap_or(end_line);
+                let lines = buffer.lines.len();
+                let start_y = (start_line * image_h as usize) / lines;
+                let end_y = ((end_line + 1) * image_h as usize) / lines;
 
-                    let cursor = editor.cursor();
-                    editor.with_buffer(|buffer| {
-                        for run in buffer.layout_runs() {
-                            if run.line_i != cursor.line {
-                                continue;
-                            }
+                let rect = Rectangle::new(
+                    [image_w as f32 / scale_factor, start_y as f32 / scale_factor].into(),
+                    Size::new(
+                        scrollbar_w as f32,
+                        (end_y as f32 - start_y as f32) / scale_factor,
+                    ),
+                );
+                state.scrollbar_v_rect.set(rect);
 
-                            draw_rect(
-                                pixels,
-                                Canvas {
-                                    w: image_w,
-                                    h: image_h,
-                                },
-                                Canvas {
-                                    w: image_w - editor_offset_x,
-                                    h: metrics.line_height as i32,
-                                },
-                                Offset {
-                                    x: editor_offset_x,
-                                    y: run.line_top as i32,
-                                },
-                                line_highlight,
-                            );
-                        }
-                    });
-                }
-
-                // Draw editor
-                let scroll_x = editor.with_buffer(|buffer| buffer.scroll().horizontal as i32);
-                editor.draw(font_system.raw(), &mut swash_cache, |x, y, w, h, color| {
-                    if x < scroll_x {
-                        //TODO: modify width?
-                        return;
-                    }
-                    draw_rect(
-                        pixels,
-                        Canvas {
-                            w: image_w,
-                            h: image_h,
-                        },
-                        Canvas {
-                            w: w as i32,
-                            h: h as i32,
-                        },
-                        Offset {
-                            x: editor_offset_x + x - scroll_x,
-                            y,
-                        },
-                        color,
-                    );
-                });
-
-                // Calculate scrollbar
-                editor.with_buffer(|buffer| {
-                    let mut start_line_opt = None;
-                    let mut end_line = 0;
-                    let mut max_line_width = 0.0;
-                    for run in buffer.layout_runs() {
-                        end_line = run.line_i;
-                        if start_line_opt.is_none() {
-                            start_line_opt = Some(end_line);
-                        }
-                        if run.line_w > max_line_width {
-                            max_line_width = run.line_w;
-                        }
-                    }
-
-                    let start_line = start_line_opt.unwrap_or(end_line);
-                    let lines = buffer.lines.len();
-                    let start_y = (start_line * image_h as usize) / lines;
-                    let end_y = ((end_line + 1) * image_h as usize) / lines;
-
+                let (buffer_w_opt, buffer_h_opt) = buffer.size();
+                let buffer_w = buffer_w_opt.unwrap_or(0.0);
+                let buffer_h = buffer_h_opt.unwrap_or(0.0);
+                let scrollbar_h_width = image_w as f32 / scale_factor - scrollbar_w as f32;
+                if buffer_w < max_line_width {
                     let rect = Rectangle::new(
-                        [image_w as f32 / scale_factor, start_y as f32 / scale_factor].into(),
+                        [
+                            (buffer.scroll().horizontal / max_line_width) * scrollbar_h_width,
+                            buffer_h / scale_factor - scrollbar_w as f32,
+                        ]
+                        .into(),
                         Size::new(
+                            (buffer_w / max_line_width) * scrollbar_h_width,
                             scrollbar_w as f32,
-                            (end_y as f32 - start_y as f32) / scale_factor,
                         ),
                     );
-                    state.scrollbar_v_rect.set(rect);
+                    state.scrollbar_h_rect.set(Some(rect));
+                } else {
+                    state.scrollbar_h_rect.set(None);
+                }
+            });
 
-                    let (buffer_w_opt, buffer_h_opt) = buffer.size();
-                    let buffer_w = buffer_w_opt.unwrap_or(0.0);
-                    let buffer_h = buffer_h_opt.unwrap_or(0.0);
-                    let scrollbar_h_width = image_w as f32 / scale_factor - scrollbar_w as f32;
-                    if buffer_w < max_line_width {
-                        let rect = Rectangle::new(
-                            [
-                                (buffer.scroll().horizontal / max_line_width) * scrollbar_h_width,
-                                buffer_h / scale_factor - scrollbar_w as f32,
-                            ]
-                            .into(),
-                            Size::new(
-                                (buffer_w / max_line_width) * scrollbar_h_width,
-                                scrollbar_w as f32,
-                            ),
-                        );
-                        state.scrollbar_h_rect.set(Some(rect));
-                    } else {
-                        state.scrollbar_h_rect.set(None);
-                    }
-                });
-            }
-
-            // Clear redraw flag
             editor.set_redraw(false);
-
             state.scale_factor.set(scale_factor);
-            *handle_opt = Some(image::Handle::from_rgba(
-                image_w as u32,
-                image_h as u32,
-                pixels_u8,
-            ));
+            *handle_opt = None;
         }
 
         let image_position = layout.position() + [self.padding.left, self.padding.top].into();
-        if let Some(ref handle) = *handle_opt {
-            let image_size = image::Renderer::measure_image(renderer, handle);
-            let scaled_size = Size::new(scaled_w as f32, scaled_h as f32);
-            log::debug!(
-                "text_box image {:?} scaled {:?} position {:?}",
-                image_size,
-                scaled_size,
-                image_position
+        drop(handle_opt);
+
+        // GPU rendering
+        {
+            // Helper to convert syntect colors to iced colors
+            let convert_color = |color: syntect::highlighting::Color| {
+                Color::from_rgba8(color.r, color.g, color.b, color.a as f32 / 255.0)
+            };
+
+            let syntax_theme = editor.theme();
+            let text_color = syntax_theme.settings.foreground.map_or(Color::WHITE, convert_color);
+            let bg_color = syntax_theme.settings.background.map_or(Color::BLACK, convert_color);
+
+            renderer.fill_quad(
+                Quad {
+                    bounds: Rectangle::new(image_position, Size::new(scaled_w as f32, scaled_h as f32)),
+                    ..Default::default()
+                },
+                bg_color,
             );
-            image::Renderer::draw_image(
-                renderer,
-                handle.clone(),
-                image::FilterMethod::Nearest,
-                Rectangle::new(image_position, scaled_size),
-                Radians(0.0),
-                1.0,
-                [0.0; 4],
-            );
+
+            use cosmic::iced_core::Pixels;
+            use cosmic::iced_core::text::Renderer as TextRendererTrait;
+            use cosmic::iced_core::text::Text;
+
+            let selection_color = syntax_theme.settings.selection.map_or(Color::from_rgba8(100, 100, 255, 0.3), convert_color);
+            let cursor_color = syntax_theme.settings.caret.map_or(Color::WHITE, convert_color);
+            let cursor = editor.cursor();
+            let base_x = image_position.x + (editor_offset_x as f32 / scale_factor);
+            let base_y = image_position.y;
+
+            editor.with_buffer(|buffer| {
+                // Render selection
+                if let Some((start, end)) = editor.selection_bounds() {
+
+                    for run in buffer.layout_runs() {
+                        let line_i = run.line_i;
+                        if line_i < start.line || line_i > end.line {
+                            continue;
+                        }
+
+                        let line_start = if line_i == start.line { start.index } else { 0 };
+                        let line_end = if line_i == end.line { end.index } else { run.text.len() };
+
+                        if line_start >= line_end {
+                            continue;
+                        }
+
+                        let mut sel_x = 0.0;
+                        let mut sel_end_x = 0.0;
+
+                        for glyph in run.glyphs.iter() {
+                            if glyph.start >= line_end {
+                                break;
+                            }
+                            if glyph.end <= line_start {
+                                sel_x = (glyph.x + glyph.w) / scale_factor;
+                                continue;
+                            }
+                            sel_end_x = (glyph.x + glyph.w) / scale_factor;
+                        }
+
+                        let sel_width = sel_end_x - sel_x;
+
+                        if sel_width > 0.0 {
+                            renderer.fill_quad(
+                                Quad {
+                                    bounds: Rectangle::new(
+                                        Point::new(
+                                            base_x + sel_x,
+                                            base_y + (run.line_top / scale_factor),
+                                        ),
+                                        Size::new(sel_width, run.line_height / scale_factor),
+                                    ),
+                                    ..Default::default()
+                                },
+                                selection_color,
+                            );
+                        }
+                    }
+                }
+
+                // Render cursor and text in a single buffer iteration
+                let clip_bounds = Rectangle::new(image_position, Size::new(scaled_w as f32, scaled_h as f32));
+
+                for run in buffer.layout_runs() {
+                    // Render cursor on the current line
+                    if run.line_i == cursor.line {
+                        let mut cursor_x = 0.0;
+                        for glyph in run.glyphs.iter() {
+                            if glyph.start >= cursor.index {
+                                break;
+                            }
+                            cursor_x = (glyph.x + glyph.w) / scale_factor;
+                        }
+
+                        renderer.fill_quad(
+                            Quad {
+                                bounds: Rectangle::new(
+                                    Point::new(base_x + cursor_x, base_y + (run.line_top / scale_factor)),
+                                    Size::new(2.0, run.line_height / scale_factor),
+                                ),
+                                ..Default::default()
+                            },
+                            cursor_color,
+                        );
+                    }
+
+                    // Render glyphs - batch consecutive glyphs with same color
+                    if run.glyphs.is_empty() {
+                        continue;
+                    }
+
+                    let run_y = base_y + (run.line_top / scale_factor);
+
+                    let mut batch_color = text_color;
+                    let mut batch_text = String::new();
+                    let mut batch_x = 0.0;
+
+                    for (i, glyph) in run.glyphs.iter().enumerate() {
+                        let glyph_color = glyph
+                            .color_opt
+                            .map(|c| Color::from_rgba8(c.r(), c.g(), c.b(), c.a() as f32 / 255.0))
+                            .unwrap_or(text_color);
+
+                        // Start new batch if color changes
+                        if i > 0 && glyph_color != batch_color {
+                            // Render accumulated batch
+                            if !batch_text.is_empty() {
+                                let text = Text {
+                                    content: batch_text.clone(),
+                                    bounds: Size::new(f32::INFINITY, run.line_height / scale_factor),
+                                    size: Pixels(metrics.font_size / scale_factor),
+                                    line_height: cosmic::iced_core::text::LineHeight::Absolute(Pixels(
+                                        metrics.line_height / scale_factor,
+                                    )),
+                                    font: cosmic::iced_core::Font::MONOSPACE,
+                                    horizontal_alignment: cosmic::iced_core::alignment::Horizontal::Left,
+                                    vertical_alignment: cosmic::iced_core::alignment::Vertical::Top,
+                                    shaping: cosmic::iced_core::text::Shaping::Advanced,
+                                    wrapping: cosmic::iced_core::text::Wrapping::None,
+                                };
+
+                                renderer.fill_text(
+                                    text,
+                                    Point::new(base_x + batch_x, run_y),
+                                    batch_color,
+                                    clip_bounds,
+                                );
+                            }
+
+                            // Start new batch
+                            batch_text.clear();
+                            batch_color = glyph_color;
+                            batch_x = glyph.x / scale_factor;
+                        }
+
+                        // Add character to current batch
+                        if let Some(ch) = run.text[glyph.start..glyph.end].chars().next() {
+                            if i == 0 {
+                                batch_x = glyph.x / scale_factor;
+                            }
+                            batch_text.push(ch);
+                        }
+                    }
+
+                    // Render final batch
+                    if !batch_text.is_empty() {
+                        let text = Text {
+                            content: batch_text,
+                            bounds: Size::new(f32::INFINITY, run.line_height / scale_factor),
+                            size: Pixels(metrics.font_size / scale_factor),
+                            line_height: cosmic::iced_core::text::LineHeight::Absolute(Pixels(
+                                metrics.line_height / scale_factor,
+                            )),
+                            font: cosmic::iced_core::Font::MONOSPACE,
+                            horizontal_alignment: cosmic::iced_core::alignment::Horizontal::Left,
+                            vertical_alignment: cosmic::iced_core::alignment::Vertical::Top,
+                            shaping: cosmic::iced_core::text::Shaping::Advanced,
+                            wrapping: cosmic::iced_core::text::Wrapping::None,
+                        };
+
+                        renderer.fill_text(
+                            text,
+                            Point::new(base_x + batch_x, run_y),
+                            batch_color,
+                            clip_bounds,
+                        );
+                    }
+                }
+            });
         }
 
         // Draw vertical scrollbar
