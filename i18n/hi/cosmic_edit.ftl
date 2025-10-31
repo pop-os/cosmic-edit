@@ -41,7 +41,7 @@ save-all = सब कुछ सहेजें
 
 ## Settings
 
-settings = सेटिंग्स
+settings = सेटिंग
 
 ### Appearance
 
