@@ -37,6 +37,70 @@ use std::{
 
 use crate::{LINE_NUMBER_CACHE, SWASH_CACHE, line_number::LineNumberKey};
 
+// Color channel bit masks for RGBA/BGRA conversion
+const ALPHA_GREEN_MASK: u32 = 0xFF00FF00;
+const RED_MASK: u32 = 0x00FF0000;
+const BLUE_MASK: u32 = 0x000000FF;
+const RED_BLUE_MASK: u32 = 0x00FF00FF;
+const ALPHA_GREEN_SHIFT_MASK: u32 = 0xFF00FF00;
+const ALPHA_FULL_MASK: u32 = 0xFF000000;
+
+/// Draws a rectangle to a pixel buffer with alpha blending.
+/// Converts cosmic_text color format (RGBA) to pixel buffer format (BGRA).
+fn draw_rect_to_buffer(
+    pixels: &mut [u32],
+    buffer_width: i32,
+    buffer_height: i32,
+    x: i32,
+    y: i32,
+    rect_width: i32,
+    rect_height: i32,
+    cosmic_color: cosmic_text::Color,
+) {
+    // Convert RGBA to BGRA and swap red/blue channels
+    let mut color = cosmic_color.0 & ALPHA_GREEN_MASK;
+    color |= (cosmic_color.0 & RED_MASK) >> 16;
+    color |= (cosmic_color.0 & BLUE_MASK) << 16;
+
+    let alpha = (color >> 24) & 0xFF;
+    if alpha == 0 {
+        return; // Fully transparent, skip drawing
+    }
+
+    // Draw rectangle with bounds checking
+    for dx in 0..rect_width {
+        let px = x + dx;
+        if px < 0 || px >= buffer_width {
+            continue;
+        }
+        for dy in 0..rect_height {
+            let py = y + dy;
+            if py < 0 || py >= buffer_height {
+                continue;
+            }
+            let offset = py as usize * buffer_width as usize + px as usize;
+
+            if alpha == 255 {
+                // Fully opaque, overwrite
+                pixels[offset] = color;
+            } else {
+                // Alpha blending with existing pixel
+                let n_alpha = 255 - alpha;
+                let current = pixels[offset];
+                if current & ALPHA_FULL_MASK == 0 {
+                    // Background is transparent, just write color
+                    pixels[offset] = color;
+                } else {
+                    // Blend with existing color
+                    let rb = ((n_alpha * (current & RED_BLUE_MASK)) + (alpha * (color & RED_BLUE_MASK))) >> 8;
+                    let ag = (n_alpha * ((current & ALPHA_GREEN_SHIFT_MASK) >> 8)) + (alpha * (0x01000000 | ((color & 0x0000FF00) >> 8)));
+                    pixels[offset] = (rb & RED_BLUE_MASK) | (ag & ALPHA_GREEN_SHIFT_MASK);
+                }
+            }
+        }
+    }
+}
+
 pub struct TextBox<'a, Message> {
     editor: &'a Mutex<ViEditor<'static, 'static>>,
     metrics: Metrics,
@@ -291,7 +355,7 @@ where
         let mut font_system = font_system().write().unwrap();
 
         // Calculate line number information
-        let (_line_number_chars, editor_offset_x) = if self.line_numbers {
+        let (line_number_chars, editor_offset_x) = if self.line_numbers {
             // Calculate number of characters needed in line number
             let mut line_number_chars = 1;
             let mut line_count = editor.with_buffer(|buffer| buffer.lines.len());
@@ -346,8 +410,7 @@ where
         editor.shape_as_needed(font_system.raw(), true);
 
         let needs_redraw = editor.redraw();
-        let mut handle_opt = state.handle_opt.lock().unwrap();
-        if needs_redraw || handle_opt.is_none() {
+        if needs_redraw {
             // GPU rendering - skip pixel buffer creation and calculate scrollbar positions
             editor.with_buffer(|buffer| {
                 let mut start_line_opt = None;
@@ -401,11 +464,9 @@ where
 
             editor.set_redraw(false);
             state.scale_factor.set(scale_factor);
-            *handle_opt = None;
         }
 
         let image_position = layout.position() + [self.padding.left, self.padding.top].into();
-        drop(handle_opt);
 
         // Render line numbers to gutter pixel buffer
         let mut gutter_handle_opt = state.gutter_handle_opt.lock().unwrap();
@@ -417,50 +478,18 @@ where
                 let mut gutter_pixels_u8 = vec![0; gutter_w as usize * image_h as usize * 4];
                 {
                     let mut swash_cache = SWASH_CACHE.get().unwrap().lock().unwrap();
+
+                    // SAFETY: Converting u8 slice to u32 slice for efficient pixel manipulation.
+                    // This is safe because:
+                    // 1. Vec<u8> allocates with proper alignment for u32 access
+                    // 2. Length is exactly divisible by 4 (width * height * 4 bytes / 4 = width * height u32s)
+                    // 3. Lifetime is tied to gutter_pixels_u8, preventing dangling references
+                    // 4. We have exclusive mutable access to the vector
                     let gutter_pixels = unsafe {
                         std::slice::from_raw_parts_mut(
                             gutter_pixels_u8.as_mut_ptr() as *mut u32,
                             gutter_pixels_u8.len() / 4,
                         )
-                    };
-
-                    // Helper function to draw a rectangle (from original code)
-                    let draw_rect = |pixels: &mut [u32], w: i32, h: i32, x: i32, y: i32, rect_w: i32, rect_h: i32, cosmic_color: cosmic_text::Color| {
-                        let mut color = cosmic_color.0 & 0xFF00FF00;
-                        color |= (cosmic_color.0 & 0x00FF0000) >> 16;
-                        color |= (cosmic_color.0 & 0x000000FF) << 16;
-
-                        let alpha = (color >> 24) & 0xFF;
-                        if alpha == 0 {
-                            return;
-                        }
-
-                        for dx in 0..rect_w {
-                            let px = x + dx;
-                            if px < 0 || px >= w {
-                                continue;
-                            }
-                            for dy in 0..rect_h {
-                                let py = y + dy;
-                                if py < 0 || py >= h {
-                                    continue;
-                                }
-                                let offset = py as usize * w as usize + px as usize;
-                                if alpha == 255 {
-                                    pixels[offset] = color;
-                                } else {
-                                    let n_alpha = 255 - alpha;
-                                    let current = pixels[offset];
-                                    if current & 0xFF000000 == 0 {
-                                        pixels[offset] = color;
-                                    } else {
-                                        let rb = ((n_alpha * (current & 0x00FF00FF)) + (alpha * (color & 0x00FF00FF))) >> 8;
-                                        let ag = (n_alpha * ((current & 0xFF00FF00) >> 8)) + (alpha * (0x01000000 | ((color & 0x0000FF00) >> 8)));
-                                        pixels[offset] = (rb & 0x00FF00FF) | (ag & 0xFF00FF00);
-                                    }
-                                }
-                            }
-                        }
                     };
 
                     let (gutter, gutter_foreground) = {
@@ -477,16 +506,16 @@ where
                             if avg > 128.0 {
                                 // Light theme - darken
                                 cosmic_text::Color::rgb(
-                                    ((bg.r() as f32 * 0.95) as u8),
-                                    ((bg.g() as f32 * 0.95) as u8),
-                                    ((bg.b() as f32 * 0.95) as u8),
+                                    (bg.r() as f32 * 0.95) as u8,
+                                    (bg.g() as f32 * 0.95) as u8,
+                                    (bg.b() as f32 * 0.95) as u8,
                                 )
                             } else {
                                 // Dark theme - lighten
                                 cosmic_text::Color::rgb(
-                                    ((bg.r() as f32 * 1.1).min(255.0) as u8),
-                                    ((bg.g() as f32 * 1.1).min(255.0) as u8),
-                                    ((bg.b() as f32 * 1.1).min(255.0) as u8),
+                                    (bg.r() as f32 * 1.1).min(255.0) as u8,
+                                    (bg.g() as f32 * 1.1).min(255.0) as u8,
+                                    (bg.b() as f32 * 1.1).min(255.0) as u8,
                                 )
                             }
                         });
@@ -496,7 +525,7 @@ where
                     };
 
                     // Fill gutter background
-                    draw_rect(gutter_pixels, gutter_w, image_h, 0, 0, gutter_w, image_h, gutter);
+                    draw_rect_to_buffer(gutter_pixels, gutter_w, image_h, 0, 0, gutter_w, image_h, gutter);
 
                     // Draw line numbers
                     editor.with_buffer(|buffer| {
@@ -514,7 +543,7 @@ where
                                     font_system.raw(),
                                     LineNumberKey {
                                         number: line_number,
-                                        width: _line_number_chars,
+                                        width: line_number_chars,
                                     },
                                 )
                                 .first()
@@ -533,7 +562,7 @@ where
                                         physical_glyph.cache_key,
                                         gutter_foreground,
                                         |x, y, color| {
-                                            draw_rect(
+                                            draw_rect_to_buffer(
                                                 gutter_pixels,
                                                 gutter_w,
                                                 image_h,
@@ -749,7 +778,6 @@ where
                     let mut batch_color = text_color;
                     let mut batch_text = String::new();
                     let mut batch_x = 0.0;
-                    let mut is_first_glyph = true;
 
                     for (i, glyph) in run.glyphs.iter().enumerate() {
                         // Skip glyphs that would render in the gutter area
@@ -758,29 +786,22 @@ where
                             continue;
                         }
 
-                        // CRITICAL: Force the first character to use its proper color from color_opt
-                        // This prevents any state bleed from gutter rendering
-                        let glyph_color = if is_first_glyph {
-                            is_first_glyph = false;
-                            // For the first glyph, explicitly check color_opt and ensure we use the right color
-                            match glyph.color_opt {
-                                Some(c) => Color::from_rgba8(c.r(), c.g(), c.b(), c.a() as f32 / 255.0),
-                                None => text_color,
-                            }
-                        } else {
-                            glyph
-                                .color_opt
-                                .map(|c| Color::from_rgba8(c.r(), c.g(), c.b(), c.a() as f32 / 255.0))
-                                .unwrap_or(text_color)
-                        };
+                        // Get glyph color from syntax highlighting or use default text color
+                        let glyph_color = glyph
+                            .color_opt
+                            .map(|c| Color::from_rgba8(c.r(), c.g(), c.b(), c.a() as f32 / 255.0))
+                            .unwrap_or(text_color);
+
+                        // Initialize batch color from first glyph's actual color
+                        if i == 0 {
+                            batch_color = glyph_color;
+                            batch_x = glyph.x / scale_factor;
+                        }
 
                         // Start new batch if color changes
                         if i > 0 && glyph_color != batch_color {
                             // Render accumulated batch
                             if !batch_text.is_empty() {
-                                // Ensure batch color is properly set (no state bleed from gutter)
-                                let render_color = batch_color;
-
                                 let text = Text {
                                     content: batch_text.clone(),
                                     bounds: Size::new(f32::INFINITY, run.line_height / scale_factor),
@@ -798,7 +819,7 @@ where
                                 renderer.fill_text(
                                     text,
                                     Point::new(base_x + batch_x, run_y),
-                                    render_color,
+                                    batch_color,
                                     clip_bounds,
                                 );
                             }
@@ -811,9 +832,6 @@ where
 
                         // Add character to current batch
                         if let Some(ch) = run.text[glyph.start..glyph.end].chars().next() {
-                            if i == 0 {
-                                batch_x = glyph.x / scale_factor;
-                            }
                             batch_text.push(ch);
                         }
                     }
@@ -1435,7 +1453,6 @@ pub struct State {
     scale_factor: Cell<f32>,
     scrollbar_v_rect: Cell<Rectangle<f32>>,
     scrollbar_h_rect: Cell<Option<Rectangle<f32>>>,
-    handle_opt: Mutex<Option<image::Handle>>,
     gutter_handle_opt: Mutex<Option<image::Handle>>,
 }
 
@@ -1452,7 +1469,6 @@ impl State {
             scale_factor: Cell::new(1.0),
             scrollbar_v_rect: Cell::new(Rectangle::default()),
             scrollbar_h_rect: Cell::new(None),
-            handle_opt: Mutex::new(None),
             gutter_handle_opt: Mutex::new(None),
         }
     }
