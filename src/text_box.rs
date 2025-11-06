@@ -643,80 +643,88 @@ where
         // Draw editor UI
         renderer.with_translation(Vector::new(view_position.x, view_position.y), |renderer| {
             renderer.with_transformation(Transformation::scale(1.0 / scale_factor), |renderer| {
-                // Draw cached image (only has line numbers)
-                if let Some(ref handle) = *handle_opt {
-                    let image_size = image::Renderer::measure_image(renderer, handle);
-                    image::Renderer::draw_image(
-                        renderer,
-                        handle.clone(),
-                        image::FilterMethod::Nearest,
-                        Rectangle::new(
-                            Point::new(0.0, 0.0),
-                            Size::new(image_size.width as f32, image_size.height as f32),
-                        ),
-                        Radians(0.0),
-                        1.0,
-                        [0.0; 4],
-                    );
-                }
-
-                // Calculate editor position
-                let scroll_x = editor.with_buffer(|buffer| buffer.scroll().horizontal);
-                let pos = Point::new(editor_offset_x as f32, 0.0);
-                let size = Size::new((image_w - editor_offset_x) as f32, image_h as f32);
-
-                // Create custom renderer for rectangles
-                let mut custom_renderer = CustomRenderer { renderer, pos };
-
-                // Draw line highlight
-                if self.highlight_current_line {
-                    let line_highlight = {
-                        let convert_color = |color: syntect::highlighting::Color| {
-                            cosmic_text::Color::rgba(color.r, color.g, color.b, color.a)
-                        };
-                        let syntax_theme = editor.theme();
-                        //TODO: ideal fallback for line highlight color
-                        syntax_theme
-                            .settings
-                            .line_highlight
-                            .map_or(editor.background_color(), convert_color)
-                    };
-
-                    let cursor = editor.cursor();
-                    editor.with_buffer(|buffer| {
-                        for run in buffer.layout_runs() {
-                            if run.line_i != cursor.line {
-                                continue;
-                            }
-
-                            custom_renderer.rectangle(
-                                0,
-                                run.line_top as i32,
-                                (image_w - editor_offset_x) as u32,
-                                metrics.line_height as u32,
-                                line_highlight,
+                renderer.with_layer(
+                    Rectangle::new(
+                        Point::new(0.0, 0.0),
+                        Size::new(image_w as f32, image_h as f32),
+                    ),
+                    |renderer| {
+                        // Draw cached image (only has line numbers)
+                        if let Some(ref handle) = *handle_opt {
+                            let image_size = image::Renderer::measure_image(renderer, handle);
+                            image::Renderer::draw_image(
+                                renderer,
+                                handle.clone(),
+                                image::FilterMethod::Nearest,
+                                Rectangle::new(
+                                    Point::new(0.0, 0.0),
+                                    Size::new(image_size.width as f32, image_size.height as f32),
+                                ),
+                                Radians(0.0),
+                                1.0,
+                                [0.0; 4],
                             );
                         }
-                    });
-                }
 
-                // Draw editor selection, cursor, etc.
-                editor.render(&mut custom_renderer);
+                        // Calculate editor position
+                        let scroll_x = editor.with_buffer(|buffer| buffer.scroll().horizontal);
+                        let pos = Point::new(editor_offset_x as f32, 0.0);
+                        let size = Size::new((image_w - editor_offset_x) as f32, image_h as f32);
 
-                // Draw editor text
-                match editor.buffer_ref() {
-                    cosmic_text::BufferRef::Arc(buffer) => {
-                        renderer.fill_raw(Raw {
-                            buffer: Arc::downgrade(&buffer),
-                            position: pos - Vector::new(scroll_x, 0.0),
-                            color: Color::new(1.0, 1.0, 1.0, 1.0),
-                            clip_bounds: Rectangle::new(pos, size),
-                        });
-                    }
-                    _ => {
-                        log::error!("cosmic-text buffer not an Arc");
-                    }
-                }
+                        // Create custom renderer for rectangles
+                        let mut custom_renderer = CustomRenderer { renderer, pos };
+
+                        // Draw line highlight
+                        if self.highlight_current_line {
+                            let line_highlight = {
+                                let convert_color = |color: syntect::highlighting::Color| {
+                                    cosmic_text::Color::rgba(color.r, color.g, color.b, color.a)
+                                };
+                                let syntax_theme = editor.theme();
+                                //TODO: ideal fallback for line highlight color
+                                syntax_theme
+                                    .settings
+                                    .line_highlight
+                                    .map_or(editor.background_color(), convert_color)
+                            };
+
+                            let cursor = editor.cursor();
+                            editor.with_buffer(|buffer| {
+                                for run in buffer.layout_runs() {
+                                    if run.line_i != cursor.line {
+                                        continue;
+                                    }
+
+                                    custom_renderer.rectangle(
+                                        0,
+                                        run.line_top as i32,
+                                        (image_w - editor_offset_x) as u32,
+                                        metrics.line_height as u32,
+                                        line_highlight,
+                                    );
+                                }
+                            });
+                        }
+
+                        // Draw editor selection, cursor, etc.
+                        editor.render(&mut custom_renderer);
+
+                        // Draw editor text
+                        match editor.buffer_ref() {
+                            cosmic_text::BufferRef::Arc(buffer) => {
+                                renderer.fill_raw(Raw {
+                                    buffer: Arc::downgrade(&buffer),
+                                    position: pos - Vector::new(scroll_x, 0.0),
+                                    color: Color::new(1.0, 1.0, 1.0, 1.0),
+                                    clip_bounds: Rectangle::new(pos, size),
+                                });
+                            }
+                            _ => {
+                                log::error!("cosmic-text buffer not an Arc");
+                            }
+                        }
+                    },
+                )
             })
         });
 
