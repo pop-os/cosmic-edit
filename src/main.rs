@@ -58,6 +58,9 @@ mod localize;
 use self::menu::menu_bar;
 mod menu;
 
+#[cfg(feature = "print")]
+mod print;
+
 use self::project::ProjectNode;
 mod project;
 
@@ -209,6 +212,7 @@ pub enum Action {
     Quit,
     Redo,
     RevertAllChanges,
+    PrintDialog,
     Save,
     SaveAsDialog,
     SelectAll,
@@ -256,6 +260,7 @@ impl Action {
             Self::OpenRecentFile(index) => Message::OpenRecentFile(*index),
             Self::OpenRecentProject(index) => Message::OpenRecentProject(*index),
             Self::Paste => Message::Paste,
+            Self::PrintDialog => Message::PrintDialog(entity_opt),
             Self::Quit => Message::Quit,
             Self::Redo => Message::Redo,
             Self::RevertAllChanges => Message::RevertAllChanges,
@@ -382,6 +387,7 @@ pub enum Message {
     OpenSearchResult(usize, usize),
     Paste,
     PasteValue(String),
+    PrintDialog(Option<segmented_button::Entity>),
     PrepareGitDiff(PathBuf, PathBuf, bool),
     ProjectSearchResult(ProjectSearchResult),
     ProjectSearchSubmit,
@@ -2299,6 +2305,38 @@ impl Application for App {
                     },
                     |x| x,
                 );
+            }
+            Message::PrintDialog(entity_opt) => {
+                #[cfg(feature = "print")]
+                {
+                    let entity = entity_opt.unwrap_or_else(|| self.tab_model.active());
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                        let buffer = {
+                            let editor = tab.editor.lock().unwrap();
+                            match editor.buffer_ref() {
+                                cosmic_text::BufferRef::Arc(buffer) => buffer.clone(),
+                                _ => {
+                                    log::error!("cosmic-text buffer not an Arc");
+                                    return Task::none();
+                                }
+                            }
+                        };
+
+                        //TODO: cleanup
+                        return Task::perform(
+                            async move {
+                                match print::print(buffer).await {
+                                    Ok(()) => {}
+                                    Err(err) => {
+                                        log::error!("failed to print: {}", err);
+                                    }
+                                }
+                                action::none()
+                            },
+                            |x| x,
+                        );
+                    }
+                }
             }
             Message::ProjectSearchResult(project_search_result) => {
                 self.project_search_result = Some(project_search_result);

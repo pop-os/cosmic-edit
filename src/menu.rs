@@ -176,7 +176,7 @@ pub fn menu_bar<'a>(
                             None,
                             Action::ToggleGitManagement,
                         ),
-                        //TODO MenuItem::Button(fl!("print"), Action::Todo),
+                        MenuItem::Button(fl!("print"), None, Action::PrintDialog),
                         MenuItem::Divider,
                         MenuItem::Button(fl!("quit"), None, Action::Quit),
                     ],
