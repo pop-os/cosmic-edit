@@ -29,8 +29,8 @@ unstaged-changes = Unstaged changes
 project-search = Project search
 
 ## Prompt save changes
-prompt-save-changes-title = Unsaved changes
-prompt-unsaved-changes = You have unsaved changes. Save?
+prompt-save-changes-title = Save changes before closing?
+prompt-unsaved-changes = You have unsaved changes. If you continue without saving, these changes will be lost.
 cancel = Cancel
 discard = Discard changes
 save-all = Save all
@@ -64,7 +64,7 @@ replace = Replace
 replace-all = Replace all
 case-sensitive = Case sensitive
 use-regex = Use regex
-wrap-around = Wrap Around
+wrap-around = Wrap around
 
 # Menu
 
