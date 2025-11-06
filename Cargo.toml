@@ -72,10 +72,6 @@ debug = true
 onig = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
 onig_sys = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
 
-# https://github.com/fschutt/printpdf/pull/242
-[patch.'https://github.com/fschutt/printpdf']
-printpdf = { git = "https://github.com/jackpot51/printpdf" }
-
 # [patch.'https://github.com/pop-os/libcosmic']
 # libcosmic = { path = "../libcosmic" }
 # cosmic-config = { path = "../libcosmic/cosmic-config" }
