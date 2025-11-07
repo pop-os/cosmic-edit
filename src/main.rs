@@ -1307,7 +1307,9 @@ impl Application for App {
     }
 
     /// Creates the application, and optionally emits command on initialize.
-    fn init(core: Core, flags: Self::Flags) -> (Self, Task<Self::Message>) {
+    fn init(mut core: Core, flags: Self::Flags) -> (Self, Task<Self::Message>) {
+        core.window.context_is_overlay = false;
+
         // Update font name from config
         {
             let mut font_system = font_system().write().unwrap();
