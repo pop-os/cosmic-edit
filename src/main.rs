@@ -2149,6 +2149,21 @@ impl Application for App {
                 }
             }
             Message::OpenGitDiff(project_path, diff) => {
+                // Close any diff tabs with same path
+                {
+                    let mut close = Vec::new();
+                    for entity in self.tab_model.iter() {
+                        if let Some(Tab::GitDiff(other_tab)) = self.tab_model.data::<Tab>(entity) {
+                            if other_tab.diff.path == diff.path {
+                                close.push(entity);
+                            }
+                        }
+                    }
+                    for entity in close {
+                        self.tab_model.remove(entity);
+                    }
+                }
+
                 let relative_path = match diff.path.strip_prefix(project_path.clone()) {
                     Ok(ok) => ok,
                     Err(err) => {
