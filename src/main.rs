@@ -26,10 +26,11 @@ use cosmic_files::{
     mime_icon::{mime_for_path, mime_icon},
 };
 use cosmic_text::{Cursor, Edit, Family, Selection, SwashCache, SyntaxSystem, ViMode};
+use notify::{RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use std::{
     any::TypeId,
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     env, fs, io,
     path::{self, Path, PathBuf},
     process,
@@ -477,7 +478,10 @@ pub struct App {
     project_search_id: widget::Id,
     project_search_value: String,
     project_search_result: Option<ProjectSearchResult>,
-    watcher_opt: Option<notify::RecommendedWatcher>,
+    watcher_opt: Option<(
+        notify::RecommendedWatcher,
+        HashSet<(PathBuf, RecursiveMode)>,
+    )>,
     modifiers: Modifiers,
 }
 
@@ -497,16 +501,13 @@ impl App {
     }
 
     fn open_folder<P: AsRef<Path>>(&mut self, path: P, mut position: u16, indent: u16) {
-        let read_dir = match fs::read_dir(&path) {
-            Ok(ok) => ok,
-            Err(err) => {
-                log::error!("failed to read directory {:?}: {}", path.as_ref(), err);
-                return;
-            }
-        };
-
         let mut nodes = Vec::new();
-        for entry_res in read_dir {
+        for entry_res in ignore::WalkBuilder::new(&path)
+            .filter_entry(|entry| entry.file_name() != ".git")
+            .hidden(false)
+            .max_depth(Some(1))
+            .build()
+        {
             let entry = match entry_res {
                 Ok(ok) => ok,
                 Err(err) => {
@@ -518,7 +519,9 @@ impl App {
                     continue;
                 }
             };
-
+            if entry.depth() == 0 {
+                continue;
+            }
             let entry_path = entry.path();
             let node = match ProjectNode::new(&entry_path) {
                 Ok(ok) => ok,
@@ -573,6 +576,7 @@ impl App {
 
                         // Save the absolute path
                         self.projects.push((name.to_string(), path.to_path_buf()));
+                        self.update_watcher();
 
                         // Add to recent projects, ensuring only one entry
                         self.config_state.recent_projects.retain(|x| x != path);
@@ -605,25 +609,28 @@ impl App {
             .text(node.name().to_string())
             .data(node)
             .id();
+        self.update_nav_bar_placeholder();
 
         let position = self.nav_model.position(id).unwrap_or(0);
-
         self.open_folder(path, position + 1, 1);
     }
 
     pub fn open_tab(&mut self, path_opt: Option<PathBuf>) -> Option<segmented_button::Entity> {
         match self.new_tab(path_opt)? {
             NewTab::Exists(entity) => Some(entity),
-            NewTab::Tab(tab) => Some(
-                self.tab_model
+            NewTab::Tab(tab) => {
+                let entity = self
+                    .tab_model
                     .insert()
                     .text(tab.title())
                     .icon(tab.icon(16))
                     .data::<Tab>(Tab::Editor(tab))
                     .closable()
                     .activate()
-                    .id(),
-            ),
+                    .id();
+                self.update_watcher();
+                Some(entity)
+            }
         }
     }
 
@@ -637,6 +644,7 @@ impl App {
             NewTab::Exists(existing) => {
                 // Swap to existing tab and remove tab keyed by `entity`
                 self.tab_model.remove(entity);
+                self.update_watcher();
                 Some(existing)
             }
             NewTab::Tab(tab) => {
@@ -645,6 +653,7 @@ impl App {
                 self.tab_model.icon_set(entity, tab.icon(16));
                 self.tab_model.data_set::<Tab>(entity, Tab::Editor(tab));
                 self.tab_model.activate(entity);
+                self.update_watcher();
                 Some(entity)
             }
         }
@@ -689,7 +698,6 @@ impl App {
 
                 let mut tab = EditorTab::new(&self.config);
                 tab.open(canonical);
-                tab.watch(&mut self.watcher_opt);
                 Some(NewTab::Tab(tab))
             }
             None => Some(NewTab::Tab(EditorTab::new(&self.config))),
@@ -846,6 +854,27 @@ impl App {
         self.nav_model.activate(active_id);
     }
 
+    fn update_nav_bar_placeholder(&mut self) {
+        // Remove all placeholder items
+        let mut remove = Vec::new();
+        for entity in self.nav_model.iter() {
+            if self.nav_model.data::<ProjectNode>(entity).is_none() {
+                remove.push(entity);
+            }
+        }
+        for entity in remove {
+            self.nav_model.remove(entity);
+        }
+
+        // Add button to open a project if none provided
+        if self.nav_model.iter().next().is_none() {
+            self.nav_model
+                .insert()
+                .icon(icon_cache_get("folder-open-symbolic", 16))
+                .text(fl!("open-project"));
+        }
+    }
+
     // Call this any time the tab changes
     pub fn update_tab(&mut self) -> Task<Message> {
         self.update_nav_bar_active();
@@ -870,6 +899,62 @@ impl App {
             },
             self.update_focus(),
         ])
+    }
+
+    fn update_watcher(&mut self) {
+        if let Some((mut watcher, old_paths)) = self.watcher_opt.take() {
+            let mut new_paths = HashSet::new();
+
+            for (_, project_path) in self.projects.iter() {
+                new_paths.insert((project_path.clone(), RecursiveMode::Recursive));
+            }
+
+            'tabs: for entity in self.tab_model.iter() {
+                if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                    if let Some(path) = &tab.path_opt {
+                        for (_, project_path) in self.projects.iter() {
+                            if path.starts_with(&project_path) {
+                                // Do not watch tabs inside of already watched projects
+                                continue 'tabs;
+                            }
+                        }
+                        new_paths.insert((path.to_path_buf(), RecursiveMode::NonRecursive));
+                    }
+                }
+            }
+
+            // Unwatch paths no longer used
+            for path_mode in old_paths.iter() {
+                if !new_paths.contains(path_mode) {
+                    let (path, _) = path_mode;
+                    match watcher.unwatch(path) {
+                        Ok(()) => {
+                            log::debug!("unwatching {:?}", path);
+                        }
+                        Err(err) => {
+                            log::debug!("failed to unwatch {:?}: {}", path, err);
+                        }
+                    }
+                }
+            }
+
+            // Watch new paths
+            for path_mode in new_paths.iter() {
+                if !old_paths.contains(path_mode) {
+                    let (path, mode) = path_mode;
+                    match watcher.watch(path, *mode) {
+                        Ok(()) => {
+                            log::debug!("watching {:?} {:?}", path, mode);
+                        }
+                        Err(err) => {
+                            log::debug!("failed to watch {:?} {:?}: {}", path, mode, err);
+                        }
+                    }
+                }
+            }
+
+            self.watcher_opt = Some((watcher, new_paths));
+        }
     }
 
     fn document_statistics(&self) -> Element<'_, Message> {
@@ -1307,7 +1392,9 @@ impl Application for App {
     }
 
     /// Creates the application, and optionally emits command on initialize.
-    fn init(core: Core, flags: Self::Flags) -> (Self, Task<Self::Message>) {
+    fn init(mut core: Core, flags: Self::Flags) -> (Self, Task<Self::Message>) {
+        core.window.context_is_overlay = false;
+
         // Update font name from config
         {
             let mut font_system = font_system().write().unwrap();
@@ -1421,13 +1508,7 @@ impl Application for App {
             }
         }
 
-        // Add button to open a project if none provided
-        if app.nav_model.iter().next().is_none() {
-            app.nav_model
-                .insert()
-                .icon(icon_cache_get("folder-open-symbolic", 16))
-                .text(fl!("open-project"));
-        }
+        app.update_nav_bar_placeholder();
 
         // Open an empty file if no arguments provided
         if app.tab_model.iter().next().is_none() {
@@ -1681,6 +1762,7 @@ impl Application for App {
             Message::CloseProject(project_i) => {
                 if project_i < self.projects.len() {
                     let (_project_name, project_path) = self.projects.remove(project_i);
+                    self.update_watcher();
                     let mut position = 0;
                     let mut closing = false;
                     while let Some(id) = self.nav_model.entity_at(position) {
@@ -1708,6 +1790,7 @@ impl Application for App {
                             position += 1;
                         }
                     }
+                    self.update_nav_bar_placeholder();
                 }
             }
             Message::CloseWindow(window_id) => {
@@ -2061,7 +2144,8 @@ impl Application for App {
                 }
             }
             Message::NotifyEvent(event) => {
-                let mut needs_reload = Vec::new();
+                // Reload tabs that changed
+                let mut tab_reload = Vec::new();
                 for entity in self.tab_model.iter() {
                     if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
                         if let Some(path) = &tab.path_opt {
@@ -2072,14 +2156,13 @@ impl Application for App {
                                         path
                                     );
                                 } else {
-                                    needs_reload.push(entity);
+                                    tab_reload.push(entity);
                                 }
                             }
                         }
                     }
                 }
-
-                for entity in needs_reload {
+                for entity in tab_reload {
                     match self.tab_model.data_mut::<Tab>(entity) {
                         Some(Tab::Editor(tab)) => {
                             tab.reload();
@@ -2089,17 +2172,107 @@ impl Application for App {
                         }
                     }
                 }
+
+                // Reload folders that changed
+                let mut close_entities = Vec::new();
+                let mut open_paths = Vec::new();
+                for entity in self.nav_model.iter() {
+                    let Some(ProjectNode::Folder {
+                        path, open: true, ..
+                    }) = self.nav_model.data::<ProjectNode>(entity)
+                    else {
+                        continue;
+                    };
+                    for event_path in event.paths.iter() {
+                        if event_path == path || event_path.parent() == Some(path) {
+                            close_entities.push(entity);
+                            open_paths.push(path.to_path_buf());
+                            break;
+                        }
+                    }
+                }
+                for entity in close_entities {
+                    // Close folder
+                    if let Some(ProjectNode::Folder { open, .. }) =
+                        self.nav_model.data_mut::<ProjectNode>(entity)
+                    {
+                        *open = false;
+                    } else {
+                        continue;
+                    }
+                    // Remove children
+                    let position = self.nav_model.position(entity).unwrap_or(0);
+                    let indent = self.nav_model.indent(entity).unwrap_or(0);
+                    while let Some(child) = self.nav_model.entity_at(position + 1) {
+                        if let Some(ProjectNode::Folder {
+                            path, open: true, ..
+                        }) = self.nav_model.data::<ProjectNode>(child)
+                        {
+                            // Re-open children as needed
+                            open_paths.push(path.to_path_buf());
+                        }
+                        if self.nav_model.indent(child).unwrap_or(0) > indent {
+                            self.nav_model.remove(child);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                for open_path in open_paths {
+                    let mut entity_opt = None;
+                    for entity in self.nav_model.iter() {
+                        let Some(ProjectNode::Folder {
+                            path, open: false, ..
+                        }) = self.nav_model.data::<ProjectNode>(entity)
+                        else {
+                            continue;
+                        };
+                        if open_path == *path {
+                            entity_opt = Some(entity);
+                            break;
+                        }
+                    }
+                    let Some(entity) = entity_opt else { continue };
+                    // Open folder
+                    let icon = if let Some(node) = self.nav_model.data_mut::<ProjectNode>(entity) {
+                        if let ProjectNode::Folder { open, .. } = node {
+                            *open = true;
+                        } else {
+                            continue;
+                        }
+                        node.icon(16)
+                    } else {
+                        continue;
+                    };
+                    // Update icon
+                    self.nav_model.icon_set(entity, icon);
+                    let position = self.nav_model.position(entity).unwrap_or(0);
+                    let indent = self.nav_model.indent(entity).unwrap_or(0);
+                    self.open_folder(open_path, position + 1, indent + 1);
+                }
+
+                // Reload git status if necessary
+                if self.core.window.show_context && self.context_page == ContextPage::GitManagement
+                {
+                    for (_, project_path) in self.projects.iter() {
+                        for path in event.paths.iter() {
+                            if let Ok(prefix) = path.strip_prefix(&project_path) {
+                                // Manually ignore project .git folders
+                                //TODO: use logic from ignore crate somehow?
+                                if prefix.starts_with(".git") {
+                                    continue;
+                                }
+                                return self.update(Message::UpdateGitProjectStatus);
+                            }
+                        }
+                    }
+                }
             }
             Message::NotifyWatcher(mut watcher_wrapper) => match watcher_wrapper.watcher_opt.take()
             {
                 Some(watcher) => {
-                    self.watcher_opt = Some(watcher);
-
-                    for entity in self.tab_model.iter() {
-                        if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
-                            tab.watch(&mut self.watcher_opt);
-                        }
-                    }
+                    self.watcher_opt = Some((watcher, HashSet::new()));
+                    self.update_watcher();
                 }
                 None => {
                     log::warn!("message did not contain notify watcher");
@@ -2149,6 +2322,21 @@ impl Application for App {
                 }
             }
             Message::OpenGitDiff(project_path, diff) => {
+                // Close any diff tabs with same path
+                {
+                    let mut close = Vec::new();
+                    for entity in self.tab_model.iter() {
+                        if let Some(Tab::GitDiff(other_tab)) = self.tab_model.data::<Tab>(entity) {
+                            if other_tab.diff.path == diff.path {
+                                close.push(entity);
+                            }
+                        }
+                    }
+                    for entity in close {
+                        self.tab_model.remove(entity);
+                    }
+                }
+
                 let relative_path = match diff.path.strip_prefix(project_path.clone()) {
                     Ok(ok) => ok,
                     Err(err) => {
@@ -2562,6 +2750,7 @@ impl Application for App {
 
                 // Remove item
                 self.tab_model.remove(entity);
+                self.update_watcher();
 
                 // If that was the last tab, make a new empty one
                 if self.tab_model.iter().next().is_none() {

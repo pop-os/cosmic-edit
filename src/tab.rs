@@ -6,7 +6,6 @@ use cosmic::{
 };
 use cosmic_files::mime_icon::{FALLBACK_MIME_ICON, mime_for_path, mime_icon};
 use cosmic_text::{Attrs, Buffer, Cursor, Edit, Selection, Shaping, SyntaxEditor, ViEditor, Wrap};
-use notify::Watcher;
 use regex::Regex;
 use std::{
     fs,
@@ -276,21 +275,6 @@ impl EditorTab {
             }
         } else {
             log::warn!("tab has no path yet");
-        }
-    }
-
-    pub fn watch(&self, watcher_opt: &mut Option<notify::RecommendedWatcher>) {
-        if let Some(path) = &self.path_opt {
-            if let Some(watcher) = watcher_opt {
-                match watcher.watch(path, notify::RecursiveMode::NonRecursive) {
-                    Ok(()) => {
-                        log::info!("watching {:?} for changes", path);
-                    }
-                    Err(err) => {
-                        log::warn!("failed to watch {:?} for changes: {:?}", path, err);
-                    }
-                }
-            }
         }
     }
 

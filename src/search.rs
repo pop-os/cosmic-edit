@@ -72,7 +72,7 @@ impl ProjectSearchResult {
                                         Ok(Some(first)) => {
                                             lines.push(LineSearchResult {
                                                 number,
-                                                text: text.to_string(),
+                                                text: text.trim_end().to_string(),
                                                 first,
                                             });
                                         },
