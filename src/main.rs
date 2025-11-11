@@ -497,16 +497,13 @@ impl App {
     }
 
     fn open_folder<P: AsRef<Path>>(&mut self, path: P, mut position: u16, indent: u16) {
-        let read_dir = match fs::read_dir(&path) {
-            Ok(ok) => ok,
-            Err(err) => {
-                log::error!("failed to read directory {:?}: {}", path.as_ref(), err);
-                return;
-            }
-        };
-
         let mut nodes = Vec::new();
-        for entry_res in read_dir {
+        for entry_res in ignore::WalkBuilder::new(&path)
+            .filter_entry(|entry| entry.file_name() != ".git")
+            .hidden(false)
+            .max_depth(Some(1))
+            .build()
+        {
             let entry = match entry_res {
                 Ok(ok) => ok,
                 Err(err) => {
@@ -518,7 +515,9 @@ impl App {
                     continue;
                 }
             };
-
+            if entry.depth() == 0 {
+                continue;
+            }
             let entry_path = entry.path();
             let node = match ProjectNode::new(&entry_path) {
                 Ok(ok) => ok,
