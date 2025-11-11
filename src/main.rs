@@ -604,9 +604,9 @@ impl App {
             .text(node.name().to_string())
             .data(node)
             .id();
+        self.update_nav_bar_placeholder();
 
         let position = self.nav_model.position(id).unwrap_or(0);
-
         self.open_folder(path, position + 1, 1);
     }
 
@@ -843,6 +843,27 @@ impl App {
             }
         }
         self.nav_model.activate(active_id);
+    }
+
+    fn update_nav_bar_placeholder(&mut self) {
+        // Remove all placeholder items
+        let mut remove = Vec::new();
+        for entity in self.nav_model.iter() {
+            if self.nav_model.data::<ProjectNode>(entity).is_none() {
+                remove.push(entity);
+            }
+        }
+        for entity in remove {
+            self.nav_model.remove(entity);
+        }
+
+        // Add button to open a project if none provided
+        if self.nav_model.iter().next().is_none() {
+            self.nav_model
+                .insert()
+                .icon(icon_cache_get("folder-open-symbolic", 16))
+                .text(fl!("open-project"));
+        }
     }
 
     // Call this any time the tab changes
@@ -1422,13 +1443,7 @@ impl Application for App {
             }
         }
 
-        // Add button to open a project if none provided
-        if app.nav_model.iter().next().is_none() {
-            app.nav_model
-                .insert()
-                .icon(icon_cache_get("folder-open-symbolic", 16))
-                .text(fl!("open-project"));
-        }
+        app.update_nav_bar_placeholder();
 
         // Open an empty file if no arguments provided
         if app.tab_model.iter().next().is_none() {
@@ -1709,6 +1724,7 @@ impl Application for App {
                             position += 1;
                         }
                     }
+                    self.update_nav_bar_placeholder();
                 }
             }
             Message::CloseWindow(window_id) => {
