@@ -18,6 +18,7 @@
   <name xml:lang="sk">COSMIC Textový editor</name>
   <name xml:lang="es">Editor de texto</name>
   <name xml:lang="it">Editor di testo</name>
+  <name xml:lang="sv">COSMIC Textredigerare</name>
   <summary>Text editor for the COSMIC desktop</summary>
   <summary xml:lang="ar">محرِّر نصوص لسطح مكتب COSMIC</summary>
   <summary xml:lang="cs">Textový editor pro pracovní prostředí COSMIC</summary>
@@ -28,6 +29,7 @@
   <summary xml:lang="sk">Textový editor pre pracovné prostredie COSMIC</summary>
   <summary xml:lang="es">Editor de texto de escritorio COSMIC</summary>
   <summary xml:lang="it">Editor di testo di COSMIC</summary>
+  <summary xml:lang="sv">Textredigerare för skrivbordsmiljön COSMIC</summary>
   <description>
     <p>Text editor that provides advanced features with high performance</p>
     <p xml:lang="ar">محرِّر نصوص يوفر ميزات متقدمة بأداء عالٍ</p>
@@ -39,6 +41,7 @@
     <p xml:lang="sk">Textový editor, ktorý poskytuje pokročilé funkcie s vysokým výkonom</p>
     <p xml:lang="es">Editor de texto que provee funcionalidades avanzadas con alto rendimiento</p>
     <p xml:lang="it">Editor di testo con funzionalità avanzate ad alte prestazioni</p>
+    <p xml:lang="sv">Textredigerare som tillhandahåller avancerade funktioner med hög prestanda</p>
     <ul>
         <li>Written in Rust for performance and safety</li>
         <li xml:lang="ar">مكتوب بلغة Rust من أجل الأداء والأمان</li>
@@ -50,6 +53,7 @@
         <li xml:lang="sk">Napísané v jazyku Rust pre výkon a bezpečnosť</li>
         <li xml:lang="es">Escrito en Rust por rendimiento y seguridad</li>
         <li xml:lang="it">Scritto in Rust per maggore velocità e sicurezza</li>
+        <li xml:lang="sv">Skriven i Rust för prestanda och säkerhet</li>
       <li>Syntax highlighting built in for most languages</li>
         <li xml:lang="ar">إبراز بناء الجملة مدمج لمعظم اللغات</li>
         <li xml:lang="cs">Vestavěné zvýrazňování syntaxe pro většinu jazyků</li>
@@ -59,6 +63,7 @@
         <li xml:lang="ru">Подсветка синтаксиса встроена для большинства языков</li>
         <li xml:lang="sk">Vstavané zvýrazňovanie syntaxe pre väčšinu jazykov</li>
         <li xml:lang="es">Resaltado de sintaxis incorporado para la mayoría de lenguajes</li>
+        <li xml:lang="sv">Inbyggd syntaxmarkering för de flesta språken</li>
       <li>Provides project-based editing</li>
         <li xml:lang="ar">يوفر تحريرًا قائمًا على المشاريع</li>
         <li xml:lang="cs">Umožňuje úpravy založené na projektech</li>
@@ -68,6 +73,7 @@
         <li xml:lang="ru">Предоставляет редактор для проектов</li>
         <li xml:lang="sk">Poskytuje úpravu založenú na projektoch</li>
         <li xml:lang="es">Provee edición basada por proyecto</li>
+        <li xml:lang="sv">Tillhandahåller projektbaserad redigering</li>
         <li>Integrated git management</li>
         <li xml:lang="ar">إدارة Git مدمجة</li>
         <li xml:lang="cs">Integrovaná správa git</li>
@@ -77,6 +83,7 @@
         <li xml:lang="ru">Встроенное управление репозиториями git</li>
         <li xml:lang="sk">Integrovaná správa git repozitárov</li>
         <li xml:lang="sk">Gestión de git integrada</li>
+        <li xml:lang="sv">Integrerad git-hantering</li>
     </ul>
   </description>
   <launchable type="desktop-id">com.system76.CosmicEdit.desktop</launchable>
