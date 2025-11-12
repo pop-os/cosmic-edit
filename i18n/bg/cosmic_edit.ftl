@@ -47,9 +47,9 @@ settings = Настройки
 
 appearance = Външен вид
 theme = Тема
-match-desktop = Системен
-dark = Тъмен
-light = Светъл
+match-desktop = Системна тема
+dark = Тъмна тема
+light = Светла тема
 syntax-dark = Тъмен синтаксис
 syntax-light = Светъл синтаксис
 default-font = Стандартен шрифт
