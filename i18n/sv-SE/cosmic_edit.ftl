@@ -25,8 +25,8 @@ project-search = Projektsök
 
 ## Fråga om ändringarna sparas
 
-prompt-save-changes-title = Osparade ändringar
-prompt-unsaved-changes = Du har osparade ändringar. Spara?
+prompt-save-changes-title = Spara ändringar innan nedstängning?
+prompt-unsaved-changes = Du har osparade ändringar. Om du fortsätter utan att spara, kommer dessa ändringar att gå förlorade.
 cancel = Avbryt
 discard = Kasta ändringar
 save-all = Spara alla
