@@ -33,9 +33,9 @@ project-search = Projektkereső
 
 ## Prompt save changes
 
-prompt-save-changes-title = Nem mentett változtatások
-prompt-unsaved-changes = Nem minden változtatás van elmentve. Mentés?
-cancel = Megszakítás
+prompt-save-changes-title = Mented a változtatásokat bezárás előtt?
+prompt-unsaved-changes = Vannak nem mentett változtatások. Ha mentés nélkül folytatod, ezek el fognak veszni.
+cancel = Mégse
 discard = Változtatások elvetése
 save-all = Összes mentése
 
@@ -54,7 +54,7 @@ syntax-dark = Sötét szintaxis
 syntax-light = Világos szintaxis
 default-font = Alapértelmezett betűtípus
 default-font-size = Alapértelmezett betűméret
-default-zoom-step = Nagyítási mérték
+default-zoom-step = Nagyítási lépték
 
 ### Keyboard shortcuts
 
