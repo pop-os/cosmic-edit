@@ -45,16 +45,16 @@ settings = Instellingen
 
 ## Appearance
 
-appearance = Weergave
+appearance = Uiterlijk
 theme = Thema
-match-desktop = Systeemstandaard
+match-desktop = Maak gelijk aan bureaublad
 dark = Donker
 light = Licht
 syntax-dark = Donkere syntaxis
 syntax-light = Lichte syntaxis
 default-font = Standaard lettertype
 default-font-size = Standaard lettertypegrootte
-default-zoom-step = Zoomstapgrootte
+default-zoom-step = Zoomstappen
 
 ### Keyboard shortcuts
 
@@ -80,7 +80,7 @@ file = Bestand
 new-file = Nieuw bestand
 new-window = Nieuw venster
 open-file = Open een bestand…
-close-file = Sluit het bestand
+close-file = Sluit bestand
 menu-open-project = Open een project…
 open-recent-project = Open een recent project
 close-project = Sluit het project
@@ -92,12 +92,12 @@ document-type = Documenttype…
 encoding = Tekenset…
 menu-git-management = Git-beheer…
 print = Druk af
-quit = Sluit
+quit = Beëindig
 
 ## Edit
 
 edit = Bewerk
-undo = Ontdoen
+undo = Herstel
 redo = Overdoen
 cut = Knip
 copy = Kopieer
@@ -130,4 +130,4 @@ menu-keyboard-shortcuts = Sneltoetsen…
 menu-about = Over COSMIC-tekstbewerker...
 open-recent-file = Open recent bestand
 support = Ondersteuning
-repository = Repository
+repository = Bibliotheek
