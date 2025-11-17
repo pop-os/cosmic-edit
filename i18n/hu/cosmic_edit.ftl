@@ -54,7 +54,7 @@ syntax-dark = Sötét szintaxis
 syntax-light = Világos szintaxis
 default-font = Alapértelmezett betűtípus
 default-font-size = Alapértelmezett betűméret
-default-zoom-step = Nagyítási lépték
+default-zoom-step = Nagyítási mérték
 
 ### Keyboard shortcuts
 

@@ -33,8 +33,8 @@ project-search = Recherche de projets
 
 ## Prompt save changes
 
-prompt-save-changes-title = Modifications non sauvegardées
-prompt-unsaved-changes = Vous avez des modifications non sauvegardées. Sauvegarder ?
+prompt-save-changes-title = Enregistrer les modifications avant de fermer ?
+prompt-unsaved-changes = Vous avez des modifications non enregistrées. Si vous continuez sans sauvegarder, ces modifications seront perdues.
 cancel = Annuler
 discard = Abandonner les modifications
 save-all = Tout enregistrer
@@ -51,7 +51,7 @@ match-desktop = Assortir au bureau
 dark = Sombre
 light = Clair
 syntax-dark = Syntaxe sombre
-syntax-light = Syntaxe clair
+syntax-light = Syntaxe claire
 default-font = Police par défaut
 default-font-size = Taille de la police par défaut
 
@@ -67,7 +67,7 @@ replace-placeholder = Remplacer...
 replace = Remplacer
 replace-all = Remplacer tout
 case-sensitive = Respecter la casse
-use-regex = Expression régulière
+use-regex = Utiliser les expressions régulières
 wrap-around = Retour à la ligne
 
 # Menu
@@ -115,7 +115,7 @@ indentation = Indentation
 ### Indentation
 
 automatic-indentation = Indentation automatique
-tab-width = Largeur de la tabulation : { $tab_width }
+tab-width = Largeur de la tabulation : { $tab_width }
 convert-indentation-to-spaces = Convertir l'indentation en espaces
 convert-indentation-to-tabs = Convertir l'indentation en tabulations
 word-wrap = Retour à la ligne
@@ -124,4 +124,10 @@ highlight-current-line = Surligner la ligne actuelle
 syntax-highlighting = Coloration syntaxique...
 menu-settings = Paramètres...
 menu-keyboard-shortcuts = Raccourcis clavier...
-menu-about = À propos de l'éditeur de texte COSMIC
+menu-about = À propos de l'éditeur de texte COSMIC...
+repository = Dépôt
+support = Support
+default-zoom-step = Niveaux de zoom
+zoom-in = Zoomer
+default-size = Taille par défaut
+zoom-out = Dézoomer

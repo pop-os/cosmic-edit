@@ -35,8 +35,8 @@ project-search = Wyszukiwanie w projekcie
 
 ## Prompt save changes
 
-prompt-save-changes-title = Niezapisane zmiany
-prompt-unsaved-changes = Masz niezapisane zmiany. Zapisać?
+prompt-save-changes-title = Zapisać zmiany przed zamknięciem?
+prompt-unsaved-changes = Masz niezapisane zmiany. Jeśli ich nie zapiszesz, przepadną.
 cancel = Anuluj
 discard = Odrzuć zmiany
 save-all = Zapisz wszystko
