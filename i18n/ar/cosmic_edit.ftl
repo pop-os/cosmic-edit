@@ -24,19 +24,19 @@ line-count = الأسطر
 git-management = إدارة Git
 git-management-description = إدارة Git هي أداة يستخدمها المطورون لإدارة عمليات التحكم في الإصدارات.
 git-management-loading = جاري تحميل إدارة Git...
-stage = المرحلة
-staged-changes = التغييرات المرحلية
-unstage = إلغاء المرحلة
-unstaged-changes = تغييرات المرحلة الملغية
+stage = رحِّل
+staged-changes = تغييرات مرحَّلة
+unstage = ألغِ الترحيل
+unstaged-changes = تغييرات غير مرحَّلة
 
 ## Project search
 
-project-search = البحث عن مشروع
+project-search = ابحث المشروع
 
 ## Prompt save changes
 
 prompt-save-changes-title = تغييرات غير محفوظة
-prompt-unsaved-changes = هناك تغييرات غير محفوظة. أحفظ؟
+prompt-unsaved-changes = لديك تغييرات غير محفوظة. إذا واصلت دون حفظ، فستفقد هذه التغييرات.
 cancel = ألغِ
 discard = تجاهل التغييرات
 save-all = احفظ الكل
@@ -49,13 +49,13 @@ settings = الإعدادات
 
 appearance = المظهر
 theme = سمة
-match-desktop = مطابقة مع سطح المكتب
+match-desktop = طابق سطح المكتب
 dark = داكن
 light = فاتح
-syntax-dark = صيغة الثيم الداكن
-syntax-light = صيغة الثيم الفاتح
+syntax-dark = صيغة داكنة
+syntax-light = صيغة فاتحة
 default-font = الخط المبدئي
-default-font-size = حجم الخط الافتراضي
+default-font-size = حجم الخط المبدئي
 default-zoom-step = خطوات التكبير
 
 ### Keyboard shortcuts
@@ -66,9 +66,9 @@ enable-vim-bindings = فعِّل ارتباط مفاتيح Vim
 find-placeholder = ابحث عن...
 find-previous = ابحث عن السابق
 find-next = ابحث عن التالي
-replace-placeholder = استبدل...
+replace-placeholder = أبدل...
 replace = استبدال
-replace-all = استبدل الكل
+replace-all = أبدل الكل
 case-sensitive = حساس لحالة الحرف
 use-regex = (regex) استعمل التعبير النمطي
 wrap-around = لف حول
@@ -85,9 +85,9 @@ open-file = فتح ملف...
 open-recent-file = فتح ملف حديث
 close-file = إغلاق الملف
 menu-open-project = افتح المشروع...
-open-recent-project = فتح مشروع حديث
+open-recent-project = افتح مشروعًا حديثًا
 close-project = إغلاق المشروع
-save = حفظ
+save = احفظ
 save-as = إحفظ كـ...
 revert-all-changes = تراجع عن جميع التغييرات
 menu-document-statistics = إحصائيات المستند...
@@ -99,13 +99,13 @@ quit = أنهِ
 
 ## Edit
 
-edit = تعديل
+edit = عدِّل
 undo = تراجع
-redo = إعادة
-cut = قص
-copy = نسخ
-paste = لصق
-select-all = تحديد الكل
+redo = أعِد
+cut = قصّ
+copy = انسخ
+paste = ألصِق
+select-all = حدّد الكل
 find = ابحث عن
 find-in-project = ابحث في المشروع...
 spell-check = التدقيق الإملائي...
@@ -113,21 +113,21 @@ spell-check = التدقيق الإملائي...
 ## View
 
 view = عرض
-zoom-in = تقريب
-default-size = الحجم الافتراضي
+zoom-in = قرِّب
+default-size = الحجم المبدئي
 zoom-out = إبعاد
 indentation = تباعد المسافات
 
 ### Indentation
 
-automatic-indentation = تباعد تلقائي للمسافات
-tab-width = عرض علامة التبويب: { $tab_width }
-convert-indentation-to-spaces = تحويل مباعد المسافات إلي مساحات
-convert-indentation-to-tabs = تحويل مباعد المسافات إلي علامات تبويب
+automatic-indentation = الإزاحة الآلية
+tab-width = عرض المسافة الكبيرة: { $tab_width }
+convert-indentation-to-spaces = حوِّل الإزاحات غلى مسافات
+convert-indentation-to-tabs = حوِّل الإزاحات إلى مسافات كبيرة
 word-wrap = التفاف الكلمات
 show-line-numbers = أظهر أرقام الأسطر
-highlight-current-line = إبراز السطر الحالي
-syntax-highlighting = إبراز الصياغة...
+highlight-current-line = أبرِز السطر الحالي
+syntax-highlighting = إبراز الصيغة...
 menu-settings = الإعدادات...
 menu-keyboard-shortcuts = اختصارات لوحة المفاتيح...
-menu-about = حول محرر نصوص COSMIC...
+menu-about = عن محرِّر نصوص COSMIC...
