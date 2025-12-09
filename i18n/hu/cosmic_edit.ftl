@@ -34,7 +34,7 @@ project-search = Projektkereső
 ## Prompt save changes
 
 prompt-save-changes-title = Mented a változtatásokat bezárás előtt?
-prompt-unsaved-changes = Vannak nem mentett változtatások. Ha mentés nélkül folytatod, ezek el fognak veszni.
+prompt-unsaved-changes = Vannak nem mentett változtatások. Ha nem mentesz, ezek el fognak veszni.
 cancel = Mégse
 discard = Változtatások elvetése
 save-all = Összes mentése
