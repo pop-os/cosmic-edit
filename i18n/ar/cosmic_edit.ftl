@@ -1,7 +1,7 @@
 cosmic-text-editor = محرر نصوص COSMIC
 new-document = مستند جديد
-open-project = افتح المشروع
-todo = المهام المطلوبة
+open-project = افتح مشروعًا
+todo = المهامّ
 
 # Context Pages
 
@@ -81,12 +81,12 @@ wrap-around = لف حول
 file = ملف
 new-file = ملف جديد
 new-window = نافذة جديدة
-open-file = فتح ملف...
-open-recent-file = فتح ملف حديث
-close-file = إغلاق الملف
-menu-open-project = افتح المشروع...
+open-file = افتح ملفًا...
+open-recent-file = افتح ملفًا حديثًا
+close-file = أغلِق الملف
+menu-open-project = افتح مشروعًا...
 open-recent-project = افتح مشروعًا حديثًا
-close-project = إغلاق المشروع
+close-project = أغلِق المشروع
 save = احفظ
 save-as = إحفظ كـ...
 revert-all-changes = تراجع عن جميع التغييرات

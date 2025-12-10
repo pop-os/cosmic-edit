@@ -28,7 +28,7 @@ project-search = Projektsök
 prompt-save-changes-title = Spara ändringar innan nedstängning?
 prompt-unsaved-changes = Du har osparade ändringar. Om du fortsätter utan att spara, kommer dessa ändringar att gå förlorade.
 cancel = Avbryt
-discard = Kasta ändringar
+discard = Förkasta ändringar
 save-all = Spara alla
 
 ## Inställningar
