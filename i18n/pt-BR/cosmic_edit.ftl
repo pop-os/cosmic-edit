@@ -69,7 +69,7 @@ replace = Substituir
 replace-all = Substituir tudo
 case-sensitive = Diferenciar maiúsculas de minúsculas
 use-regex = Usar expressão regular
-wrap-around = Envolver ao redor
+wrap-around = Voltar ao início
 
 # Menu
 
@@ -100,7 +100,7 @@ quit = Sair
 edit = Editar
 undo = Desfazer
 redo = Refazer
-cut = Cortar
+cut = Recortar
 copy = Copiar
 paste = Colar
 select-all = Selecionar tudo
@@ -111,9 +111,9 @@ spell-check = Verificação ortográfica...
 ## View
 
 view = Exibir
-zoom-in = Aumentar o zoom
+zoom-in = Ampliar
 default-size = Tamanho padrão
-zoom-out = Diminuir o zoom
+zoom-out = Reduzir
 indentation = Recuo de texto
 
 ### Indentation
