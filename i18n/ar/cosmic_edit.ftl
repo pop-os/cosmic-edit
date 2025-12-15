@@ -48,7 +48,7 @@ settings = الإعدادات
 ### Appearance
 
 appearance = المظهر
-theme = سمة
+theme = النسق
 match-desktop = طابق سطح المكتب
 dark = داكن
 light = فاتح
@@ -66,11 +66,11 @@ enable-vim-bindings = فعِّل ارتباط مفاتيح Vim
 find-placeholder = ابحث عن...
 find-previous = ابحث عن السابق
 find-next = ابحث عن التالي
-replace-placeholder = أبدل...
-replace = استبدال
-replace-all = أبدل الكل
+replace-placeholder = استبدل...
+replace = استبدل
+replace-all = استبدل الكل
 case-sensitive = حساس لحالة الحرف
-use-regex = (regex) استعمل التعبير النمطي
+use-regex = استعمل التعبير النمطي (regex)
 wrap-around = لف حول
 
 # Menu
@@ -105,7 +105,7 @@ redo = أعِد
 cut = قصّ
 copy = انسخ
 paste = ألصِق
-select-all = حدّد الكل
+select-all = حدِّد الكل
 find = ابحث عن
 find-in-project = ابحث في المشروع...
 spell-check = التدقيق الإملائي...
@@ -115,7 +115,7 @@ spell-check = التدقيق الإملائي...
 view = عرض
 zoom-in = قرِّب
 default-size = الحجم المبدئي
-zoom-out = إبعاد
+zoom-out = بعِّد
 indentation = تباعد المسافات
 
 ### Indentation
