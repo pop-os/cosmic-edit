@@ -6,7 +6,7 @@ open-project = Atidaryti projektą
 
 ## Document statistics
 
-document-statistics = Apie dokumentą
+document-statistics = Dokumento statistika
 word-count = Žodžių skaičius
 character-count = Simbolių skaičius
 character-count-no-spaces = Simbolių skaičius (be tarpų)
@@ -43,7 +43,7 @@ save-as = Išsaugoti kaip...
 revert-all-changes = Atstatyti visus pakeitimus
 menu-document-statistics = Apie dokumentą...
 document-type = Dokumento tipas...
-encoding = Užkoduoti...
+encoding = Kodavimas...
 print = Spausdinti
 quit = Išeiti
 
@@ -113,3 +113,4 @@ case-sensitive = Skirti raidžių dydžius
 use-regex = Naudoti regex
 wrap-around = Kelti į sekančią eilutę
 stage = Patvirtinti pakeitimai
+project-search = Paieška projekte

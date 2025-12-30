@@ -1,4 +1,4 @@
-cosmic-text-editor = Editor de Texto
+cosmic-text-editor = Editor de Texto COSMIC
 new-document = Novo documento
 open-project = Abrir projeto
 todo = TODO
@@ -20,8 +20,8 @@ line-count = Linhas
 ## Git management
 
 git-management = Gestor do Git
-git-management-description = Git é uma ferramenta de desenvolvedores usada para operações de controle de versão.
-git-management-loading = Carregando o gestor do Git...
+git-management-description = Git é uma ferramenta de desenvolvimento usada para operações de controle de versão.
+git-management-loading = Carregando o gerenciamento do Git...
 stage = Adicionar à área de preparação
 staged-changes = Alterações na área de preparação
 unstage = Remover da área de preparação

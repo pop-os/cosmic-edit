@@ -58,7 +58,7 @@ default-zoom-step = Nagyítási mérték
 
 ### Keyboard shortcuts
 
-keyboard-shortcuts = Billentyűparancsok
+keyboard-shortcuts = Gyorsbillentyűk
 enable-vim-bindings = Vim billentyűkombinációk engedélyezése
 # Find
 find-placeholder = Keresés...
@@ -67,7 +67,7 @@ find-next = Következő találat
 replace-placeholder = Csere...
 replace = Csere
 replace-all = Összes lecserélése
-case-sensitive = Kisbetű-nagybetű érzékenység
+case-sensitive = Kis- és nagybetű érzékenység
 use-regex = Regex használata
 wrap-around = Körbefutás
 
@@ -127,7 +127,7 @@ show-line-numbers = Sorszámok megjelenítése
 highlight-current-line = Aktuális sor kiemelése
 syntax-highlighting = Szintaxiskiemelés...
 menu-settings = Beállítások...
-menu-keyboard-shortcuts = Billentyűparancsok...
+menu-keyboard-shortcuts = Gyorsbillentyűk...
 menu-about = A COSMIC Szövegszerkesztő névjegye...
 repository = Tároló
 support = Támogatás
