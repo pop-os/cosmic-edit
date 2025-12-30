@@ -31,8 +31,8 @@ use serde::{Deserialize, Serialize};
 use std::{
     any::TypeId,
     collections::{HashMap, HashSet},
-    env, fs, io,
-    path::{self, Path, PathBuf},
+    env, io,
+    path::{Path, PathBuf},
     process,
     sync::{Mutex, OnceLock},
 };
@@ -87,14 +87,19 @@ pub fn monospace_attrs() -> cosmic_text::Attrs<'static> {
     cosmic_text::Attrs::new().family(Family::Monospace)
 }
 
-fn canonicalize_or_absolute(path_in: &PathBuf) -> PathBuf {
-    match fs::canonicalize(path_in) {
-        Ok(ok) => ok,
-        Err(err) => match path::absolute(path_in) {
-            Ok(ok) => ok,
-            Err(_) => {
-                log::error!("failed to canonicalize {:?}: {}", path_in, err);
-                path_in.clone()
+fn canonicalize_or_absolute(path_in: &std::path::Path) -> Option<std::path::PathBuf> {
+    match std::fs::canonicalize(path_in) {
+        Ok(ok) => Some(ok),
+        Err(canon_err) => match std::path::absolute(path_in) {
+            Ok(ok) => Some(ok),
+            Err(abs_err) => {
+                log::error!(
+                    "failed to normalize path {:?}: canonicalize error: {}; absolute error: {}",
+                    path_in,
+                    canon_err,
+                    abs_err
+                );
+                None
             }
         },
     }
@@ -675,7 +680,7 @@ impl App {
     fn new_tab(&mut self, path_opt: Option<PathBuf>) -> Option<NewTab> {
         match path_opt {
             Some(path) => {
-                let canonical = canonicalize_or_absolute(&path);
+                let canonical = canonicalize_or_absolute(&path)?;
 
                 //TODO: allow files to be open multiple times
                 let mut activate_opt = None;
@@ -836,7 +841,7 @@ impl App {
                                 }
                             }
                             ProjectNode::File { path, .. } => {
-                                if canonicalize_or_absolute(path) == tab_path {
+                                if canonicalize_or_absolute(path).as_ref() == Some(&tab_path) {
                                     active_id = id;
                                     break;
                                 }
@@ -2618,21 +2623,25 @@ impl Application for App {
                 self.dialog_opt = None;
                 match result {
                     DialogResult::Cancel => {}
-                    DialogResult::Open(mut paths) => {
-                        if let Some(picked) = paths.pop() {
-                            let mut title_opt = None;
-
-                            if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                                tab.save_as(picked);
-                                title_opt = Some(tab.title());
-                            }
-
-                            if let Some(title) = title_opt {
-                                self.tab_model.text_set(entity, title);
-                            }
-
+                    DialogResult::Open(paths) => {
+                        let Some(picked) = paths.into_iter().next() else {
                             return self.update_dialogs();
+                        };
+
+                        let mut title_opt = None;
+
+                        if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                            tab.path_opt = Some(picked.clone());
+                            tab.save_as(picked);
+                            title_opt = Some(tab.title());
+                                tab.save();
                         }
+
+                        if let Some(title) = title_opt {
+                            self.tab_model.text_set(entity, title);
+                        }
+
+                        return self.update_dialogs();
                     }
                 }
             }
