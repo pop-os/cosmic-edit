@@ -707,7 +707,6 @@ impl App {
 
                 let mut tab = EditorTab::new(&self.config);
                 tab.open(canonical);
-
                 Some(NewTab::Tab(tab))
             }
             None => Some(NewTab::Tab(EditorTab::new(&self.config))),
@@ -2627,20 +2626,29 @@ impl Application for App {
                         let Some(picked) = paths.into_iter().next() else {
                             return self.update_dialogs();
                         };
-
-                        let mut title_opt = None;
-
-                        if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                            tab.path_opt = Some(picked.clone());
-                            tab.save_as(picked);
-                            title_opt = Some(tab.title());
-                                tab.save();
+                        let mut already_open: Option<_> = None;
+                        for other in self.tab_model.iter() {
+                            if other == entity {
+                                continue;
+                            }
+                            if let Some(Tab::Editor(other_tab)) = self.tab_model.data::<Tab>(other) {
+                                if let Some(other_path) = &other_tab.path_opt {
+                                    if other_path == &picked {
+                                        already_open = Some(other);
+                                        break;
+                                    }
+                                }
+                            }
                         }
-
-                        if let Some(title) = title_opt {
+                        if let Some(other) = already_open {
+                            self.tab_model.activate(other);
+                            return self.update_dialogs();
+                        }
+                        if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                            tab.save_as(picked);
+                            let title = tab.title();
                             self.tab_model.text_set(entity, title);
                         }
-
                         return self.update_dialogs();
                     }
                 }
