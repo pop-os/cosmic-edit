@@ -27,8 +27,8 @@ use cosmic::{
     theme::Theme,
 };
 use cosmic_text::{
-    Action, BorrowedWithFontSystem, Edit, Metrics, Motion, Renderer as _, Scroll, Selection,
-    ViEditor,
+    Action, BorrowedWithFontSystem, Cursor, Edit, Metrics, Motion, Renderer as _, Scroll,
+    Selection, ViEditor,
 };
 use std::{
     cell::Cell,
@@ -1072,6 +1072,12 @@ where
                 }
             }
             Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
+                if modifiers.shift() && !state.modifiers.shift() {
+                    let anchor = editor.cursor();
+                    *state.shift_anchor.lock().unwrap() = Some(anchor);
+                } else if !modifiers.shift() && state.modifiers.shift() {
+                    *state.shift_anchor.lock().unwrap() = None;
+                }
                 state.modifiers = modifiers;
             }
             Event::Mouse(MouseEvent::ButtonPressed(button)) => {
@@ -1122,6 +1128,16 @@ where
                                 } else {
                                     ClickKind::Single
                                 };
+                            let maybe_anchor = if state.modifiers.shift() {
+                                state.shift_anchor.lock().unwrap().clone()
+                            } else {
+                                None
+                            };
+
+                            if let Some(anchor) = maybe_anchor {
+                                editor.set_selection(Selection::Normal(anchor));
+                            }
+
                             match click_kind {
                                 ClickKind::Single => editor.action(Action::Click {
                                     x: x as i32,
@@ -1135,6 +1151,10 @@ where
                                     x: x as i32,
                                     y: y as i32,
                                 }),
+                            }
+
+                            if let Some(anchor) = maybe_anchor {
+                                editor.set_selection(Selection::Normal(anchor));
                             }
                             state.click = Some((click_kind, Instant::now()));
                             state.dragging = Some(Dragging::Buffer);
@@ -1341,6 +1361,7 @@ pub struct State {
     scrollbar_v_rect: Cell<Rectangle<f32>>,
     scrollbar_h_rect: Cell<Option<Rectangle<f32>>>,
     handle_opt: Mutex<Option<image::Handle>>,
+    shift_anchor: Mutex<Option<Cursor>>,
 }
 
 impl State {
@@ -1357,6 +1378,7 @@ impl State {
             scrollbar_v_rect: Cell::new(Rectangle::default()),
             scrollbar_h_rect: Cell::new(None),
             handle_opt: Mutex::new(None),
+            shift_anchor: Mutex::new(None),
         }
     }
 }
