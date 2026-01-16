@@ -31,8 +31,8 @@ use serde::{Deserialize, Serialize};
 use std::{
     any::TypeId,
     collections::{HashMap, HashSet},
-    env, fs, io,
-    path::{self, Path, PathBuf},
+    env, io,
+    path::{Path, PathBuf},
     process,
     sync::{Mutex, OnceLock},
 };
@@ -87,14 +87,32 @@ pub fn monospace_attrs() -> cosmic_text::Attrs<'static> {
     cosmic_text::Attrs::new().family(Family::Monospace)
 }
 
+fn canonicalize_or_absolute(path_in: &std::path::Path) -> Option<std::path::PathBuf> {
+    match std::fs::canonicalize(path_in) {
+        Ok(ok) => Some(ok),
+        Err(canon_err) => match std::path::absolute(path_in) {
+            Ok(ok) => Some(ok),
+            Err(abs_err) => {
+                log::error!(
+                    "failed to normalize path {:?}: canonicalize error: {}; absolute error: {}",
+                    path_in,
+                    canon_err,
+                    abs_err
+                );
+                None
+            }
+        },
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(all(unix, not(target_os = "redox")))]
     match fork::daemon(true, true) {
         Ok(fork::Fork::Child) => (),
-        Ok(fork::Fork::Parent(_child_pid)) => process::exit(0),
+        Ok(fork::Fork::Parent(_child_pid)) => std::process::exit(0),
         Err(err) => {
             eprintln!("failed to daemonize: {:?}", err);
-            process::exit(1);
+            std::process::exit(1);
         }
     }
 
@@ -662,16 +680,7 @@ impl App {
     fn new_tab(&mut self, path_opt: Option<PathBuf>) -> Option<NewTab> {
         match path_opt {
             Some(path) => {
-                let canonical = match fs::canonicalize(&path) {
-                    Ok(ok) => ok,
-                    Err(err) => match path::absolute(&path) {
-                        Ok(ok) => ok,
-                        Err(_) => {
-                            log::error!("failed to canonicalize {:?}: {}", path, err);
-                            return None;
-                        }
-                    },
-                };
+                let canonical = canonicalize_or_absolute(&path)?;
 
                 //TODO: allow files to be open multiple times
                 let mut activate_opt = None;
@@ -831,7 +840,7 @@ impl App {
                                 }
                             }
                             ProjectNode::File { path, .. } => {
-                                if path == &tab_path {
+                                if canonicalize_or_absolute(path).as_ref() == Some(&tab_path) {
                                     active_id = id;
                                     break;
                                 }
@@ -1290,13 +1299,10 @@ impl App {
             .theme_names
             .iter()
             .position(|theme_name| theme_name == &self.config.syntax_theme_light);
-        let font_selected = {
-            let mut font_system = font_system().write().unwrap();
-            let current_font_name = font_system.raw().db().family_name(&Family::Monospace);
-            self.font_names
-                .iter()
-                .position(|font_name| font_name == current_font_name)
-        };
+        let font_selected = self
+            .font_names
+            .iter()
+            .position(|font_name| font_name == &self.config.font_name);
         let font_size_selected = self
             .font_sizes
             .iter()
@@ -2568,7 +2574,7 @@ impl Application for App {
                     tab.save();
                 }
                 if let Some(title) = title_opt {
-                    self.tab_model.text_set(self.tab_model.active(), title);
+                    self.tab_model.text_set(entity, title);
                 }
                 return self.update_dialogs();
             }
@@ -2616,19 +2622,34 @@ impl Application for App {
                 self.dialog_opt = None;
                 match result {
                     DialogResult::Cancel => {}
-                    DialogResult::Open(mut paths) => {
-                        if !paths.is_empty() {
-                            let mut title_opt = None;
-                            if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                                tab.path_opt = Some(paths.remove(0));
-                                title_opt = Some(tab.title());
-                                tab.save();
+                    DialogResult::Open(paths) => {
+                        let Some(picked) = paths.into_iter().next() else {
+                            return self.update_dialogs();
+                        };
+                        let mut already_open: Option<_> = None;
+                        for other in self.tab_model.iter() {
+                            if other == entity {
+                                continue;
                             }
-                            if let Some(title) = title_opt {
-                                self.tab_model.text_set(entity, title);
+                            if let Some(Tab::Editor(other_tab)) = self.tab_model.data::<Tab>(other) {
+                                if let Some(other_path) = &other_tab.path_opt {
+                                    if other_path == &picked {
+                                        already_open = Some(other);
+                                        break;
+                                    }
+                                }
                             }
+                        }
+                        if let Some(other) = already_open {
+                            self.tab_model.activate(other);
                             return self.update_dialogs();
                         }
+                        if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                            tab.save_as(picked);
+                            let title = tab.title();
+                            self.tab_model.text_set(entity, title);
+                        }
+                        return self.update_dialogs();
                     }
                 }
             }
