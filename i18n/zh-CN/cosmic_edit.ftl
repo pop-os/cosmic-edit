@@ -20,7 +20,7 @@ line-count = 行数
 ## Git management
 
 git-management = Git 管理
-git-management-description = Git 管理是一个用于版本控制操作的开发工具。
+git-management-description = Git 管理是个用于版本控制的开发工具。
 git-management-loading = 正在加载 Git 管理...
 stage = 暂存
 staged-changes = 已暂存的更改
@@ -33,8 +33,8 @@ project-search = 项目搜索
 
 ## Prompt save changes
 
-prompt-save-changes-title = 未保存的更改
-prompt-unsaved-changes = 您有未保存的更改。是否保存？
+prompt-save-changes-title = 关闭前保存更改？
+prompt-unsaved-changes = 您有未保存的更改。如果继续且不保存，这些更改将会丢失。
 cancel = 取消
 discard = 放弃更改
 save-all = 全部保存
@@ -58,8 +58,8 @@ default-zoom-step = 缩放步长
 
 ### Keyboard shortcuts
 
-keyboard-shortcuts = 键盘快捷键
-enable-vim-bindings = 启用 Vim 绑定
+keyboard-shortcuts = 快捷键
+enable-vim-bindings = 启用 Vim 快捷键
 # Find
 find-placeholder = 查找...
 find-previous = 查找上一个
@@ -69,7 +69,7 @@ replace = 替换
 replace-all = 全部替换
 case-sensitive = 区分大小写
 use-regex = 使用正则表达式
-wrap-around = 循环查找
+wrap-around = 循环搜索
 
 # Menu
 
@@ -91,7 +91,7 @@ revert-all-changes = 撤销所有更改
 menu-document-statistics = 文档统计...
 document-type = 文档类型...
 encoding = 编码...
-menu-git-management = Git 管理...
+menu-git-management = Git 管理…
 print = 打印
 quit = 退出
 
@@ -111,7 +111,7 @@ spell-check = 拼写检查...
 ## View
 
 view = 视图
-zoom-in = 放大
+zoom-in = 增大
 default-size = 默认大小
 zoom-out = 缩小
 indentation = 缩进
@@ -127,7 +127,7 @@ show-line-numbers = 显示行号
 highlight-current-line = 高亮当前行
 syntax-highlighting = 语法高亮...
 menu-settings = 设置...
-menu-keyboard-shortcuts = 键盘快捷键...
-menu-about = 关于 COSMIC 文本编辑器...
+menu-keyboard-shortcuts = 快捷键...
+menu-about = 关于 COSMIC 文本编辑器…
 repository = 仓库
 support = 支持
