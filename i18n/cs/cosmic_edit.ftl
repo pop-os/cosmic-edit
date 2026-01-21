@@ -19,7 +19,7 @@ settings = Nastavení
 ## Appearance
 
 appearance = Vzhled
-theme = Téma
+theme = Motiv
 default-font = Výchozí písmo
 default-font-size = Výchozí velikost písma
 
@@ -87,8 +87,8 @@ prompt-unsaved-changes = Máte neuložené změny. Pokud je nyní neuložíte, p
 cancel = Zrušit
 discard = Zahodit změny
 save-all = Uložit vše
-dark = Tmavé
-light = Světlé
+dark = Tmavý
+light = Světlý
 default-zoom-step = Kroky přiblížení
 find-placeholder = Najít...
 find-previous = Najít předchozí
