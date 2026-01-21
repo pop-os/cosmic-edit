@@ -45,18 +45,18 @@ menu-document-statistics = 문서 통계...
 document-type = 문서 유형...
 encoding = 부호화...
 print = 인쇄
-quit = 종료
+quit = 나가기
 
 ## Edit
 
 edit = 수정
-undo = 실행취소
+undo = 되돌리기
 redo = 재실행
 cut = 잘라내기
 copy = 복사
 paste = 붙여넣기
 find = 찾기
-replace = 바꾸기
+replace = 대체
 spell-check = 맞춤법 검사...
 
 ## View
@@ -77,3 +77,11 @@ syntax-highlighting = 구문 강조...
 menu-settings = 설정...
 menu-keyboard-shortcuts = 단축키...
 menu-about = COSMIC Text Editor 대해
+cancel = 취소
+dark = 다크
+light = 라이트
+match-desktop = 데스크톱에 맞춤
+cosmic-text-editor = COSMIC 텍스트 편집기
+close-file = 파일 닫기
+repository = 저장소
+support = 지원
