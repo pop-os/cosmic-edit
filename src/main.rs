@@ -42,6 +42,9 @@ use unicode_segmentation::UnicodeSegmentation;
 use config::{AppTheme, CONFIG_VERSION, Config, ConfigState};
 mod config;
 
+mod backup;
+mod hotexit;
+
 use git::{GitDiff, GitDiffLine, GitRepository, GitStatus, GitStatusKind};
 mod git;
 
@@ -390,6 +393,13 @@ pub enum Message {
     PromptSaveChanges(segmented_button::Entity),
     Quit,
     QuitForce,
+    QuitForceNoBackup,
+    QuitClean,
+    SaveBackups,
+    AutoSaveToggle(bool),
+    // Session restoration messages
+    RestoreOptionChanged(RestoreOption),
+    ConfirmRestoreSessions,
     Redo,
     RevertAllChanges,
     Save(Option<segmented_button::Entity>),
@@ -404,6 +414,7 @@ pub enum Message {
     TabActivate(segmented_button::Entity),
     TabActivateJump(usize),
     TabChanged(segmented_button::Entity),
+    TabEdit(segmented_button::Entity),
     TabClose(segmented_button::Entity),
     TabCloseForce(segmented_button::Entity),
     TabContextAction(segmented_button::Entity, Action),
@@ -421,6 +432,7 @@ pub enum Message {
     Undo,
     UpdateGitProjectStatus,
     VimBindings(bool),
+    ReopenOnStart(bool),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -433,10 +445,14 @@ pub enum ContextPage {
     Settings,
 }
 
+use hotexit::RestoreOption;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum DialogPage {
     PromptSaveClose(segmented_button::Entity),
     PromptSaveQuit(Vec<segmented_button::Entity>),
+    /// Prompt user to select how to handle multiple orphaned sessions.
+    PromptRestoreSessions(Vec<u64>, RestoreOption),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -483,6 +499,9 @@ pub struct App {
         HashSet<(PathBuf, RecursiveMode)>,
     )>,
     modifiers: Modifiers,
+    session_id: u64,
+    /// Tabs with pending saves: maps entity -> scheduled save time
+    pending_saves: HashMap<Entity, std::time::Instant>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -498,6 +517,461 @@ impl App {
 
     pub fn active_tab_mut(&mut self) -> Option<&mut Tab> {
         self.tab_model.active_data_mut()
+    }
+
+    /// Save ALL unsaved tabs to backup immediately (used during quit/force-quit)
+    fn save_all_backups_now(&mut self) {
+        log::debug!(
+            "hotexit: saving all backups for session {}",
+            self.session_id
+        );
+
+        // Collect entities first to avoid borrow issues
+        let entities: Vec<_> = self.tab_model.iter().collect();
+        let mut untitled_counter = 0usize;
+        let mut written = 0usize;
+
+        for entity in entities {
+            if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                // Skip documents with no unsaved changes
+                if !tab.changed() {
+                    continue;
+                }
+
+                // Check if content has been reverted to match saved state
+                if tab.check_and_reset_if_unchanged() {
+                    // Content matches saved file - clean up any backup
+                    if let Some(backup_id) = tab.backup_id.take() {
+                        hotexit::cleanup_backup_after_save(Some(backup_id));
+                    }
+                    tab.backup_content_hash = None;
+                    continue;
+                }
+
+                let cursor = tab.cursor();
+                let request = hotexit::BackupRequest {
+                    path_opt: tab.path_opt.clone(),
+                    content: tab.text(),
+                    cursor_line: cursor.line,
+                    cursor_index: cursor.index,
+                    zoom_adj: tab.zoom_adj,
+                    existing_backup_id: tab.backup_id.clone(),
+                    previous_content_hash: tab.backup_content_hash,
+                };
+
+                match hotexit::write_tab_backup(self.session_id, request, &mut untitled_counter) {
+                    Ok(Some(result)) => {
+                        tab.backup_id = Some(result.backup_id);
+                        tab.backup_content_hash = Some(result.content_hash);
+                        written += 1;
+                    }
+                    Ok(None) => {
+                        // Skipped (empty or unchanged)
+                    }
+                    Err(e) => {
+                        log::error!("hotexit: backup failed for {:?}: {}", tab.path_opt, e);
+                    }
+                }
+            }
+        }
+        log::info!("hotexit: backup complete ({} written)", written);
+    }
+
+    /// Save tabs that have been idle (no changes) for the configured interval.
+    /// - If auto_save is enabled AND tab has a path: save to disk
+    /// - Otherwise: save to backup cache for hot exit recovery
+    fn save_idle_tabs(&mut self) {
+        use std::time::Instant;
+
+        // Skip if nothing is pending
+        if self.pending_saves.is_empty() {
+            return;
+        }
+
+        let now = Instant::now();
+        let auto_save_enabled = self.config.auto_save;
+
+        // Find tabs that are due for saving
+        let due_entities: Vec<Entity> = self
+            .pending_saves
+            .iter()
+            .filter(|(_, save_at)| now >= **save_at)
+            .map(|(entity, _)| *entity)
+            .collect();
+
+        if due_entities.is_empty() {
+            return;
+        }
+
+        let mut untitled_counter = 0usize;
+        let mut backups_written = 0usize;
+        let mut files_saved = 0usize;
+        let mut titles_to_update: Vec<(Entity, String)> = Vec::new();
+
+        for entity in due_entities {
+            // Remove from pending (will be re-added if tab changes again)
+            self.pending_saves.remove(&entity);
+
+            if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                // Skip if there are no actual unsaved changes
+                if !tab.changed() {
+                    continue;
+                }
+
+                // Check if content has been reverted to match saved state
+                if tab.check_and_reset_if_unchanged() {
+                    // Content matches saved file - clean up any backup and update title
+                    if let Some(backup_id) = tab.backup_id.take() {
+                        hotexit::cleanup_backup_after_save(Some(backup_id));
+                    }
+                    tab.backup_content_hash = None;
+                    titles_to_update.push((entity, tab.title()));
+                    log::debug!("save_idle_tabs: content reverted to saved state, skipping backup");
+                    continue;
+                }
+
+                // Decide whether to auto-save to disk or backup to cache
+                if auto_save_enabled && tab.path_opt.is_some() {
+                    // Auto-save: save to disk
+                    match tab.save() {
+                        Ok(()) => {
+                            titles_to_update.push((entity, tab.title()));
+                            // Clean up backup file only after successful auto-save
+                            hotexit::cleanup_backup_after_save(tab.backup_id.take());
+                            files_saved += 1;
+                            log::debug!("auto-save: saved {:?}", tab.path_opt);
+                        }
+                        Err(e) => {
+                            // Save failed - keep backup for recovery
+                            log::warn!("auto-save: save failed for {:?}: {}", tab.path_opt, e);
+                        }
+                    }
+                } else {
+                    // Backup: save to cache (for untitled docs, or when auto_save is disabled)
+                    let cursor = tab.cursor();
+                    let request = hotexit::BackupRequest {
+                        path_opt: tab.path_opt.clone(),
+                        content: tab.text(),
+                        cursor_line: cursor.line,
+                        cursor_index: cursor.index,
+                        zoom_adj: tab.zoom_adj,
+                        existing_backup_id: tab.backup_id.clone(),
+                        previous_content_hash: tab.backup_content_hash,
+                    };
+
+                    match hotexit::write_tab_backup(self.session_id, request, &mut untitled_counter)
+                    {
+                        Ok(Some(result)) => {
+                            tab.backup_id = Some(result.backup_id);
+                            tab.backup_content_hash = Some(result.content_hash);
+                            backups_written += 1;
+                            log::debug!("hotexit: backed up {:?}", tab.path_opt);
+                        }
+                        Ok(None) => {
+                            // Skipped (empty or unchanged)
+                        }
+                        Err(e) => {
+                            log::error!("hotexit: backup failed for {:?}: {}", tab.path_opt, e);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Update tab titles (remove unsaved indicator for auto-saved files)
+        for (entity, title) in titles_to_update {
+            self.tab_model.text_set(entity, title);
+        }
+
+        if files_saved > 0 || backups_written > 0 {
+            log::info!(
+                "save_idle_tabs: {} files auto-saved, {} backups written",
+                files_saved,
+                backups_written
+            );
+        }
+    }
+
+    /// Collect session tabs for session save.
+    /// Returns (tabs, active_tab_index).
+    fn collect_session_tabs(&self) -> (Vec<hotexit::SessionTab>, usize) {
+        let mut tabs = Vec::new();
+        let mut active_tab = 0;
+        let active_entity = self.tab_model.active();
+
+        for entity in self.tab_model.iter() {
+            if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+                let has_unsaved = tab.changed();
+
+                // Skip empty untitled documents
+                if tab.path_opt.is_none() && !has_unsaved {
+                    continue;
+                }
+
+                tabs.push(hotexit::SessionTab {
+                    path: tab.path_opt.clone(),
+                    has_unsaved_changes: has_unsaved,
+                    backup_id: tab.backup_id.clone(),
+                });
+
+                if entity == active_entity {
+                    active_tab = tabs.len().saturating_sub(1);
+                }
+            }
+        }
+
+        (tabs, active_tab)
+    }
+
+    /// Collect session projects with expanded folder state.
+    fn collect_session_projects(&self) -> Vec<hotexit::SessionProject> {
+        self.projects
+            .iter()
+            .map(|(_, project_path)| {
+                let expanded_folders = self
+                    .nav_model
+                    .iter()
+                    .filter_map(|entity| {
+                        if let Some(ProjectNode::Folder {
+                            path,
+                            open: true,
+                            root: false,
+                            ..
+                        }) = self.nav_model.data::<ProjectNode>(entity)
+                        {
+                            if path.starts_with(project_path) {
+                                return Some(path.clone());
+                            }
+                        }
+                        None
+                    })
+                    .collect();
+
+                hotexit::SessionProject {
+                    path: project_path.clone(),
+                    expanded_folders,
+                }
+            })
+            .collect()
+    }
+
+    /// Get the active project navigation item path.
+    fn get_active_project_path(&self) -> Option<PathBuf> {
+        self.nav_model
+            .active_data::<ProjectNode>()
+            .map(|node| match node {
+                ProjectNode::Folder { path, .. } | ProjectNode::File { path, .. } => path.clone(),
+            })
+    }
+
+    /// Save current session state (open files and projects)
+    fn save_session(&self) {
+        let (tabs, active_tab) = self.collect_session_tabs();
+        let projects = self.collect_session_projects();
+        let active_project_path = self.get_active_project_path();
+
+        // Don't save session if there's nothing worth restoring
+        if tabs.is_empty() && projects.is_empty() {
+            log::debug!("hotexit: skipping session save - no meaningful content to restore");
+            hotexit::release_and_cleanup_session(self.session_id);
+            return;
+        }
+
+        let state = hotexit::SessionState {
+            tabs,
+            projects,
+            active_tab,
+            active_project_path,
+        };
+
+        if let Err(e) = hotexit::save_session(self.session_id, &state) {
+            log::error!("hotexit: failed to save session: {}", e);
+        }
+    }
+
+    /// Restore a specific session by ID (for spawned instances)
+    /// Returns true if the session was restored successfully
+    fn restore_specific_session(&mut self, session_id: u64) -> bool {
+        match hotexit::load_session(session_id) {
+            Ok(state) => self.restore_session_state(session_id, state),
+            Err(e) => {
+                log::warn!("hotexit: could not load session {:016x}: {}", session_id, e);
+                false
+            }
+        }
+    }
+
+    /// Adopt an orphaned session, taking over its session_id.
+    /// Releases the current session lock and adopts the new session.
+    fn adopt_session(&mut self, session_id: u64) -> bool {
+        // Try to adopt the orphaned session first (atomically acquires lock for new session)
+        // Only release our current lock after confirming adoption succeeded
+        if hotexit::adopt_session(session_id) {
+            // Success - now release our old lock (we hold the new one)
+            hotexit::release_session_lock(self.session_id);
+            log::info!(
+                "hotexit: switching session_id from {:016x} to {:016x}",
+                self.session_id,
+                session_id
+            );
+            self.session_id = session_id;
+            true
+        } else {
+            // Adoption failed, we still hold our original lock
+            false
+        }
+    }
+
+    /// Try to adopt and restore a session. On failure, reverts to a fresh session.
+    /// Returns true if restoration succeeded.
+    fn try_adopt_and_restore(&mut self, session_id: u64, state: hotexit::SessionState) -> bool {
+        if self.adopt_session(session_id) {
+            if self.restore_session_state(session_id, state) {
+                return true;
+            }
+            // Restoration failed - release the lock and get a fresh session
+            self.reset_to_fresh_session(session_id);
+        }
+        false
+    }
+
+    /// Reset to a fresh session after a failed restore attempt.
+    /// Releases the failed session's lock and creates a new session.
+    fn reset_to_fresh_session(&mut self, failed_session_id: u64) {
+        hotexit::release_session_lock(failed_session_id);
+        self.session_id = hotexit::generate_session_id();
+        if let Err(e) = hotexit::create_session_lock(self.session_id) {
+            log::warn!("hotexit: failed to create new session lock: {}", e);
+        }
+    }
+
+    /// Restore a session state (shared logic for session restoration)
+    /// The caller must adopt the session before calling this (sets self.session_id and creates lock)
+    fn restore_session_state(&mut self, session_id: u64, session: hotexit::SessionState) -> bool {
+        log::info!(
+            "hotexit: restoring session {:016x} with {} tabs, {} projects",
+            session_id,
+            session.tabs.len(),
+            session.projects.len()
+        );
+
+        // Restore projects first
+        let mut restored_any = false;
+        for session_project in &session.projects {
+            if session_project.path.is_dir() {
+                self.open_project(&session_project.path);
+                restored_any = true;
+
+                // Restore expanded folders
+                for expanded_path in &session_project.expanded_folders {
+                    self.expand_project_folder(expanded_path);
+                }
+            }
+        }
+
+        // Load and restore tabs
+        for restored_tab in hotexit::load_session_tabs(&session) {
+            match restored_tab {
+                hotexit::RestoredTab::FromBackup {
+                    path_opt,
+                    content,
+                    cursor_line,
+                    cursor_index,
+                    zoom_adj,
+                    backup_id,
+                    content_hash,
+                } => {
+                    let mut tab = EditorTab::new(&self.config);
+                    tab.path_opt = path_opt;
+                    tab.load_text(&content);
+                    tab.set_cursor(cursor_line, cursor_index);
+                    tab.zoom_adj = zoom_adj;
+                    tab.backup_id = Some(backup_id);
+                    tab.backup_content_hash = Some(content_hash);
+
+                    // Add tab with unsaved indicator
+                    let mut title = tab.title();
+                    title.push_str(" \u{2022}");
+                    self.tab_model
+                        .insert()
+                        .text(title)
+                        .icon(tab.icon(16))
+                        .data::<Tab>(Tab::Editor(tab))
+                        .closable()
+                        .activate();
+                }
+                hotexit::RestoredTab::FromFile { path } => {
+                    let mut tab = EditorTab::new(&self.config);
+                    tab.open(path);
+                    self.tab_model
+                        .insert()
+                        .text(tab.title())
+                        .icon(tab.icon(16))
+                        .data::<Tab>(Tab::Editor(tab))
+                        .closable()
+                        .activate();
+                }
+            }
+            restored_any = true;
+        }
+        self.update_watcher();
+
+        // Activate the previously active tab
+        if restored_any && session.active_tab < self.tab_model.iter().count() {
+            self.tab_model.activate_position(session.active_tab as u16);
+        }
+
+        // Restore active project nav item
+        if let Some(ref path) = session.active_project_path {
+            self.set_active_project_path(path);
+        }
+
+        restored_any
+    }
+
+    /// Restore sessions with optional limit, spawning additional instances as needed.
+    /// - Adopts and restores first session in current instance
+    /// - Spawns instances for remaining sessions (up to limit - 1 if limit is set)
+    /// - Discards sessions beyond the limit
+    fn restore_sessions_with_limit(&mut self, session_ids: Vec<u64>, limit: Option<usize>) {
+        let mut iter = session_ids.into_iter();
+
+        // Adopt and restore first session in this instance
+        if let Some(first_id) = iter.next() {
+            if self.adopt_session(first_id) {
+                let mut restore_success = false;
+                match hotexit::load_session(first_id) {
+                    Ok(state) => {
+                        restore_success = self.restore_session_state(first_id, state);
+                    }
+                    Err(e) => {
+                        log::warn!("hotexit: failed to load session {:016x}: {}", first_id, e);
+                    }
+                }
+                if !restore_success {
+                    self.reset_to_fresh_session(first_id);
+                }
+            }
+        }
+
+        // Spawn instances for remaining sessions (up to limit - 1 since first is in current instance)
+        let spawn_limit = limit.map(|l| l.saturating_sub(1)).unwrap_or(usize::MAX);
+        for session_id in iter.by_ref().take(spawn_limit) {
+            hotexit::spawn_restore_instance(session_id);
+        }
+
+        // Discard any sessions beyond the limit
+        for session_id in iter {
+            hotexit::discard_session(session_id);
+        }
+
+        // Open empty tab if no tabs were loaded
+        if self.tab_model.iter().next().is_none() {
+            self.open_tab(None);
+        }
+
+        // Clean up stale backups now that restoration is complete
+        hotexit::cleanup_stale_backups();
     }
 
     fn open_folder<P: AsRef<Path>>(&mut self, path: P, mut position: u16, indent: u16) {
@@ -613,6 +1087,62 @@ impl App {
 
         let position = self.nav_model.position(id).unwrap_or(0);
         self.open_folder(path, position + 1, 1);
+    }
+
+    /// Expand a folder in the project tree by path
+    /// Used to restore expanded state from session
+    fn expand_project_folder(&mut self, path: &PathBuf) {
+        // Find the folder node by path (collect first to avoid borrow issues)
+        let target_entity = self.nav_model.iter().find(|&entity| {
+            if let Some(ProjectNode::Folder {
+                path: node_path,
+                open,
+                ..
+            }) = self.nav_model.data::<ProjectNode>(entity)
+            {
+                node_path == path && !*open
+            } else {
+                false
+            }
+        });
+
+        if let Some(entity) = target_entity {
+            // Set open state
+            if let Some(ProjectNode::Folder { open, .. }) =
+                self.nav_model.data_mut::<ProjectNode>(entity)
+            {
+                *open = true;
+            }
+
+            // Update icon
+            if let Some(node) = self.nav_model.data::<ProjectNode>(entity) {
+                self.nav_model.icon_set(entity, node.icon(16));
+            }
+
+            // Add children
+            let position = self.nav_model.position(entity).unwrap_or(0);
+            let indent = self.nav_model.indent(entity).unwrap_or(0);
+            self.open_folder(path, position + 1, indent + 1);
+        }
+    }
+
+    /// Set the active item in the project nav by path
+    fn set_active_project_path(&mut self, path: &PathBuf) {
+        // Find the matching entity (collect first to avoid borrow issues)
+        let target_entity = self.nav_model.iter().find(|&entity| {
+            if let Some(node) = self.nav_model.data::<ProjectNode>(entity) {
+                match node {
+                    ProjectNode::Folder { path: p, .. } => p == path,
+                    ProjectNode::File { path: p, .. } => p == path,
+                }
+            } else {
+                false
+            }
+        });
+
+        if let Some(entity) = target_entity {
+            self.nav_model.activate(entity);
+        }
     }
 
     pub fn open_tab(&mut self, path_opt: Option<PathBuf>) -> Option<segmented_button::Entity> {
@@ -774,13 +1304,21 @@ impl App {
                         }
                     }
                 }
+                log::info!(
+                    "hotexit: update_dialogs PromptSaveQuit - {} unsaved tabs",
+                    unsaved.len()
+                );
                 if unsaved.is_empty() {
-                    // All tabs have been saved, we can exit
-                    return self.update(Message::QuitForce);
+                    // All tabs have been saved, we can exit cleanly
+                    log::info!("hotexit: no unsaved tabs, triggering QuitClean");
+                    return self.update(Message::QuitClean);
                 } else {
                     // Update dialog
                     self.dialog_page_opt = Some(DialogPage::PromptSaveQuit(unsaved));
                 }
+            }
+            Some(DialogPage::PromptRestoreSessions(_, _)) => {
+                // Session restore dialog doesn't need periodic updates
             }
             None => {}
         }
@@ -1307,6 +1845,18 @@ impl App {
             .position(|zoom_step| zoom_step == &self.config.font_size_zoom_step_mul_100);
         widget::settings::view_column(vec![
             widget::settings::section()
+                .title(fl!("app-settings"))
+                .add(
+                    widget::settings::item::builder(fl!("reopen-on-start"))
+                        .toggler(self.config.reopen_on_start, Message::ReopenOnStart),
+                )
+                .add(
+                    widget::settings::item::builder(fl!("auto-save"))
+                        .description(fl!("auto-save-description"))
+                        .toggler(self.config.auto_save, Message::AutoSaveToggle),
+                )
+                .into(),
+            widget::settings::section()
                 .title(fl!("appearance"))
                 .add(
                     widget::settings::item::builder(fl!("theme")).control(widget::dropdown(
@@ -1495,24 +2045,102 @@ impl Application for App {
             project_search_result: None,
             watcher_opt: None,
             modifiers: Modifiers::empty(),
+            session_id: hotexit::generate_session_id(),
+            pending_saves: HashMap::new(),
         };
 
         // Do not show nav bar by default. Will be opened by open_project if needed
         app.core.nav_bar_set_toggled(false);
+
+        // Create lock for our session
+        if let Err(e) = hotexit::create_session_lock(app.session_id) {
+            log::warn!(
+                "hotexit: failed to create session lock: {} (continuing without lock)",
+                e
+            );
+        }
+
+        // Clean up any orphaned temp files from previous crashes
+        hotexit::cleanup_temp_files();
+
+        // Parse command line arguments and handle startup
+        let mut restored_session = false;
+        let mut cli_paths = Vec::new();
+        let mut restore_session_id = None;
+
         for arg in env::args().skip(1) {
-            let path = PathBuf::from(arg);
-            if path.is_dir() {
-                app.open_project(path);
-            } else {
-                app.open_tab(Some(path));
+            if let Some(session_str) = arg.strip_prefix("--restore-session=") {
+                if let Ok(id) = u64::from_str_radix(session_str, 16) {
+                    restore_session_id = Some(id);
+                }
+            } else if !arg.starts_with('-') {
+                cli_paths.push(PathBuf::from(arg));
+            }
+        }
+
+        if let Some(target_session_id) = restore_session_id {
+            // Spawned instance: adopt and restore specific session (no cascade spawning)
+            log::info!(
+                "hotexit: spawned instance adopting session {:016x}",
+                target_session_id
+            );
+            if app.adopt_session(target_session_id) {
+                restored_session = app.restore_specific_session(target_session_id);
+                if !restored_session {
+                    app.reset_to_fresh_session(target_session_id);
+                }
+            }
+        } else if !cli_paths.is_empty() {
+            // User provided files/folders on command line
+            for path in cli_paths {
+                if path.is_dir() {
+                    app.open_project(path);
+                } else {
+                    app.open_tab(Some(path));
+                }
+            }
+        } else {
+            // Normal startup: determine action based on orphaned sessions
+            match hotexit::determine_startup_action(
+                app.config.reopen_on_start,
+                app.config.hot_exit_max_auto_restore,
+            ) {
+                hotexit::StartupAction::Normal => {}
+                hotexit::StartupAction::RestoreSingle(session_id, state) => {
+                    restored_session = app.try_adopt_and_restore(session_id, state);
+                }
+                hotexit::StartupAction::RestoreMultiple {
+                    first_session: (first_id, first_state),
+                    spawn_sessions,
+                } => {
+                    restored_session = app.try_adopt_and_restore(first_id, first_state);
+                    for session_id in spawn_sessions {
+                        hotexit::spawn_restore_instance(session_id);
+                    }
+                }
+                hotexit::StartupAction::PromptUser(session_ids) => {
+                    // Default to RestoreFirstN (restore up to max_auto_restore sessions)
+                    app.dialog_page_opt = Some(DialogPage::PromptRestoreSessions(
+                        session_ids,
+                        RestoreOption::default(),
+                    ));
+                }
             }
         }
 
         app.update_nav_bar_placeholder();
 
-        // Open an empty file if no arguments provided
-        if app.tab_model.iter().next().is_none() {
+        // Open an empty file if no tabs were restored and no dialog is showing
+        if app.tab_model.iter().next().is_none() && app.dialog_page_opt.is_none() {
             app.open_tab(None);
+        } else if restored_session {
+            log::info!("hotexit: skipping default empty tab since tabs were restored");
+        }
+
+        // Clean up stale backups if no restore dialog is pending
+        // (if dialog is pending, cleanup happens after user confirms)
+        if app.dialog_page_opt.is_none() {
+            hotexit::cleanup_stale_backups();
         }
 
         //TODO: try update_config here? It breaks loading system theme by default
@@ -1564,6 +2192,7 @@ impl Application for App {
     }
 
     fn on_app_exit(&mut self) -> Option<Message> {
+        log::info!("hotexit: on_app_exit called");
         Some(Message::Quit)
     }
 
@@ -1694,8 +2323,8 @@ impl Application for App {
                 if can_save_all {
                     save_button = save_button.on_press(Message::SaveAll);
                 }
-                let discard_button =
-                    widget::button::destructive(fl!("discard")).on_press(Message::QuitForce);
+                let discard_button = widget::button::destructive(fl!("discard"))
+                    .on_press(Message::QuitForceNoBackup);
                 let cancel_button =
                     widget::button::text(fl!("cancel")).on_press(Message::DialogCancel);
                 let dialog = widget::dialog()
@@ -1706,6 +2335,80 @@ impl Application for App {
                     .primary_action(save_button)
                     .secondary_action(discard_button)
                     .tertiary_action(cancel_button);
+
+                Some(dialog.into())
+            }
+            DialogPage::PromptRestoreSessions(sessions, selected_option) => {
+                let state = hotexit::RestoreDialogState::new(
+                    sessions.len(),
+                    self.config.hot_exit_max_auto_restore,
+                    *selected_option,
+                );
+
+                let mut column = widget::column::with_capacity(5).spacing(space_xxs);
+
+                // Radio button options
+                let radio_discard = widget::radio(
+                    widget::text(fl!("restore-option-discard-all")),
+                    RestoreOption::DiscardAll,
+                    Some(*selected_option),
+                    Message::RestoreOptionChanged,
+                );
+                let radio_restore_n = widget::radio(
+                    widget::text(fl!(
+                        "restore-option-restore-5",
+                        count = state.restore_n_count()
+                    )),
+                    RestoreOption::RestoreFirstN,
+                    Some(*selected_option),
+                    Message::RestoreOptionChanged,
+                );
+                let radio_restore_all = widget::radio(
+                    widget::text(fl!(
+                        "restore-option-restore-all",
+                        count = state.total_sessions
+                    )),
+                    RestoreOption::RestoreAll,
+                    Some(*selected_option),
+                    Message::RestoreOptionChanged,
+                );
+
+                column = column.push(radio_discard);
+                column = column.push(radio_restore_n);
+                column = column.push(radio_restore_all);
+
+                // Warning message based on selection
+                let warning_text = match *selected_option {
+                    RestoreOption::DiscardAll => {
+                        fl!("restore-warning-discard-all", count = state.total_sessions)
+                    }
+                    RestoreOption::RestoreFirstN => fl!(
+                        "restore-warning-restore-5",
+                        restore_count = state.sessions_to_restore,
+                        discard_count = state.sessions_to_discard
+                    ),
+                    RestoreOption::RestoreAll => {
+                        fl!("restore-warning-restore-all", count = state.total_sessions)
+                    }
+                };
+
+                if !warning_text.is_empty() {
+                    column = column.push(widget::vertical_space().height(Length::Fixed(8.0)));
+                    column = column.push(widget::text(warning_text));
+                }
+
+                let confirm_button = widget::button::suggested(fl!("confirm"))
+                    .on_press(Message::ConfirmRestoreSessions);
+                let cancel_button =
+                    widget::button::text(fl!("cancel")).on_press(Message::DialogCancel);
+
+                let dialog = widget::dialog()
+                    .title(fl!("restore-sessions-title"))
+                    .body(fl!("restore-sessions-body", count = state.total_sessions))
+                    .icon(icon::from_name("dialog-question-symbolic").size(64))
+                    .control(column)
+                    .primary_action(confirm_button)
+                    .secondary_action(cancel_button);
 
                 Some(dialog.into())
             }
@@ -2531,13 +3234,75 @@ impl Application for App {
                 self.dialog_page_opt = Some(DialogPage::PromptSaveClose(entity));
             }
             Message::Quit => {
+                log::info!("hotexit: Message::Quit received");
                 // Create empty dialog
                 self.dialog_page_opt = Some(DialogPage::PromptSaveQuit(Vec::new()));
                 // This update will get the actual list of unsaved tabs
                 return self.update_dialogs();
             }
             Message::QuitForce => {
+                // Save backups first (sets backup_id), then session (stores backup_id)
+                self.save_all_backups_now();
+                self.save_session();
+                // Keep session file for restoration, only release lock
+                hotexit::release_session_lock(self.session_id);
                 process::exit(0);
+            }
+            Message::QuitForceNoBackup => {
+                // User explicitly discarded changes, clear everything for THIS session only
+                hotexit::remove_session_backups(self.session_id);
+                hotexit::release_and_cleanup_session(self.session_id);
+                process::exit(0);
+            }
+            Message::QuitClean => {
+                log::info!(
+                    "hotexit: Message::QuitClean - clean shutdown, removing session and backups"
+                );
+                // User closed cleanly, no need to restore anything for THIS session
+                hotexit::remove_session_backups(self.session_id);
+                hotexit::release_and_cleanup_session(self.session_id);
+                process::exit(0);
+            }
+            Message::SaveBackups => {
+                // Save tabs that have been idle for the configured interval
+                // This handles both auto-save (to disk) and backup (to cache) based on config
+                self.save_idle_tabs();
+                self.save_session();
+            }
+            Message::AutoSaveToggle(auto_save) => {
+                config_set!(auto_save, auto_save);
+            }
+            Message::RestoreOptionChanged(option) => {
+                if let Some(DialogPage::PromptRestoreSessions(_, ref mut selected_option)) =
+                    self.dialog_page_opt
+                {
+                    *selected_option = option;
+                }
+            }
+            Message::ConfirmRestoreSessions => {
+                if let Some(DialogPage::PromptRestoreSessions(session_ids, selected_option)) =
+                    self.dialog_page_opt.take()
+                {
+                    match selected_option {
+                        RestoreOption::DiscardAll => {
+                            for session_id in session_ids {
+                                hotexit::discard_session(session_id);
+                            }
+                            self.open_tab(None);
+                            hotexit::cleanup_stale_backups();
+                        }
+                        RestoreOption::RestoreFirstN => {
+                            self.restore_sessions_with_limit(
+                                session_ids,
+                                Some(self.config.hot_exit_max_auto_restore),
+                            );
+                        }
+                        RestoreOption::RestoreAll => {
+                            self.restore_sessions_with_limit(session_ids, None);
+                        }
+                    }
+                }
+                return self.update_tab();
             }
             Message::Redo => {
                 if let Some(Tab::Editor(tab)) = self.active_tab() {
@@ -2557,30 +3322,65 @@ impl Application for App {
                 }
             }
             Message::Save(entity_opt) => {
-                let mut title_opt = None;
-
                 let entity = entity_opt.unwrap_or_else(|| self.tab_model.active());
-                if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                    if tab.path_opt.is_none() {
-                        return self.update(Message::SaveAsDialog(Some(entity)));
+                let (title_opt, backup_id, saved) = {
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                        if tab.path_opt.is_none() {
+                            return self.update(Message::SaveAsDialog(Some(entity)));
+                        }
+                        match tab.save() {
+                            Ok(()) => {
+                                let backup_id = tab.backup_id.take();
+                                (Some(tab.title()), backup_id, true)
+                            }
+                            Err(e) => {
+                                log::error!("Save failed: {}", e);
+                                (Some(tab.title()), None, false)
+                            }
+                        }
+                    } else {
+                        (None, None, false)
                     }
-                    title_opt = Some(tab.title());
-                    tab.save();
-                }
+                };
                 if let Some(title) = title_opt {
-                    self.tab_model.text_set(self.tab_model.active(), title);
+                    self.tab_model.text_set(entity, title);
+                }
+                // Only clean up pending save and backup if save actually succeeded
+                if saved {
+                    self.pending_saves.remove(&entity);
+                    hotexit::cleanup_backup_after_save(backup_id);
                 }
                 return self.update_dialogs();
             }
             Message::SaveAll => {
                 let entities: Vec<_> = self.tab_model.iter().collect();
-                for entity in entities {
-                    if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                        if tab.path_opt.is_none() {
-                            log::warn!("{} has no path when doing save all", tab.title());
+                let backup_ids: Vec<_> = entities
+                    .into_iter()
+                    .filter_map(|entity| {
+                        if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                            if tab.path_opt.is_none() {
+                                log::warn!("{} has no path when doing save all", tab.title());
+                                None
+                            } else {
+                                match tab.save() {
+                                    Ok(()) => tab.backup_id.take(),
+                                    Err(e) => {
+                                        log::warn!(
+                                            "save all: failed to save {:?}: {}",
+                                            tab.path_opt,
+                                            e
+                                        );
+                                        None
+                                    }
+                                }
+                            }
+                        } else {
+                            None
                         }
-                        tab.save();
-                    }
+                    })
+                    .collect();
+                for backup_id in backup_ids {
+                    hotexit::cleanup_backup_after_save(Some(backup_id));
                 }
                 return self.update_dialogs();
             }
@@ -2618,15 +3418,26 @@ impl Application for App {
                     DialogResult::Cancel => {}
                     DialogResult::Open(mut paths) => {
                         if !paths.is_empty() {
-                            let mut title_opt = None;
-                            if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                                tab.path_opt = Some(paths.remove(0));
-                                title_opt = Some(tab.title());
-                                tab.save();
-                            }
+                            let (title_opt, backup_id) = {
+                                if let Some(Tab::Editor(tab)) =
+                                    self.tab_model.data_mut::<Tab>(entity)
+                                {
+                                    tab.path_opt = Some(paths.remove(0));
+                                    match tab.save() {
+                                        Ok(()) => (Some(tab.title()), tab.backup_id.take()),
+                                        Err(e) => {
+                                            log::error!("Save As failed: {}", e);
+                                            (Some(tab.title()), None)
+                                        }
+                                    }
+                                } else {
+                                    (None, None)
+                                }
+                            };
                             if let Some(title) = title_opt {
                                 self.tab_model.text_set(entity, title);
                             }
+                            hotexit::cleanup_backup_after_save(backup_id);
                             return self.update_dialogs();
                         }
                     }
@@ -2704,6 +3515,7 @@ impl Application for App {
                 }
             }
             Message::TabChanged(entity) => {
+                // Update tab title when changed state transitions
                 if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
                     let mut title = tab.title();
                     //TODO: better way of adding change indicator
@@ -2712,6 +3524,17 @@ impl Application for App {
                     }
                     self.tab_model.text_set(entity, title);
                 }
+            }
+            Message::TabEdit(entity) => {
+                // Reset the save timer on every content edit
+                let save_at = std::time::Instant::now()
+                    + std::time::Duration::from_secs(self.config.auto_save_interval_secs);
+                self.pending_saves.insert(entity, save_at);
+                log::debug!(
+                    "TabEdit: scheduled save for {:?} at {:?} from now",
+                    entity,
+                    std::time::Duration::from_secs(self.config.auto_save_interval_secs)
+                );
             }
             Message::TabClose(entity) => {
                 match self.tab_model.data_mut::<Tab>(entity) {
@@ -2747,6 +3570,9 @@ impl Application for App {
                         self.tab_model.activate_position(position + 1);
                     }
                 }
+
+                // Remove from pending saves
+                self.pending_saves.remove(&entity);
 
                 // Remove item
                 self.tab_model.remove(entity);
@@ -2929,6 +3755,9 @@ impl Application for App {
                 config_set!(vim_bindings, vim_bindings);
                 return self.update_config();
             }
+            Message::ReopenOnStart(reopen_on_start) => {
+                config_set!(reopen_on_start, reopen_on_start);
+            }
             Message::Focus(window_id) => {
                 if Some(window_id) == self.core.main_window_id() {
                     // focus the text box if context page is not shown
@@ -3024,6 +3853,7 @@ impl Application for App {
                     .on_focus(Message::FindFocused(false))
                     .on_auto_scroll(Message::AutoScroll)
                     .on_changed(Message::TabChanged(tab_id))
+                    .on_edit(Message::TabEdit(tab_id))
                     .has_context_menu(tab.context_menu.is_some())
                     .on_context_menu(move |position_opt| {
                         Message::TabContextMenu(tab_id, position_opt)
@@ -3395,6 +4225,74 @@ impl Application for App {
             subscriptions.push(
                 iced::time::every(time::Duration::from_millis(10))
                     .map(move |_| Message::Scroll(auto_scroll)),
+            );
+        }
+
+        // Timer for saving idle tabs (auto-save or backup)
+        // Only runs when there are pending saves, polls at 100ms to check for due saves
+        if !self.pending_saves.is_empty() {
+            subscriptions.push(
+                iced::time::every(time::Duration::from_millis(100)).map(|_| Message::SaveBackups),
+            );
+        }
+
+        // Unix signal handlers for graceful shutdown with backup
+        #[cfg(unix)]
+        {
+            struct SignalSubscription;
+            subscriptions.push(
+                Subscription::run_with_id(
+                    TypeId::of::<SignalSubscription>(),
+                    stream::channel(1, |mut output| async move {
+                        use tokio::signal::unix::{Signal, SignalKind, signal};
+
+                        // Helper to register signal with graceful fallback
+                        fn try_register_signal(kind: SignalKind, name: &str) -> Option<Signal> {
+                            match signal(kind) {
+                                Ok(s) => Some(s),
+                                Err(e) => {
+                                    log::warn!("hotexit: failed to register {} handler: {}", name, e);
+                                    None
+                                }
+                            }
+                        }
+
+                        // Initialize signal handlers
+                        let sigterm = try_register_signal(SignalKind::terminate(), "SIGTERM");
+                        let sigint = try_register_signal(SignalKind::interrupt(), "SIGINT");
+                        let sighup = try_register_signal(SignalKind::hangup(), "SIGHUP");
+
+                        // If no signal handlers could be registered, just sleep forever
+                        if sigterm.is_none() && sigint.is_none() && sighup.is_none() {
+                            log::warn!("hotexit: no signal handlers registered, session may not be saved on kill");
+                            loop {
+                                tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+                            }
+                        }
+
+                        // Use Options with futures that never resolve if None
+                        let mut sigterm = sigterm;
+                        let mut sigint = sigint;
+                        let mut sighup = sighup;
+
+                        loop {
+                            tokio::select! {
+                                _ = async { sigterm.as_mut().unwrap().recv().await }, if sigterm.is_some() => {
+                                    log::info!("hotexit: received SIGTERM, saving session for restoration");
+                                    let _ = output.send(Message::QuitForce).await;
+                                }
+                                _ = async { sigint.as_mut().unwrap().recv().await }, if sigint.is_some() => {
+                                    log::info!("hotexit: received SIGINT, saving session for restoration");
+                                    let _ = output.send(Message::QuitForce).await;
+                                }
+                                _ = async { sighup.as_mut().unwrap().recv().await }, if sighup.is_some() => {
+                                    log::info!("hotexit: received SIGHUP, saving session for restoration");
+                                    let _ = output.send(Message::QuitForce).await;
+                                }
+                            }
+                        }
+                    }),
+                ),
             );
         }
 

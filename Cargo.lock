@@ -1475,6 +1475,7 @@ dependencies = [
  "i18n-embed-fl",
  "icu",
  "ignore",
+ "libc",
  "libcosmic",
  "log",
  "notify",
@@ -1484,10 +1485,12 @@ dependencies = [
  "regex",
  "rust-embed",
  "serde",
+ "serde_json",
  "syntect",
  "tokio",
  "two-face",
  "unicode-segmentation",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
