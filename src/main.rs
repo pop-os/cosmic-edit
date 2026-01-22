@@ -1411,7 +1411,7 @@ impl Application for App {
             let mut font_system = font_system().write().unwrap();
             let attrs = monospace_attrs();
             for face in font_system.raw().db().faces() {
-                if attrs.matches(face) && face.monospaced {
+                if face.style == attrs.style && face.stretch == attrs.stretch && face.monospaced {
                     //TODO: get localized name if possible
                     let font_name = face
                         .families
