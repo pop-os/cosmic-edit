@@ -8,14 +8,77 @@ use cosmic_files::mime_icon::{FALLBACK_MIME_ICON, mime_for_path, mime_icon};
 use cosmic_text::{Attrs, Buffer, Cursor, Edit, Selection, Shaping, SyntaxEditor, ViEditor, Wrap};
 use regex::Regex;
 use std::{
-    fs,
+    fmt, fs,
     io::{self, Write},
-    path::{self, PathBuf},
-    process::{Command, Stdio},
+    path::{self, Path, PathBuf},
+    process::{Command, ExitStatus, Stdio},
     sync::{Arc, Mutex},
 };
 
-use crate::{Config, SYNTAX_SYSTEM, fl, git::GitDiff};
+use crate::{Config, SYNTAX_SYSTEM, backup, fl, git::GitDiff};
+
+/// Errors that can occur when saving a tab to disk.
+#[derive(Debug)]
+pub enum SaveError {
+    /// Tab has no file path associated with it.
+    NoPath,
+    /// I/O error during save operation.
+    Io(io::Error),
+    /// pkexec process failed to spawn or execute.
+    PkexecFailed {
+        /// Exit status if the process ran but failed.
+        status: Option<ExitStatus>,
+        /// Error message describing the failure.
+        message: String,
+    },
+}
+
+impl fmt::Display for SaveError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NoPath => write!(f, "tab has no file path"),
+            Self::Io(e) => write!(f, "I/O error: {}", e),
+            Self::PkexecFailed { status, message } => {
+                if let Some(s) = status {
+                    write!(f, "pkexec failed ({}): {}", s, message)
+                } else {
+                    write!(f, "pkexec failed: {}", message)
+                }
+            }
+        }
+    }
+}
+
+impl std::error::Error for SaveError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Io(e) => Some(e),
+            _ => None,
+        }
+    }
+}
+
+impl From<io::Error> for SaveError {
+    fn from(err: io::Error) -> Self {
+        Self::Io(err)
+    }
+}
+
+/// Cursor position in a document.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct CursorPosition {
+    /// Line number (0-indexed).
+    pub line: usize,
+    /// Character index within the line.
+    pub index: usize,
+}
+
+impl CursorPosition {
+    /// Create a new cursor position.
+    pub fn new(line: usize, index: usize) -> Self {
+        Self { line, index }
+    }
+}
 
 fn editor_text(editor: &ViEditor<'static, 'static>) -> String {
     editor.with_buffer(|buffer| {
@@ -53,6 +116,30 @@ pub struct EditorTab {
     pub editor: Mutex<ViEditor<'static, 'static>>,
     pub context_menu: Option<Point>,
     pub zoom_adj: i8,
+    /// Backup ID for hot exit cache.
+    ///
+    /// # Lifecycle
+    /// - Set when a backup is written for this tab
+    /// - Cleared when the tab is saved to disk (backup no longer needed)
+    /// - Persists across saves to the same backup file (reused for updates)
+    pub backup_id: Option<String>,
+
+    /// Hash of content at last backup write.
+    ///
+    /// # Lifecycle
+    /// - Set when a backup is written
+    /// - Used to skip unnecessary backup writes when content hasn't changed
+    /// - Cleared when content reverts to saved state
+    pub backup_content_hash: Option<u64>,
+
+    /// Hash of the file content as saved on disk.
+    ///
+    /// # Lifecycle
+    /// - Set when file is opened (hash of file content)
+    /// - Updated after successful save() or save_with_pkexec()
+    /// - Used by check_and_reset_if_unchanged() to detect when edits
+    ///   have been undone back to the saved state
+    pub saved_content_hash: Option<u64>,
 }
 
 impl EditorTab {
@@ -80,6 +167,9 @@ impl EditorTab {
             editor: Mutex::new(ViEditor::new(editor)),
             context_menu: None,
             zoom_adj,
+            backup_id: None,
+            backup_content_hash: None,
+            saved_content_hash: None,
         };
 
         // Update any other config settings
@@ -124,12 +214,16 @@ impl EditorTab {
             Ok(()) => {
                 log::info!("opened {:?}", absolute);
                 self.path_opt = Some(absolute);
+                // Store hash of the saved content for change detection
+                self.saved_content_hash = Some(backup::compute_content_hash(&editor_text(&editor)));
             }
             Err(err) => {
                 if err.kind() == io::ErrorKind::NotFound {
                     log::warn!("opened non-existant file {:?}", absolute);
                     self.path_opt = Some(absolute);
                     editor.set_changed(true);
+                    // New file - hash of empty content
+                    self.saved_content_hash = Some(backup::compute_content_hash(""));
                 } else {
                     log::error!("failed to open {:?}: {}", absolute, err);
                     self.path_opt = None;
@@ -217,63 +311,111 @@ impl EditorTab {
         }
     }
 
-    pub fn save(&mut self) {
-        if let Some(path) = &self.path_opt {
-            let mut editor = self.editor.lock().unwrap();
-            let text = editor_text(&editor);
-            match fs::write(path, &text) {
-                Ok(()) => {
-                    editor.save_point();
-                    log::info!("saved {:?}", path);
-                }
-                Err(err) => {
-                    if err.kind() == std::io::ErrorKind::PermissionDenied {
-                        log::warn!("Permission denied. Attempting to save with pkexec.");
+    /// Save the tab content to disk.
+    ///
+    /// Returns `Ok(())` on success, or a `SaveError` describing the failure.
+    /// If the initial write fails with permission denied, attempts to save
+    /// using `pkexec` for elevated permissions.
+    pub fn save(&mut self) -> Result<(), SaveError> {
+        let path = match &self.path_opt {
+            Some(p) => p.clone(),
+            None => {
+                log::warn!("tab has no path yet");
+                return Err(SaveError::NoPath);
+            }
+        };
 
-                        if let Ok(mut output) = Command::new("pkexec")
-                            .arg("tee")
-                            .arg(path)
-                            .stdin(Stdio::piped())
-                            .stdout(Stdio::null()) // Redirect stdout to /dev/null
-                            .stderr(Stdio::inherit()) // Retain stderr for error visibility
-                            .spawn()
-                        {
-                            if let Some(mut stdin) = output.stdin.take() {
-                                if let Err(e) = stdin.write_all(text.as_bytes()) {
-                                    log::error!("Failed to write to stdin: {}", e);
-                                }
-                            } else {
-                                log::error!("Failed to access stdin of pkexec process.");
-                            }
+        let text = {
+            let editor = self.editor.lock().unwrap();
+            editor_text(&editor)
+        };
+        let content_hash = backup::compute_content_hash(&text);
 
-                            // Ensure the child process is reaped
-                            match output.wait() {
-                                Ok(status) => {
-                                    if status.success() {
-                                        // Mark the editor's state as saved if the process succeeds
-                                        editor.save_point();
-                                        log::info!("File saved successfully with pkexec.");
-                                    } else {
-                                        log::error!(
-                                            "pkexec process exited with a non-zero status: {:?}",
-                                            status
-                                        );
-                                    }
-                                }
-                                Err(e) => {
-                                    log::error!("Failed to wait on pkexec process: {}", e);
-                                }
-                            }
-                        } else {
-                            log::error!(
-                                "Failed to spawn pkexec process. Check permissions or path."
-                            );
-                        }
-                    }
+        match fs::write(&path, &text) {
+            Ok(()) => {
+                let mut editor = self.editor.lock().unwrap();
+                editor.save_point();
+                self.saved_content_hash = Some(content_hash);
+                log::info!("saved {:?}", path);
+                Ok(())
+            }
+            Err(err) => {
+                if err.kind() != io::ErrorKind::PermissionDenied {
+                    log::error!("failed to save {:?}: {}", path, err);
+                    return Err(SaveError::Io(err));
                 }
+
+                // Try to save with elevated permissions via pkexec
+                log::warn!("Permission denied. Attempting to save with pkexec.");
+                self.save_with_pkexec(&path, &text, content_hash)
+            }
+        }
+    }
+
+    /// Attempt to save using pkexec for elevated permissions.
+    fn save_with_pkexec(
+        &mut self,
+        path: &Path,
+        text: &str,
+        content_hash: u64,
+    ) -> Result<(), SaveError> {
+        let mut child = Command::new("pkexec")
+            .arg("tee")
+            .arg(path)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::null())
+            .stderr(Stdio::inherit())
+            .spawn()
+            .map_err(|e| {
+                log::error!("Failed to spawn pkexec process: {}", e);
+                SaveError::PkexecFailed {
+                    status: None,
+                    message: format!("failed to spawn: {}", e),
+                }
+            })?;
+
+        // Write content to stdin
+        if let Some(mut stdin) = child.stdin.take() {
+            if let Err(e) = stdin.write_all(text.as_bytes()) {
+                log::error!("Failed to write to pkexec stdin: {}", e);
+                let _ = child.wait();
+                return Err(SaveError::PkexecFailed {
+                    status: None,
+                    message: format!("failed to write to stdin: {}", e),
+                });
             }
         } else {
-            log::warn!("tab has no path yet");
+            log::error!("Failed to access stdin of pkexec process.");
+            let _ = child.wait();
+            return Err(SaveError::PkexecFailed {
+                status: None,
+                message: "stdin not available".to_string(),
+            });
+        }
+
+        // Wait for process and check result
+        match child.wait() {
+            Ok(status) if status.success() => {
+                let mut editor = self.editor.lock().unwrap();
+                editor.save_point();
+                self.saved_content_hash = Some(content_hash);
+                log::info!("File saved successfully with pkexec.");
+                Ok(())
+            }
+            Ok(status) => {
+                log::error!("pkexec process exited with status: {:?}", status);
+                Err(SaveError::PkexecFailed {
+                    status: Some(status),
+                    message: "process exited with non-zero status".to_string(),
+                })
+            }
+            Err(e) => {
+                log::error!("Failed to wait on pkexec process: {}", e);
+                Err(SaveError::PkexecFailed {
+                    status: None,
+                    message: format!("failed to wait on process: {}", e),
+                })
+            }
         }
     }
 
@@ -377,6 +519,86 @@ impl EditorTab {
 
     pub fn set_zoom_adj(&mut self, value: i8) {
         self.zoom_adj = value;
+    }
+
+    /// Get the text content of the editor
+    pub fn text(&self) -> String {
+        let editor = self.editor.lock().unwrap();
+        editor_text(&editor)
+    }
+
+    /// Check if current content matches the saved file content.
+    /// If it does, reset the changed indicator and return true.
+    /// This handles the case where user makes changes then undoes them.
+    pub fn check_and_reset_if_unchanged(&mut self) -> bool {
+        let current_hash = backup::compute_content_hash(&self.text());
+        if self.saved_content_hash == Some(current_hash) {
+            // Content matches saved state - reset changed indicator
+            let mut editor = self.editor.lock().unwrap();
+            editor.set_changed(false);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Get the current cursor position.
+    pub fn cursor(&self) -> CursorPosition {
+        let editor = self.editor.lock().unwrap();
+        let cursor = editor.cursor();
+        CursorPosition::new(cursor.line, cursor.index)
+    }
+
+    /// Load content from a string (used for restoring cached documents)
+    pub fn load_text(&mut self, content: &str) {
+        let mut editor = self.editor.lock().unwrap();
+        let mut font_system = font_system().write().unwrap();
+        let mut editor = editor.borrow_with(font_system.raw());
+
+        // Select all content and replace it with new content
+        let cursor_start = Cursor::new(0, 0);
+        let cursor_end = editor.with_buffer(|buffer| {
+            let last_line = buffer.lines.len().saturating_sub(1);
+            Cursor::new(
+                last_line,
+                buffer
+                    .lines
+                    .get(last_line)
+                    .map(|line| line.text().len())
+                    .unwrap_or(0),
+            )
+        });
+
+        editor.start_change();
+        editor.delete_range(cursor_start, cursor_end);
+        editor.insert_at(cursor_start, content, None);
+        editor.finish_change();
+
+        // Mark as changed since this is unsaved cached content
+        editor.set_changed(true);
+    }
+
+    /// Set the cursor position (clamped to valid range)
+    pub fn set_cursor(&mut self, line: usize, index: usize) {
+        let mut editor = self.editor.lock().unwrap();
+        // Clamp cursor to valid range to avoid panics
+        let cursor_opt = editor.with_buffer(|buffer| {
+            // Handle empty buffer case
+            if buffer.lines.is_empty() {
+                return None;
+            }
+            let max_line = buffer.lines.len().saturating_sub(1);
+            let safe_line = line.min(max_line);
+            let line_len = buffer
+                .lines
+                .get(safe_line)
+                .map(|l| l.text().len())
+                .unwrap_or(0);
+            Some((safe_line, index.min(line_len)))
+        });
+        if let Some((safe_line, safe_index)) = cursor_opt {
+            editor.set_cursor(Cursor::new(safe_line, safe_index));
+        }
     }
 
     // Code adapted from cosmic-text ViEditor search
