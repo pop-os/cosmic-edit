@@ -47,11 +47,17 @@ pub struct TextBox<'a, Message> {
     on_auto_scroll: Option<Box<dyn Fn(Option<f32>) -> Message + 'a>>,
     on_changed: Option<Message>,
     on_focus: Option<Message>,
+    /// Callback for scroll events. Parameter is target line (Some for jump, None for incremental).
+    on_scroll: Option<Box<dyn Fn(Option<usize>) -> Message + 'a>>,
     click_timing: Duration,
     has_context_menu: bool,
     on_context_menu: Option<Box<dyn Fn(Option<Point>) -> Message + 'a>>,
     highlight_current_line: bool,
     line_numbers: bool,
+    /// Offset to add to line numbers (for large file windowed buffers)
+    line_number_offset: usize,
+    /// Total lines in the file (for large file scrollbar calculation)
+    total_lines: usize,
 }
 
 impl<'a, Message> TextBox<'a, Message>
@@ -67,11 +73,14 @@ where
             on_auto_scroll: None,
             on_changed: None,
             on_focus: None,
+            on_scroll: None,
             click_timing: Duration::from_millis(500),
             has_context_menu: false,
             on_context_menu: None,
             highlight_current_line: false,
             line_numbers: false,
+            line_number_offset: 0,
+            total_lines: 0,
         }
     }
 
@@ -125,6 +134,25 @@ where
 
     pub fn on_focus(mut self, on_focus: Message) -> Self {
         self.on_focus = Some(on_focus);
+        self
+    }
+
+    /// Called when scroll position changes (for large file buffer refresh).
+    /// Parameter is target line: Some(line) for jump to specific line, None for incremental refresh.
+    pub fn on_scroll(mut self, on_scroll: impl Fn(Option<usize>) -> Message + 'a) -> Self {
+        self.on_scroll = Some(Box::new(on_scroll));
+        self
+    }
+
+    /// Set the offset to add to line numbers (for large file windowed buffers)
+    pub fn line_number_offset(mut self, offset: usize) -> Self {
+        self.line_number_offset = offset;
+        self
+    }
+
+    /// Set the total lines in the file (for large file scrollbar calculation)
+    pub fn total_lines(mut self, total: usize) -> Self {
+        self.total_lines = total;
         self
     }
 }
@@ -413,8 +441,13 @@ where
         // Calculate line number information
         let (line_number_chars, editor_offset_x) = if self.line_numbers {
             // Calculate number of characters needed in line number
+            // Use total_lines for large files to get correct width
             let mut line_number_chars = 1;
-            let mut line_count = editor.with_buffer(|buffer| buffer.lines.len());
+            let mut line_count = if self.total_lines > 0 {
+                self.total_lines
+            } else {
+                editor.with_buffer(|buffer| buffer.lines.len())
+            };
             while line_count >= 10 {
                 line_count /= 10;
                 line_number_chars += 1;
@@ -520,7 +553,8 @@ where
                             LINE_NUMBER_CACHE.get().unwrap().lock().unwrap();
                         let mut last_line_number = 0;
                         for run in buffer.layout_runs() {
-                            let line_number = run.line_i.saturating_add(1);
+                            // Add line_number_offset for large file windowed buffers
+                            let line_number = run.line_i.saturating_add(1).saturating_add(self.line_number_offset);
                             if line_number == last_line_number {
                                 // Skip duplicate lines
                                 continue;
@@ -590,15 +624,35 @@ where
                     }
 
                     let start_line = start_line_opt.unwrap_or(end_line);
-                    let lines = buffer.lines.len();
-                    let start_y = (start_line * image_h as usize) / lines;
-                    let end_y = ((end_line + 1) * image_h as usize) / lines;
+                    // Use total_lines for large file scrollbar, otherwise buffer lines
+                    let lines = if self.total_lines > 0 { self.total_lines } else { buffer.lines.len() };
+                    // Add offset to get absolute position in file
+                    let absolute_start = start_line + self.line_number_offset;
+                    let absolute_end = end_line + self.line_number_offset;
+
+                    // Calculate scrollbar position and size
+                    let total_height = image_h as f32 / scale_factor;
+                    let start_y = (absolute_start as f32 / lines as f32) * total_height;
+                    let end_y = ((absolute_end + 1) as f32 / lines as f32) * total_height;
+                    let thumb_height = end_y - start_y;
+
+                    // Ensure minimum thumb size for visibility and usability
+                    let min_thumb_height = 20.0_f32;
+                    let (final_start_y, final_thumb_height) = if thumb_height < min_thumb_height {
+                        // Scale position to account for larger thumb
+                        let scroll_range = total_height - min_thumb_height;
+                        let scroll_fraction = absolute_start as f32 / lines.saturating_sub(1).max(1) as f32;
+                        let adjusted_start = scroll_fraction * scroll_range;
+                        (adjusted_start, min_thumb_height)
+                    } else {
+                        (start_y, thumb_height)
+                    };
 
                     let rect = Rectangle::new(
-                        [image_w as f32 / scale_factor, start_y as f32 / scale_factor].into(),
+                        [image_w as f32 / scale_factor, final_start_y].into(),
                         Size::new(
                             scrollbar_size as f32,
-                            (end_y as f32 - start_y as f32) / scale_factor,
+                            final_thumb_height,
                         ),
                     );
                     state.scrollbar_v_rect.set(rect);
@@ -1166,19 +1220,41 @@ where
                         } else if x_logical >= scrollbar_v_rect.x
                             && x_logical < (scrollbar_v_rect.x + scrollbar_v_rect.width)
                         {
-                            editor.with_buffer_mut(|buffer| {
-                                let mut scroll = buffer.scroll();
-                                //TODO: if buffer height is undefined, what should this do?
-                                let scroll_line = ((y / buffer.size().1.unwrap_or(1.0))
-                                    * buffer.lines.len() as f32)
-                                    as i32;
-                                scroll.line = scroll_line.try_into().unwrap_or_default();
-                                buffer.set_scroll(scroll);
+                            // Click on scrollbar track (not handle) - jump to position
+                            if self.total_lines > 0 {
+                                // Large file: calculate target line in full file
+                                // Use same min_thumb_height logic as scrollbar drawing
+                                let buffer_h = editor.with_buffer(|buffer| buffer.size().1.unwrap_or(1.0));
+                                let min_thumb_height = 20.0_f32;
+                                let scroll_range = buffer_h - min_thumb_height;
+                                let scroll_fraction = if scroll_range > 0.0 {
+                                    (y / scroll_range).clamp(0.0, 1.0)
+                                } else {
+                                    0.0
+                                };
+                                let target_line = (scroll_fraction * (self.total_lines.saturating_sub(1)) as f32) as usize;
+                                if let Some(on_scroll) = &self.on_scroll {
+                                    shell.publish((on_scroll)(Some(target_line)));
+                                }
                                 state.dragging = Some(Dragging::ScrollbarV {
                                     start_y: y,
-                                    start_scroll: buffer.scroll(),
+                                    start_scroll: editor.with_buffer(|buffer| buffer.scroll()),
                                 });
-                            });
+                            } else {
+                                editor.with_buffer_mut(|buffer| {
+                                    let mut scroll = buffer.scroll();
+                                    //TODO: if buffer height is undefined, what should this do?
+                                    let scroll_line = ((y / buffer.size().1.unwrap_or(1.0))
+                                        * buffer.lines.len() as f32)
+                                        as i32;
+                                    scroll.line = scroll_line.try_into().unwrap_or_default();
+                                    buffer.set_scroll(scroll);
+                                    state.dragging = Some(Dragging::ScrollbarV {
+                                        start_y: y,
+                                        start_scroll: buffer.scroll(),
+                                    });
+                                });
+                            }
                         }
                     }
 
@@ -1239,18 +1315,44 @@ where
                                 start_y,
                                 start_scroll,
                             } => {
-                                editor.with_buffer_mut(|buffer| {
-                                    let mut scroll = buffer.scroll();
-                                    //TODO: if buffer size is undefined, what should this do?
-                                    let scroll_offset = (((y - start_y)
-                                        / buffer.size().1.unwrap_or(1.0))
-                                        * buffer.lines.len() as f32)
-                                        as i32;
-                                    scroll.line = (start_scroll.line as i32 + scroll_offset)
-                                        .try_into()
-                                        .unwrap_or_default();
-                                    buffer.set_scroll(scroll);
-                                });
+                                if self.total_lines > 0 {
+                                    // Large file: calculate target line from absolute Y position
+                                    // This makes the scrollbar thumb follow the mouse directly
+                                    let buffer_h = editor.with_buffer(|buffer| buffer.size().1.unwrap_or(1.0));
+
+                                    // Account for minimum thumb size in the mapping
+                                    // The thumb position uses: thumb_y = fraction * (height - min_thumb)
+                                    // So to invert: fraction = thumb_y / (height - min_thumb)
+                                    let min_thumb_height = 20.0_f32;
+                                    let scroll_range = buffer_h - min_thumb_height;
+
+                                    // Calculate scroll fraction from mouse Y position
+                                    let scroll_fraction = if scroll_range > 0.0 {
+                                        (y / scroll_range).clamp(0.0, 1.0)
+                                    } else {
+                                        0.0
+                                    };
+
+                                    // Map to target line in file
+                                    let target_line = (scroll_fraction * (self.total_lines.saturating_sub(1)) as f32) as usize;
+
+                                    if let Some(on_scroll) = &self.on_scroll {
+                                        shell.publish((on_scroll)(Some(target_line)));
+                                    }
+                                } else {
+                                    editor.with_buffer_mut(|buffer| {
+                                        let mut scroll = buffer.scroll();
+                                        //TODO: if buffer size is undefined, what should this do?
+                                        let scroll_offset = (((y - *start_y)
+                                            / buffer.size().1.unwrap_or(1.0))
+                                            * buffer.lines.len() as f32)
+                                            as i32;
+                                        scroll.line = (start_scroll.line as i32 + scroll_offset)
+                                            .try_into()
+                                            .unwrap_or_default();
+                                        buffer.set_scroll(scroll);
+                                    });
+                                }
                             }
                             Dragging::ScrollbarH {
                                 start_x,

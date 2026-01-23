@@ -5,7 +5,7 @@ use cosmic::{
     widget::icon,
 };
 use cosmic_files::mime_icon::{FALLBACK_MIME_ICON, mime_for_path, mime_icon};
-use cosmic_text::{Attrs, Buffer, Cursor, Edit, Selection, Shaping, SyntaxEditor, ViEditor, Wrap};
+use cosmic_text::{Attrs, Buffer, Cursor, Edit, Metrics, RopeBuffer, Selection, Shaping, SyntaxEditor, ViEditor, Wrap};
 use regex::Regex;
 use std::{
     fs,
@@ -16,6 +16,12 @@ use std::{
 };
 
 use crate::{Config, SYNTAX_SYSTEM, fl, git::GitDiff};
+
+/// File size threshold (in bytes) above which we set a minimal buffer height
+/// before loading to prevent shaping all lines at once.
+/// This prevents the 313x memory multiplier crash on large files.
+/// See: https://github.com/pop-os/cosmic-edit/issues/457
+const LARGE_FILE_THRESHOLD: u64 = 1024 * 1024; // 1MB
 
 fn editor_text(editor: &ViEditor<'static, 'static>) -> String {
     editor.with_buffer(|buffer| {
@@ -53,13 +59,27 @@ pub struct EditorTab {
     pub editor: Mutex<ViEditor<'static, 'static>>,
     pub context_menu: Option<Point>,
     pub zoom_adj: i8,
+
+    /// Optional rope-based buffer for large files.
+    /// When set, the Editor's Buffer is populated from this for visible lines.
+    rope_buffer: Option<RopeBuffer>,
+
+    /// Metrics used for buffer creation.
+    metrics: Metrics,
+
+    /// Start line of the currently loaded window (for large files).
+    rope_window_start: usize,
+
+    /// End line of the currently loaded window (for large files).
+    rope_window_end: usize,
 }
 
 impl EditorTab {
     pub fn new(config: &Config) -> Self {
         let attrs = crate::monospace_attrs();
         let zoom_adj = Default::default();
-        let mut buffer = Buffer::new_empty(config.metrics(zoom_adj));
+        let metrics = config.metrics(zoom_adj);
+        let mut buffer = Buffer::new_empty(metrics);
         buffer.set_text(
             font_system().write().unwrap().raw(),
             "",
@@ -81,6 +101,10 @@ impl EditorTab {
             editor: Mutex::new(ViEditor::new(editor)),
             context_menu: None,
             zoom_adj,
+            rope_buffer: None,
+            metrics,
+            rope_window_start: 0,
+            rope_window_end: 0,
         };
 
         // Update any other config settings
@@ -108,9 +132,6 @@ impl EditorTab {
     }
 
     pub fn open(&mut self, path: PathBuf) {
-        let mut editor = self.editor.lock().unwrap();
-        let mut font_system = font_system().write().unwrap();
-        let mut editor = editor.borrow_with(font_system.raw());
         let absolute = match fs::canonicalize(&path) {
             Ok(ok) => ok,
             Err(err) => match path::absolute(&path) {
@@ -121,6 +142,27 @@ impl EditorTab {
                 }
             },
         };
+
+        // Check file size - use RopeBuffer for large files
+        let file_size = fs::metadata(&absolute).map(|m| m.len()).unwrap_or(0);
+        if file_size > LARGE_FILE_THRESHOLD {
+            log::info!(
+                "Large file detected ({:.1}MB), using RopeBuffer",
+                file_size as f64 / 1024.0 / 1024.0
+            );
+            self.path_opt = Some(absolute.clone());
+            if let Err(e) = self.open_large_file(&absolute) {
+                log::error!("failed to open large file {:?}: {}", absolute, e);
+                self.path_opt = None;
+            }
+            return;
+        }
+
+        // Normal file - use standard loading
+        let mut editor = self.editor.lock().unwrap();
+        let mut font_system = font_system().write().unwrap();
+        let mut editor = editor.borrow_with(font_system.raw());
+
         match editor.load_text(&absolute, self.attrs.clone()) {
             Ok(()) => {
                 log::info!("opened {:?}", absolute);
@@ -137,6 +179,186 @@ impl EditorTab {
                 }
             }
         }
+    }
+
+    /// Open a large file using RopeBuffer for efficient memory usage.
+    fn open_large_file(&mut self, path: &std::path::Path) -> io::Result<()> {
+        let content = fs::read_to_string(path)?;
+        let mut rope_buffer = RopeBuffer::new_empty(self.metrics);
+        {
+            let mut font_system = font_system().write().unwrap();
+            rope_buffer.set_text(
+                font_system.raw(),
+                &content,
+                &self.attrs,
+                Shaping::Advanced,
+                None,
+            );
+        }
+        self.rope_buffer = Some(rope_buffer);
+        self.refresh_editor_from_rope();
+        Ok(())
+    }
+
+    /// Refresh the editor's buffer from the rope buffer based on current scroll position.
+    pub fn refresh_editor_from_rope(&mut self) {
+        let Some(rope) = &self.rope_buffer else {
+            return;
+        };
+
+        let total_lines = rope.line_count();
+        let buffer_size = 500; // Number of lines to keep in buffer
+        let margin = 100; // Refresh when within this many lines of edge
+
+        // Get current scroll position (relative to current window)
+        let buffer_scroll = {
+            let editor = self.editor.lock().unwrap();
+            editor.with_buffer(|b| b.scroll())
+        };
+
+        // Calculate absolute line position in the full file
+        let absolute_line = self.rope_window_start + buffer_scroll.line;
+
+        // Check if we need to shift the window
+        let lines_from_start = buffer_scroll.line;
+        let lines_from_end = self.rope_window_end.saturating_sub(self.rope_window_start)
+            .saturating_sub(buffer_scroll.line);
+
+        let need_refresh =
+            // First load (window not initialized)
+            self.rope_window_end == 0 ||
+            // Approaching top of window
+            (lines_from_start < margin && self.rope_window_start > 0) ||
+            // Approaching bottom of window
+            (lines_from_end < margin && self.rope_window_end < total_lines);
+
+        if !need_refresh {
+            return;
+        }
+
+        // Calculate new window centered on current position
+        let half_buffer = buffer_size / 2;
+        let new_start = absolute_line.saturating_sub(half_buffer);
+        let new_end = (new_start + buffer_size).min(total_lines);
+        let new_start = new_end.saturating_sub(buffer_size); // Adjust if at end
+
+        // Convert the window to a standard Buffer
+        let windowed_buffer = {
+            let mut font_system = font_system().write().unwrap();
+            rope.to_buffer_range(
+                font_system.raw(),
+                self.metrics,
+                new_start,
+                new_end,
+            )
+        };
+
+        // Update window tracking
+        self.rope_window_start = new_start;
+        self.rope_window_end = new_end;
+
+        // Calculate new scroll position relative to new window
+        let new_scroll_line = absolute_line.saturating_sub(new_start);
+
+        // Update the Editor's buffer with the windowed content
+        let mut editor = self.editor.lock().unwrap();
+        let mut font_system = font_system().write().unwrap();
+        let mut editor = editor.borrow_with(font_system.raw());
+
+        editor.with_buffer_mut(|buffer| {
+            buffer.lines.clear();
+            for line in windowed_buffer.lines.iter() {
+                buffer.lines.push(line.clone());
+            }
+            // Set scroll to the correct position within the new window
+            let mut new_scroll = buffer_scroll;
+            new_scroll.line = new_scroll_line;
+            buffer.set_scroll(new_scroll);
+            buffer.set_redraw(true);
+        });
+
+        log::debug!(
+            "Rope window refreshed: lines {}-{} of {}, scroll at {}",
+            new_start, new_end, total_lines, new_scroll_line
+        );
+    }
+
+    /// Jump to a specific line in the file (for large file scrollbar navigation).
+    pub fn jump_to_line(&mut self, target_line: usize) {
+        let Some(rope) = &self.rope_buffer else {
+            return;
+        };
+
+        let total_lines = rope.line_count();
+        let buffer_size = 500;
+
+        // Clamp target to valid range
+        let target_line = target_line.min(total_lines.saturating_sub(1));
+
+        // Calculate window centered on target line
+        let half_buffer = buffer_size / 2;
+        let new_start = target_line.saturating_sub(half_buffer);
+        let new_end = (new_start + buffer_size).min(total_lines);
+        let new_start = new_end.saturating_sub(buffer_size);
+
+        // Convert the window to a standard Buffer
+        let windowed_buffer = {
+            let mut font_system = font_system().write().unwrap();
+            rope.to_buffer_range(
+                font_system.raw(),
+                self.metrics,
+                new_start,
+                new_end,
+            )
+        };
+
+        // Update window tracking
+        self.rope_window_start = new_start;
+        self.rope_window_end = new_end;
+
+        // Calculate scroll position within new window
+        let new_scroll_line = target_line.saturating_sub(new_start);
+
+        // Update the Editor's buffer
+        let mut editor = self.editor.lock().unwrap();
+        let mut font_system = font_system().write().unwrap();
+        let mut editor = editor.borrow_with(font_system.raw());
+
+        editor.with_buffer_mut(|buffer| {
+            buffer.lines.clear();
+            for line in windowed_buffer.lines.iter() {
+                buffer.lines.push(line.clone());
+            }
+            let mut scroll = buffer.scroll();
+            scroll.line = new_scroll_line;
+            buffer.set_scroll(scroll);
+            buffer.set_redraw(true);
+        });
+
+        log::debug!(
+            "Jumped to line {}: window {}-{} of {}, scroll at {}",
+            target_line, new_start, new_end, total_lines, new_scroll_line
+        );
+    }
+
+    /// Check if this tab uses a RopeBuffer (large file mode).
+    pub fn uses_rope_buffer(&self) -> bool {
+        self.rope_buffer.is_some()
+    }
+
+    /// Get the total line count (from RopeBuffer if available, otherwise from Editor).
+    pub fn total_line_count(&self) -> usize {
+        if let Some(rope) = &self.rope_buffer {
+            rope.line_count()
+        } else {
+            let editor = self.editor.lock().unwrap();
+            editor.with_buffer(|b| b.lines.len())
+        }
+    }
+
+    /// Get the start line of the currently loaded window (for large file line number offset).
+    pub fn line_number_offset(&self) -> usize {
+        self.rope_window_start
     }
 
     pub fn reload(&mut self) {

@@ -397,6 +397,7 @@ pub enum Message {
     SaveAsDialog(Option<segmented_button::Entity>),
     SaveAsResult(segmented_button::Entity, DialogResult),
     Scroll(f32),
+    ScrollChanged(Option<usize>),
     SelectAll,
     Surface(surface::Action),
     SystemThemeModeChange(cosmic_theme::ThemeMode),
@@ -2658,6 +2659,20 @@ impl Application for App {
                     });
                 }
             }
+            Message::ScrollChanged(target_line_opt) => {
+                // Refresh rope buffer window when scroll position changes
+                if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
+                    if tab.uses_rope_buffer() {
+                        if let Some(target_line) = target_line_opt {
+                            // Jump to specific line (from scrollbar drag)
+                            tab.jump_to_line(target_line);
+                        } else {
+                            // Incremental refresh (from normal scrolling)
+                            tab.refresh_editor_from_rope();
+                        }
+                    }
+                }
+            }
             Message::Surface(a) => {
                 return cosmic::task::message(cosmic::Action::Cosmic(
                     cosmic::app::Action::Surface(a),
@@ -3024,6 +3039,7 @@ impl Application for App {
                     .on_focus(Message::FindFocused(false))
                     .on_auto_scroll(Message::AutoScroll)
                     .on_changed(Message::TabChanged(tab_id))
+                    .on_scroll(Message::ScrollChanged)
                     .has_context_menu(tab.context_menu.is_some())
                     .on_context_menu(move |position_opt| {
                         Message::TabContextMenu(tab_id, position_opt)
@@ -3033,6 +3049,12 @@ impl Application for App {
                 }
                 if self.config.line_numbers {
                     text_box = text_box.line_numbers();
+                }
+                // Apply line number offset and total lines for large file windowed buffers
+                if tab.uses_rope_buffer() {
+                    text_box = text_box
+                        .line_number_offset(tab.line_number_offset())
+                        .total_lines(tab.total_line_count());
                 }
                 let mut popover = widget::popover(text_box);
                 if let Some(point) = tab.context_menu {
