@@ -3416,30 +3416,56 @@ impl Application for App {
                 self.dialog_opt = None;
                 match result {
                     DialogResult::Cancel => {}
-                    DialogResult::Open(mut paths) => {
-                        if !paths.is_empty() {
-                            let (title_opt, backup_id) = {
-                                if let Some(Tab::Editor(tab)) =
-                                    self.tab_model.data_mut::<Tab>(entity)
-                                {
-                                    tab.path_opt = Some(paths.remove(0));
-                                    match tab.save() {
-                                        Ok(()) => (Some(tab.title()), tab.backup_id.take()),
-                                        Err(e) => {
-                                            log::error!("Save As failed: {}", e);
-                                            (Some(tab.title()), None)
-                                        }
-                                    }
-                                } else {
-                                    (None, None)
-                                }
-                            };
-                            if let Some(title) = title_opt {
-                                self.tab_model.text_set(entity, title);
+                    DialogResult::Open(paths) => {
+                        let Some(picked) = paths.into_iter().next() else {
+                            return self.update_dialogs();
+                        };
+
+                        // Check if the picked file is already open in another tab
+                        let resolved_picked = std::fs::canonicalize(&picked)
+                            .unwrap_or_else(|_| picked.clone());
+                        let mut already_open: Option<segmented_button::Entity> = None;
+                        for other in self.tab_model.iter() {
+                            if other == entity {
+                                continue;
                             }
-                            hotexit::cleanup_backup_after_save(backup_id);
+                            if let Some(Tab::Editor(other_tab)) = self.tab_model.data::<Tab>(other) {
+                                if let Some(other_path) = &other_tab.path_opt {
+                                    if other_path == &resolved_picked {
+                                        already_open = Some(other);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // If file is already open in another tab, switch to that tab
+                        if let Some(other) = already_open {
+                            self.tab_model.activate(other);
                             return self.update_dialogs();
                         }
+
+                        // Save to the new path
+                        let (title_opt, backup_id) = {
+                            if let Some(Tab::Editor(tab)) =
+                                self.tab_model.data_mut::<Tab>(entity)
+                            {
+                                match tab.save_as(picked) {
+                                    Ok(()) => (Some(tab.title()), tab.backup_id.take()),
+                                    Err(e) => {
+                                        log::error!("Save As failed: {}", e);
+                                        (Some(tab.title()), None)
+                                    }
+                                }
+                            } else {
+                                (None, None)
+                            }
+                        };
+                        if let Some(title) = title_opt {
+                            self.tab_model.text_set(entity, title);
+                        }
+                        hotexit::cleanup_backup_after_save(backup_id);
+                        return self.update_dialogs();
                     }
                 }
             }

@@ -17,6 +17,12 @@ use std::{
 
 use crate::{Config, SYNTAX_SYSTEM, backup, fl, git::GitDiff};
 
+/// File size threshold (in bytes) above which we set a minimal buffer height
+/// before loading to prevent shaping all lines at once.
+/// This prevents the 313x memory multiplier crash on large files.
+/// 1MB = conservative threshold that prevents memory explosion.
+const LARGE_FILE_THRESHOLD: u64 = 1024 * 1024;
+
 /// Errors that can occur when saving a tab to disk.
 #[derive(Debug)]
 pub enum SaveError {
@@ -88,6 +94,16 @@ fn editor_text(editor: &ViEditor<'static, 'static>) -> String {
             text.push_str(line.ending().as_str());
         }
         text
+    })
+}
+
+/// Resolve a path to its canonical form, falling back to absolute path if canonicalization fails.
+fn resolve_path(path_in: &PathBuf) -> PathBuf {
+    fs::canonicalize(path_in).unwrap_or_else(|err| {
+        path::absolute(path_in).unwrap_or_else(|_| {
+            log::error!("failed to canonicalize {:?}: {}", path_in, err);
+            path_in.clone()
+        })
     })
 }
 
@@ -211,6 +227,26 @@ impl EditorTab {
                 }
             },
         };
+
+        // Check file size and set minimal buffer height for large files
+        // This prevents cosmic-text from shaping ALL lines at once
+        // (which causes 200+ bytes per character memory usage)
+        let is_large_file = fs::metadata(&absolute)
+            .map(|m| m.len() > LARGE_FILE_THRESHOLD)
+            .unwrap_or(false);
+
+        if is_large_file {
+            log::info!(
+                "Large file detected (>{}KB), setting minimal buffer height before load",
+                LARGE_FILE_THRESHOLD / 1024
+            );
+            // Set a small buffer height to limit initial shaping to ~5 lines
+            // The real height will be set during rendering
+            editor.with_buffer_mut(|buffer| {
+                buffer.set_size(None, Some(100.0));
+            });
+        }
+
         match editor.load_text(&absolute, self.attrs.clone()) {
             Ok(()) => {
                 log::info!("opened {:?}", absolute);
@@ -310,6 +346,18 @@ impl EditorTab {
         } else {
             log::warn!("tried to reload with no path");
         }
+    }
+
+    /// Set the file path for this tab, resolving it to a canonical form.
+    pub fn set_path(&mut self, path: PathBuf) {
+        self.path_opt = Some(resolve_path(&path));
+    }
+
+    /// Save the tab content to a new path (Save As).
+    /// Sets the path and then saves.
+    pub fn save_as(&mut self, path: PathBuf) -> Result<(), SaveError> {
+        self.set_path(path);
+        self.save()
     }
 
     /// Save the tab content to disk.
