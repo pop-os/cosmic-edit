@@ -40,8 +40,9 @@ default-features = false
 git = "https://github.com/pop-os/cosmic-syntax-theme.git"
 
 [dependencies.cosmic-text]
-git = "https://github.com/pop-os/cosmic-text.git"
-features = ["syntect", "vi"]
+git = "https://github.com/Lcstyle/cosmic-text.git"
+branch = "feature/rope-buffer"
+features = ["syntect", "vi", "rope-buffer"]
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"
@@ -67,7 +68,6 @@ debug = true
 onig = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
 onig_sys = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
 
-# [patch.'https://github.com/pop-os/libcosmic']
-# libcosmic = { path = "../libcosmic" }
-# cosmic-config = { path = "../libcosmic/cosmic-config" }
-# cosmic-theme = { path = "../libcosmic/cosmic-theme" }
+# Patch cosmic-text for all dependencies (including iced_glyphon via libcosmic)
+[patch.'https://github.com/pop-os/cosmic-text.git']
+cosmic-text = { git = "https://github.com/Lcstyle/cosmic-text.git", branch = "feature/rope-buffer" }
