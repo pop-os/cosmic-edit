@@ -60,13 +60,12 @@ impl EditorTab {
         let attrs = crate::monospace_attrs();
         let zoom_adj = Default::default();
         let mut buffer = Buffer::new_empty(config.metrics(zoom_adj));
-        buffer.set_text(
-            font_system().write().unwrap().raw(),
-            "",
-            &attrs,
-            Shaping::Advanced,
-            None,
-        );
+        {
+            let mut font_system = font_system().write().unwrap();
+            // Set a minimal size before it is updated by draw
+            buffer.set_size(font_system.raw(), Some(0.0), Some(0.0));
+            buffer.set_text(font_system.raw(), "", &attrs, Shaping::Advanced, None);
+        }
 
         let editor = SyntaxEditor::new(
             Arc::new(buffer),
