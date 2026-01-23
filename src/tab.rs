@@ -17,6 +17,12 @@ use std::{
 
 use crate::{Config, SYNTAX_SYSTEM, fl, git::GitDiff};
 
+/// File size threshold (in bytes) above which we set a minimal buffer height
+/// before loading to prevent shaping all lines at once.
+/// This prevents the 313x memory multiplier crash on large files.
+/// See: https://github.com/pop-os/cosmic-edit/issues/457
+const LARGE_FILE_THRESHOLD: u64 = 1024 * 1024; // 1MB
+
 fn editor_text(editor: &ViEditor<'static, 'static>) -> String {
     editor.with_buffer(|buffer| {
         let mut text = String::new();
@@ -121,6 +127,23 @@ impl EditorTab {
                 }
             },
         };
+
+        // Check file size and set minimal buffer height for large files.
+        // This prevents cosmic-text from shaping ALL lines at once
+        // (which causes 200+ bytes per character memory usage).
+        // The proper height is set during rendering, and additional lines
+        // are shaped on-demand as user scrolls.
+        let file_size = fs::metadata(&absolute).map(|m| m.len()).unwrap_or(0);
+        if file_size > LARGE_FILE_THRESHOLD {
+            log::info!(
+                "Large file detected ({:.1}MB), optimizing load",
+                file_size as f64 / 1024.0 / 1024.0
+            );
+            editor.with_buffer_mut(|buffer| {
+                buffer.set_size(None, Some(100.0));
+            });
+        }
+
         match editor.load_text(&absolute, self.attrs.clone()) {
             Ok(()) => {
                 log::info!("opened {:?}", absolute);
