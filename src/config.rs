@@ -65,6 +65,15 @@ pub struct Config {
     pub tab_width: u16,
     pub vim_bindings: bool,
     pub word_wrap: bool,
+    /// Maximum file size (in MB) for content hash computation.
+    /// Files larger than this skip hash-based features (undo-to-saved detection, backup optimization).
+    /// Default: 5 MB. Set to 0 to disable limit.
+    #[serde(default = "default_max_hash_file_size_mb")]
+    pub max_hash_file_size_mb: u64,
+}
+
+fn default_max_hash_file_size_mb() -> u64 {
+    5
 }
 
 fn default_true() -> bool {
@@ -97,6 +106,7 @@ impl Default for Config {
             tab_width: 4,
             vim_bindings: false,
             word_wrap: true,
+            max_hash_file_size_mb: 5,
         }
     }
 }

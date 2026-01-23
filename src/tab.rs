@@ -17,12 +17,6 @@ use std::{
 
 use crate::{Config, SYNTAX_SYSTEM, backup, fl, git::GitDiff};
 
-/// File size threshold (in bytes) above which we set a minimal buffer height
-/// before loading to prevent shaping all lines at once.
-/// This prevents the 313x memory multiplier crash on large files.
-/// 1MB = conservative threshold that prevents memory explosion.
-const LARGE_FILE_THRESHOLD: u64 = 1024 * 1024;
-
 /// Errors that can occur when saving a tab to disk.
 #[derive(Debug)]
 pub enum SaveError {
@@ -156,6 +150,10 @@ pub struct EditorTab {
     /// - Used by check_and_reset_if_unchanged() to detect when edits
     ///   have been undone back to the saved state
     pub saved_content_hash: Option<u64>,
+
+    /// Maximum file size (in bytes) for content hash computation.
+    /// Files larger than this skip hash-based features.
+    max_file_size_for_hash: u64,
 }
 
 impl EditorTab {
@@ -187,6 +185,7 @@ impl EditorTab {
             backup_id: None,
             backup_content_hash: None,
             saved_content_hash: None,
+            max_file_size_for_hash: config.max_hash_file_size_mb * 1024 * 1024,
         };
 
         // Update any other config settings
@@ -211,6 +210,9 @@ impl EditorTab {
         });
         //TODO: dynamically discover light/dark changes
         editor.update_theme(config.syntax_theme());
+
+        // Update large file threshold from config
+        self.max_file_size_for_hash = config.max_hash_file_size_mb * 1024 * 1024;
     }
 
     pub fn open(&mut self, path: PathBuf) {
@@ -231,14 +233,14 @@ impl EditorTab {
         // Check file size and set minimal buffer height for large files
         // This prevents cosmic-text from shaping ALL lines at once
         // (which causes 200+ bytes per character memory usage)
-        let is_large_file = fs::metadata(&absolute)
-            .map(|m| m.len() > LARGE_FILE_THRESHOLD)
-            .unwrap_or(false);
+        let file_size = fs::metadata(&absolute).map(|m| m.len()).unwrap_or(0);
+        let is_large_file = file_size > self.max_file_size_for_hash;
 
         if is_large_file {
             log::info!(
-                "Large file detected (>{}KB), setting minimal buffer height before load",
-                LARGE_FILE_THRESHOLD / 1024
+                "Large file detected ({:.1}MB > {}MB threshold), optimizing load",
+                file_size as f64 / 1024.0 / 1024.0,
+                self.max_file_size_for_hash / 1024 / 1024
             );
             // Set a small buffer height to limit initial shaping to ~5 lines
             // The real height will be set during rendering
@@ -252,7 +254,13 @@ impl EditorTab {
                 log::info!("opened {:?}", absolute);
                 self.path_opt = Some(absolute);
                 // Store hash of the saved content for change detection
-                self.saved_content_hash = Some(backup::compute_content_hash(&editor_text(&editor)));
+                // Skip for large files to avoid slow startup (hash iterates every byte)
+                if is_large_file {
+                    log::info!("Skipping content hash for large file");
+                    self.saved_content_hash = None;
+                } else {
+                    self.saved_content_hash = Some(backup::compute_content_hash(&editor_text(&editor)));
+                }
             }
             Err(err) => {
                 if err.kind() == io::ErrorKind::NotFound {
@@ -378,13 +386,20 @@ impl EditorTab {
             let editor = self.editor.lock().unwrap();
             editor_text(&editor)
         };
-        let content_hash = backup::compute_content_hash(&text);
+
+        // Skip hash computation for large files to avoid slow saves
+        let is_large = text.len() as u64 > self.max_file_size_for_hash;
+        let content_hash = if is_large {
+            None
+        } else {
+            Some(backup::compute_content_hash(&text))
+        };
 
         match fs::write(&path, &text) {
             Ok(()) => {
                 let mut editor = self.editor.lock().unwrap();
                 editor.save_point();
-                self.saved_content_hash = Some(content_hash);
+                self.saved_content_hash = content_hash;
                 log::info!("saved {:?}", path);
                 Ok(())
             }
@@ -406,7 +421,7 @@ impl EditorTab {
         &mut self,
         path: &Path,
         text: &str,
-        content_hash: u64,
+        content_hash: Option<u64>,
     ) -> Result<(), SaveError> {
         let mut child = Command::new("pkexec")
             .arg("tee")
@@ -447,7 +462,7 @@ impl EditorTab {
             Ok(status) if status.success() => {
                 let mut editor = self.editor.lock().unwrap();
                 editor.save_point();
-                self.saved_content_hash = Some(content_hash);
+                self.saved_content_hash = content_hash;
                 log::info!("File saved successfully with pkexec.");
                 Ok(())
             }
