@@ -33,8 +33,8 @@ project-search = Пошук проєкту
 
 ## Prompt save changes
 
-prompt-save-changes-title = Незбережені зміни
-prompt-unsaved-changes = У вас є незбережені зміни. Зберегти їх?
+prompt-save-changes-title = Зберегти зміни перед закриттям?
+prompt-unsaved-changes = У вас є незбережені зміни. Якщо ви продовжите без збереження, зміни будуть втрачені.
 cancel = Скасувати
 discard = Відкинути зміни
 save-all = Зберегти всі
@@ -57,7 +57,7 @@ default-font-size = Стандартний розмір шрифту
 
 ### Keyboard shortcuts
 
-keyboard-shortcuts = Клавіатурні скорочення
+keyboard-shortcuts = Сполучення клавіш
 enable-vim-bindings = Прив’язки клавіш Vim
 # Find
 find-placeholder = Знайти...
@@ -66,7 +66,7 @@ find-next = Знайти наступний
 replace-placeholder = Замінити...
 replace = Замінити
 replace-all = Замінити всі
-case-sensitive = Чутливість до регістру літер
+case-sensitive = Чутливий до регістру
 use-regex = Використовувати регулярні вирази
 
 # Menu
@@ -95,7 +95,7 @@ quit = Вийти
 ## Edit
 
 edit = Редагувати
-undo = Відмінити
+undo = Скасувати
 redo = Повторити
 cut = Вирізати
 copy = Копіювати
@@ -114,9 +114,9 @@ indentation = Відступ
 
 automatic-indentation = Автоматичний відступ
 tab-width = Ширина табуляції: { $tab_width }
-convert-indentation-to-spaces = Перетворити відступи на пропуски
+convert-indentation-to-spaces = Перетворювати відступи на пробіли
 convert-indentation-to-tabs = Перетворити відступи на табуляції
-word-wrap = Перенесення слів
+word-wrap = Перенос слів
 show-line-numbers = Показувати номери рядків
 highlight-current-line = Підсвічувати поточний рядок
 syntax-highlighting = Підсвічування синтаксису...
