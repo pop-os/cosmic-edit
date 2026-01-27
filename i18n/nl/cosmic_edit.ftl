@@ -13,7 +13,7 @@ todo = Te doen
 
 document-statistics = Documentstatistieken
 word-count = Woordenaantal
-character-count = Lettertekens
+character-count = Aantal lettertekens
 character-count-no-spaces = Lettertekens (zonder spaties)
 line-count = Regels
 
@@ -22,9 +22,9 @@ line-count = Regels
 git-management = Git-beheer
 git-management-description = Git-beheer is een ontwikkelaarshulpmiddel dat voor versiebeheer gebruikt wordt.
 git-management-loading = Git-beheer wordt geladen…
-stage = Voeg toe aan index
+stage = Zet in stage
 staged-changes = Geïndexeerde wijzigingen
-unstage = Haal uit index
+unstage = Uit stage halen
 unstaged-changes = Niet-geïndexeerde wijzigingen
 
 ## Project search
@@ -33,8 +33,8 @@ project-search = Doorzoek project
 
 ## Prompt save changes
 
-prompt-save-changes-title = Niet-opgeslagen wijzigingen
-prompt-unsaved-changes = Uw wijziging zijn nog niet opgeslagen. Opslaan?
+prompt-save-changes-title = Wijzigingen opslaan voor afsluiten?
+prompt-unsaved-changes = Er zijn niet-opgeslagen wijzigingen. Als u doorgaat zonder op te slaan, gaan deze wijzigingen verloren.
 cancel = Annuleer
 discard = Verwerp wijzigingen
 save-all = Sla alles op
@@ -50,21 +50,21 @@ theme = Thema
 match-desktop = Maak gelijk aan bureaublad
 dark = Donker
 light = Licht
-syntax-dark = Donkere syntaxis
-syntax-light = Lichte syntaxis
-default-font = Standaard lettertype
+syntax-dark = Donkere opmaak
+syntax-light = Lichte opmaak
+default-font = Standaardlettertype
 default-font-size = Standaard lettertypegrootte
 default-zoom-step = Zoomstappen
 
 ### Keyboard shortcuts
 
-keyboard-shortcuts = Sneltoetsen
+keyboard-shortcuts = Snelkoppelingen
 enable-vim-bindings = Schakel Vim-sneltoetsen in
 # Find
 find-placeholder = Zoek…
 find-previous = Zoek vorige
 find-next = Zoek volgende
-replace-placeholder = Vervang…
+replace-placeholder = Vervang...
 replace = Vervang
 replace-all = Vervang alles
 case-sensitive = Hoofdlettergevoelig
@@ -78,20 +78,20 @@ wrap-around = Tekstomloop
 
 file = Bestand
 new-file = Nieuw bestand
-new-window = Nieuw venster
-open-file = Open een bestand…
+new-window = Nieuw venster openen
+open-file = Bestand openen...
 close-file = Sluit bestand
-menu-open-project = Open een project…
-open-recent-project = Open een recent project
-close-project = Sluit het project
+menu-open-project = Project openen…
+open-recent-project = Recent project openen
+close-project = Project sluiten
 save = Sla op
-save-as = Sla op als…
-revert-all-changes = Herstel alle wijzigingen
+save-as = Opslaan als…
+revert-all-changes = Wijzigingen ongedaan maken
 menu-document-statistics = Documentstatistieken…
 document-type = Documenttype…
 encoding = Tekenset…
 menu-git-management = Git-beheer…
-print = Druk af
+print = Afdrukken
 quit = Beëindig
 
 ## Edit
@@ -100,11 +100,11 @@ edit = Bewerk
 undo = Herstel
 redo = Overdoen
 cut = Knip
-copy = Kopieer
+copy = Kopiëer
 paste = Plak
 select-all = Selecteer alles
 find = Zoek
-find-in-project = Zoek in het project…
+find-in-project = Zoeken in project…
 spell-check = Spellingscontrole...
 
 ## View
@@ -113,21 +113,21 @@ view = Beeld
 zoom-in = Zoom in
 default-size = Standaardgrootte
 zoom-out = Zoom uit
-indentation = Inspringing
+indentation = Tekstinspringing
 
 ### Indentation
 
-automatic-indentation = Automatische inspringing
+automatic-indentation = Automatische tekstinspringing
 tab-width = Tabbreedte: { $tab_width }
-convert-indentation-to-spaces = Zet inspringing om in spaties
-convert-indentation-to-tabs = Zet inspringing om in tabs
+convert-indentation-to-spaces = Zet tekstinspringing om in spaties
+convert-indentation-to-tabs = Zet tekstinspringing om in tabs
 word-wrap = Woordafbreking
 show-line-numbers = Toon regelnummers
 highlight-current-line = Markeer huidige regel
-syntax-highlighting = Syntaxiskleuring…
-menu-settings = Instellingen...
-menu-keyboard-shortcuts = Sneltoetsen…
+syntax-highlighting = Syntaxismarkering…
+menu-settings = Instellingen…
+menu-keyboard-shortcuts = Sneltoetsen...
 menu-about = Over COSMIC-tekstbewerker...
-open-recent-file = Open recent bestand
+open-recent-file = Recent bestand openen
 support = Ondersteuning
 repository = Bibliotheek
