@@ -26,7 +26,7 @@ default-font-size = Výchozí velikost písma
 ### Keyboard shortcuts
 
 keyboard-shortcuts = Klávesové zkratky
-enable-vim-bindings = Povolit Vim zkratky
+enable-vim-bindings = Povolit zkratky Vim
 
 # Menu
 
