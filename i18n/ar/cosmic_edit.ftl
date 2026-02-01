@@ -1,4 +1,4 @@
-cosmic-text-editor = محرر نصوص COSMIC
+cosmic-text-editor = محرِّر نصوص COSMIC
 new-document = مستند جديد
 open-project = افتح مشروعًا
 todo = المهامّ
