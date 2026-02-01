@@ -107,7 +107,7 @@ spell-check = Перевірка правопису...
 
 ## View
 
-view = Вигляд
+view = Вид
 indentation = Відступ
 
 ### Indentation

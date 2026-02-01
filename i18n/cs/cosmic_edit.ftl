@@ -50,8 +50,8 @@ quit = Ukončit
 ## Edit
 
 edit = Úpravy
-undo = Vrátit
-redo = Opakovat
+undo = Zpět
+redo = Znovu
 cut = Vyjmout
 copy = Kopírovat
 paste = Vložit
