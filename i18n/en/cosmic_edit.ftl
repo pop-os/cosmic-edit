@@ -35,8 +35,29 @@ cancel = Cancel
 discard = Discard changes
 save-all = Save all
 
+## Restore sessions
+restore-sessions-title = Restore Previous Sessions?
+restore-sessions-body = { $count } previous sessions were found that didn't close properly.
+confirm = Confirm
+
+# Radio button options
+restore-option-discard-all = Discard all sessions
+restore-option-restore-5 = Restore { $count } sessions and discard the rest (Recommended)
+restore-option-restore-all = Restore all { $count } sessions
+
+# Warning messages
+restore-warning-discard-all = Warning: All { $count } sessions and their unsaved changes will be permanently deleted.
+restore-warning-restore-5 = { $restore_count } sessions will be restored. { $discard_count } sessions will be discarded.
+restore-warning-restore-all = All { $count } sessions will be restored in separate windows.
+
 ## Settings
 settings = Settings
+
+### App Settings
+app-settings = App Settings
+reopen-on-start = Reopen projects and tabs on start
+auto-save = Auto-save
+auto-save-description = Automatically save files after a period of inactivity
 
 ### Appearance
 appearance = Appearance
