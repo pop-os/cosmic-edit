@@ -35,7 +35,7 @@ project-search = Doorzoek project
 
 prompt-save-changes-title = Wijzigingen opslaan voor afsluiten?
 prompt-unsaved-changes = Er zijn niet-opgeslagen wijzigingen. Als u doorgaat zonder op te slaan, gaan deze wijzigingen verloren.
-cancel = Annuleer
+cancel = Annuleren
 discard = Verwerp wijzigingen
 save-all = Sla alles op
 
