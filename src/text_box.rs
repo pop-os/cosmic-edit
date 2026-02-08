@@ -594,14 +594,19 @@ where
                     let start_y = (start_line * image_h as usize) / lines;
                     let end_y = ((end_line + 1) * image_h as usize) / lines;
 
-                    let rect = Rectangle::new(
-                        [image_w as f32 / scale_factor, start_y as f32 / scale_factor].into(),
-                        Size::new(
-                            scrollbar_size as f32,
-                            (end_y as f32 - start_y as f32) / scale_factor,
-                        ),
-                    );
-                    state.scrollbar_v_rect.set(rect);
+                    let has_vertical_scroll = start_line > 0 || (end_line + 1) < lines;
+                    if has_vertical_scroll {
+                        let rect = Rectangle::new(
+                            [image_w as f32 / scale_factor, start_y as f32 / scale_factor].into(),
+                            Size::new(
+                                scrollbar_size as f32,
+                                (end_y as f32 - start_y as f32) / scale_factor,
+                            ),
+                        );
+                        state.scrollbar_v_rect.set(Some(rect));
+                    } else {
+                        state.scrollbar_v_rect.set(None);
+                    }
 
                     let (buffer_w_opt, buffer_h_opt) = buffer.size();
                     let buffer_w = buffer_w_opt.unwrap_or(0.0);
@@ -723,8 +728,7 @@ where
         });
 
         // Draw vertical scrollbar
-        {
-            let scrollbar_v_rect = state.scrollbar_v_rect.get();
+        if let Some(scrollbar_v_rect) = state.scrollbar_v_rect.get() {
 
             // neutral_3, 0.7
             let track_color = cosmic_theme
@@ -1158,27 +1162,29 @@ where
                             }
                             state.click = Some((click_kind, Instant::now()));
                             state.dragging = Some(Dragging::Buffer);
-                        } else if scrollbar_v_rect.contains(Point::new(x_logical, y_logical)) {
-                            state.dragging = Some(Dragging::ScrollbarV {
-                                start_y: y,
-                                start_scroll: editor.with_buffer(|buffer| buffer.scroll()),
-                            });
-                        } else if x_logical >= scrollbar_v_rect.x
-                            && x_logical < (scrollbar_v_rect.x + scrollbar_v_rect.width)
-                        {
-                            editor.with_buffer_mut(|buffer| {
-                                let mut scroll = buffer.scroll();
-                                //TODO: if buffer height is undefined, what should this do?
-                                let scroll_line = ((y / buffer.size().1.unwrap_or(1.0))
-                                    * buffer.lines.len() as f32)
-                                    as i32;
-                                scroll.line = scroll_line.try_into().unwrap_or_default();
-                                buffer.set_scroll(scroll);
+                        } else if let Some(scrollbar_v_rect) = scrollbar_v_rect {
+                            if scrollbar_v_rect.contains(Point::new(x_logical, y_logical)) {
                                 state.dragging = Some(Dragging::ScrollbarV {
                                     start_y: y,
-                                    start_scroll: buffer.scroll(),
+                                    start_scroll: editor.with_buffer(|buffer| buffer.scroll()),
                                 });
-                            });
+                            } else if x_logical >= scrollbar_v_rect.x
+                                && x_logical < (scrollbar_v_rect.x + scrollbar_v_rect.width)
+                            {
+                                editor.with_buffer_mut(|buffer| {
+                                    let mut scroll = buffer.scroll();
+                                    //TODO: if buffer height is undefined, what should this do?
+                                    let scroll_line = ((y / buffer.size().1.unwrap_or(1.0))
+                                        * buffer.lines.len() as f32)
+                                        as i32;
+                                    scroll.line = scroll_line.try_into().unwrap_or_default();
+                                    buffer.set_scroll(scroll);
+                                    state.dragging = Some(Dragging::ScrollbarV {
+                                        start_y: y,
+                                        start_scroll: buffer.scroll(),
+                                    });
+                                });
+                            }
                         }
                     }
 
@@ -1358,7 +1364,7 @@ pub struct State {
     is_focused: bool,
     emit_focus: bool,
     scale_factor: Cell<f32>,
-    scrollbar_v_rect: Cell<Rectangle<f32>>,
+    scrollbar_v_rect: Cell<Option<Rectangle<f32>>>,
     scrollbar_h_rect: Cell<Option<Rectangle<f32>>>,
     handle_opt: Mutex<Option<image::Handle>>,
     shift_anchor: Mutex<Option<Cursor>>,
@@ -1375,7 +1381,7 @@ impl State {
             is_focused: false,
             emit_focus: false,
             scale_factor: Cell::new(1.0),
-            scrollbar_v_rect: Cell::new(Rectangle::default()),
+            scrollbar_v_rect: Cell::new(None),
             scrollbar_h_rect: Cell::new(None),
             handle_opt: Mutex::new(None),
             shift_anchor: Mutex::new(None),
