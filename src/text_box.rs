@@ -579,7 +579,9 @@ where
                     let mut start_line_opt = None;
                     let mut end_line = 0;
                     let mut max_line_width = 0.0;
+                    let mut layout_run_count = 0usize;
                     for run in buffer.layout_runs() {
+                        layout_run_count += 1;
                         end_line = run.line_i;
                         if start_line_opt.is_none() {
                             start_line_opt = Some(end_line);
@@ -594,7 +596,12 @@ where
                     let start_y = (start_line * image_h as usize) / lines;
                     let end_y = ((end_line + 1) * image_h as usize) / lines;
 
-                    let scrollable = start_line > 0 || (end_line + 1) < lines;
+                    let original_condition = start_line > 0 || (end_line + 1) < lines;
+                    let visible_runs = (((image_h as f32 / scale_factor) / metrics.line_height)
+                        .floor() as usize)
+                        .max(1);
+                    let wrap_overflow = layout_run_count > visible_runs;
+                    let scrollable = original_condition || wrap_overflow;
                     if scrollable {
                         let rect = Rectangle::new(
                             [image_w as f32 / scale_factor, start_y as f32 / scale_factor].into(),
