@@ -1,4 +1,4 @@
-cosmic-text-editor = محرر نصوص COSMIC
+cosmic-text-editor = محرِّر نصوص COSMIC
 new-document = مستند جديد
 open-project = افتح مشروعًا
 todo = المهامّ
@@ -35,7 +35,7 @@ project-search = ابحث المشروع
 
 ## Prompt save changes
 
-prompt-save-changes-title = تغييرات غير محفوظة
+prompt-save-changes-title = احفظ التغييرات قبل الإغلاق؟
 prompt-unsaved-changes = لديك تغييرات غير محفوظة. إذا واصلت دون حفظ، فستفقد هذه التغييرات.
 cancel = ألغِ
 discard = تجاهل التغييرات

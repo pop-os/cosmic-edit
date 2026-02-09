@@ -34,7 +34,7 @@ project-search = Пошук проєкту
 ## Prompt save changes
 
 prompt-save-changes-title = Зберегти зміни перед закриттям?
-prompt-unsaved-changes = У вас є незбережені зміни. Якщо ви продовжите без збереження, зміни будуть втрачені.
+prompt-unsaved-changes = У вас є незбережені зміни. Якщо продовжите без збереження, зміни будуть втрачені.
 cancel = Скасувати
 discard = Відкинути зміни
 save-all = Зберегти всі
@@ -47,7 +47,7 @@ settings = Налаштування
 
 appearance = Зовнішній вигляд
 theme = Тема
-match-desktop = Відповідно системі
+match-desktop = Системна
 dark = Темна
 light = Світла
 syntax-dark = Темний синтаксис
@@ -107,7 +107,7 @@ spell-check = Перевірка правопису...
 
 ## View
 
-view = Вигляд
+view = Вид
 indentation = Відступ
 
 ### Indentation
@@ -123,7 +123,7 @@ syntax-highlighting = Підсвічування синтаксису...
 menu-settings = Налаштування...
 menu-keyboard-shortcuts = Сполучення клавіш...
 menu-about = Про текстовий редактор COSMIC...
-repository = Репозиторій
+repository = Сховище
 support = Підтримка
 open-recent-file = Відкрити нещодавній файл
 default-zoom-step = Зміна масштабу
