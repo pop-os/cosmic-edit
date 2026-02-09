@@ -2,7 +2,7 @@
 
 use cosmic::surface;
 use cosmic::widget::menu::action::MenuAction;
-use cosmic::widget::menu::key_bind::KeyBind;
+use cosmic::widget::menu::key_bind::{KeyBind, Modifier};
 use cosmic::widget::segmented_button::Entity;
 use cosmic::{
     Application, ApplicationExt, Apply, Element, action,
@@ -365,7 +365,7 @@ pub enum Message {
     GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
     GitStage(PathBuf, PathBuf),
     GitUnstage(PathBuf, PathBuf),
-    Key(Modifiers, keyboard::Key),
+    Key(Modifiers, keyboard::Key, keyboard::key::Physical),
     LaunchUrl(String),
     Modifiers(Modifiers),
     NewFile,
@@ -431,6 +431,68 @@ pub enum ContextPage {
     //TODO: Move search to pop-up
     ProjectSearch,
     Settings,
+}
+
+fn modifier_matches(modifiers: Modifiers, key_bind: &KeyBind) -> bool {
+    modifiers.logo() == key_bind.modifiers.contains(&Modifier::Super)
+        && modifiers.control() == key_bind.modifiers.contains(&Modifier::Ctrl)
+        && modifiers.alt() == key_bind.modifiers.contains(&Modifier::Alt)
+        && modifiers.shift() == key_bind.modifiers.contains(&Modifier::Shift)
+}
+
+fn keybind_letter_code(key: &keyboard::Key) -> Option<keyboard::key::Code> {
+    let keyboard::Key::Character(character) = key else {
+        return None;
+    };
+
+    let mut chars = character.chars();
+    let ch = chars.next()?;
+    if chars.next().is_some() {
+        return None;
+    }
+
+    match ch.to_ascii_lowercase() {
+        'a' => Some(keyboard::key::Code::KeyA),
+        'b' => Some(keyboard::key::Code::KeyB),
+        'c' => Some(keyboard::key::Code::KeyC),
+        'd' => Some(keyboard::key::Code::KeyD),
+        'e' => Some(keyboard::key::Code::KeyE),
+        'f' => Some(keyboard::key::Code::KeyF),
+        'g' => Some(keyboard::key::Code::KeyG),
+        'h' => Some(keyboard::key::Code::KeyH),
+        'i' => Some(keyboard::key::Code::KeyI),
+        'j' => Some(keyboard::key::Code::KeyJ),
+        'k' => Some(keyboard::key::Code::KeyK),
+        'l' => Some(keyboard::key::Code::KeyL),
+        'm' => Some(keyboard::key::Code::KeyM),
+        'n' => Some(keyboard::key::Code::KeyN),
+        'o' => Some(keyboard::key::Code::KeyO),
+        'p' => Some(keyboard::key::Code::KeyP),
+        'q' => Some(keyboard::key::Code::KeyQ),
+        'r' => Some(keyboard::key::Code::KeyR),
+        's' => Some(keyboard::key::Code::KeyS),
+        't' => Some(keyboard::key::Code::KeyT),
+        'u' => Some(keyboard::key::Code::KeyU),
+        'v' => Some(keyboard::key::Code::KeyV),
+        'w' => Some(keyboard::key::Code::KeyW),
+        'x' => Some(keyboard::key::Code::KeyX),
+        'y' => Some(keyboard::key::Code::KeyY),
+        'z' => Some(keyboard::key::Code::KeyZ),
+        _ => None,
+    }
+}
+
+fn key_bind_matches_hybrid(
+    key_bind: &KeyBind,
+    modifiers: Modifiers,
+    key: &keyboard::Key,
+    physical_key: keyboard::key::Physical,
+) -> bool {
+    if let Some(code) = keybind_letter_code(&key_bind.key) {
+        modifier_matches(modifiers, key_bind) && physical_key == code
+    } else {
+        key_bind.matches(modifiers, key)
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -2109,9 +2171,9 @@ impl Application for App {
                     |x| x,
                 );
             }
-            Message::Key(modifiers, key) => {
+            Message::Key(modifiers, key, physical_key) => {
                 for (key_bind, action) in self.key_binds.iter() {
-                    if key_bind.matches(modifiers, &key) {
+                    if key_bind_matches_hybrid(key_bind, modifiers, &key, physical_key) {
                         return self.update(action.message(None));
                     }
                 }
@@ -3273,12 +3335,15 @@ impl Application for App {
 
         let mut subscriptions = vec![
             event::listen_with(|event, status, window_id| match event {
-                event::Event::Keyboard(keyboard::Event::KeyPressed { modifiers, key, .. }) => {
-                    match status {
-                        event::Status::Ignored => Some(Message::Key(modifiers, key)),
+                event::Event::Keyboard(keyboard::Event::KeyPressed {
+                    modifiers,
+                    key,
+                    physical_key,
+                    ..
+                }) => match status {
+                    event::Status::Ignored => Some(Message::Key(modifiers, key, physical_key)),
                         event::Status::Captured => None,
-                    }
-                }
+                },
                 event::Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
                     Some(Message::Modifiers(modifiers))
                 }
