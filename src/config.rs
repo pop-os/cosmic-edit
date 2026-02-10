@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
+//! Application configuration types and settings.
+
 use cosmic::{
     cosmic_config::{self, CosmicConfigEntry, cosmic_config_derive::CosmicConfigEntry},
     theme,
@@ -38,6 +40,15 @@ impl AppTheme {
 #[derive(Clone, CosmicConfigEntry, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Config {
     pub app_theme: AppTheme,
+    /// Reopen projects and tabs from previous session on start
+    #[serde(default = "default_true")]
+    pub reopen_on_start: bool,
+    /// Auto-save files after a period of inactivity (off by default)
+    #[serde(default)]
+    pub auto_save: bool,
+    /// Interval between auto-saves in seconds (when auto_save is enabled)
+    #[serde(default = "default_auto_save_interval")]
+    pub auto_save_interval_secs: u64,
     pub auto_indent: bool,
     pub find_case_sensitive: bool,
     pub find_use_regex: bool,
@@ -46,6 +57,8 @@ pub struct Config {
     pub font_size: u16,
     pub font_size_zoom_step_mul_100: u16,
     pub highlight_current_line: bool,
+    /// Maximum number of sessions to auto-restore without prompting
+    pub hot_exit_max_auto_restore: usize,
     pub line_numbers: bool,
     pub syntax_theme_dark: String,
     pub syntax_theme_light: String,
@@ -54,10 +67,21 @@ pub struct Config {
     pub word_wrap: bool,
 }
 
+fn default_true() -> bool {
+    true
+}
+
+fn default_auto_save_interval() -> u64 {
+    2
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
             app_theme: AppTheme::System,
+            reopen_on_start: true,
+            auto_save: false,
+            auto_save_interval_secs: 2,
             auto_indent: true,
             find_case_sensitive: false,
             find_use_regex: false,
@@ -66,6 +90,7 @@ impl Default for Config {
             font_size: 14,
             font_size_zoom_step_mul_100: 100,
             highlight_current_line: true,
+            hot_exit_max_auto_restore: 5,
             line_numbers: true,
             syntax_theme_dark: "COSMIC Dark".to_string(),
             syntax_theme_light: "COSMIC Light".to_string(),
