@@ -23,7 +23,7 @@ static MENU_ID: LazyLock<cosmic::widget::Id> =
 
 // Menu rows are fixed-height in libcosmic; wrapped labels get visually clipped.
 // Keep recent path labels short enough to stay on one line.
-const RECENT_MENU_LABEL_MAX_CHARS: usize = 30;
+const RECENT_MENU_LABEL_MAX_CHARS: usize = 40;
 
 fn char_count(value: &str) -> usize {
     value.chars().count()
