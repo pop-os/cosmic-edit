@@ -35,7 +35,7 @@ project-search = Doorzoek project
 
 prompt-save-changes-title = Wijzigingen opslaan voor afsluiten?
 prompt-unsaved-changes = Er zijn niet-opgeslagen wijzigingen. Als u doorgaat zonder op te slaan, gaan deze wijzigingen verloren.
-cancel = Annuleer
+cancel = Annuleren
 discard = Verwerp wijzigingen
 save-all = Sla alles op
 
@@ -65,7 +65,7 @@ find-placeholder = Zoek…
 find-previous = Zoek vorige
 find-next = Zoek volgende
 replace-placeholder = Vervang...
-replace = Vervang
+replace = Vervangen
 replace-all = Vervang alles
 case-sensitive = Hoofdlettergevoelig
 use-regex = Gebruik reguliere expressies
@@ -84,7 +84,7 @@ close-file = Sluit bestand
 menu-open-project = Project openen…
 open-recent-project = Recent project openen
 close-project = Project sluiten
-save = Sla op
+save = Opslaan
 save-as = Opslaan als…
 revert-all-changes = Wijzigingen ongedaan maken
 menu-document-statistics = Documentstatistieken…
