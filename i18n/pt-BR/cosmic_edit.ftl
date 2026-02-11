@@ -33,8 +33,8 @@ project-search = Localizar no projeto
 
 ## Prompt save changes
 
-prompt-save-changes-title = Alterações não salvas
-prompt-unsaved-changes = Você possui alterações não salvas. Deseja salvar?
+prompt-save-changes-title = Salvar alterações antes de fechar?
+prompt-unsaved-changes = Você possui alterações não salvas. Se você continuar sem salvar, estas alterações serão perdidas.
 cancel = Cancelar
 discard = Descartar alterações
 save-all = Salvar tudo
@@ -58,7 +58,7 @@ default-zoom-step = Etapas de zoom
 
 ### Keyboard shortcuts
 
-keyboard-shortcuts = Atalhos do teclado
+keyboard-shortcuts = Atalhos de teclado
 enable-vim-bindings = Habilitar atalhos do Vim
 # Find
 find-placeholder = Localizar...
@@ -127,7 +127,7 @@ show-line-numbers = Mostrar números das linhas
 highlight-current-line = Destacar linha atual
 syntax-highlighting = Destaque de sintaxe...
 menu-settings = Configurações...
-menu-keyboard-shortcuts = Atalhos do teclado...
+menu-keyboard-shortcuts = Atalhos de teclado...
 menu-about = Sobre o Editor de Texto COSMIC...
 repository = Repositório
 support = Suporte
