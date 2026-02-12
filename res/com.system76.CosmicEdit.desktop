@@ -1,18 +1,6 @@
-#TODO: more build-out, desktop actions, translations?
 [Desktop Entry]
 Name=COSMIC Text Editor
-Name[ar]=محرِّر نصوص COSMIC 
-Name[cs]=Textový editor COSMIC
-Name[zh_CN]=COSMIC 文本编辑器
-Name[pl]=Edytor Tekstu COSMIC
-Name[pt_BR]=Editor de Texto
-Name[hu]=COSMIC Szövegszerkesztő
-Name[pt]=Editor de Texto
-Name[ru]=Текстовый редактор COSMIC
-Name[sk]=Textový editor COSMIC
-Name[sv]=COSMIC Textredigerare
-Name[es]=Editor de texto COSMIC
-Name[it]=Editor di testo COSMIC
+Comment=Text editor for the COSMIC desktop
 Exec=cosmic-edit %F
 Terminal=false
 Type=Application
@@ -21,12 +9,3 @@ MimeType=text/plain;
 Icon=com.system76.CosmicEdit
 Categories=COSMIC;Utility;TextEditor;
 Keywords=Text;Editor;
-Keywords[ar]=نص;محرر;
-Keywords[cs]=Text;Editor;Poznámky;
-Keywords[pl]=Edytor;Tekstu;
-Keywords[pt_BR]=Texto;Editor;Notas;
-Keywords[hu]=szöveg;szerkesztő;
-Keywords[sk]=Text;Editor;Poznámky;
-Keywords[sv]=Text;Editor;Redigerare;
-Keywords[es]=Texto;Editor;Notas;
-Keywords[it]=Testo;Editor;Note;Blocco;
