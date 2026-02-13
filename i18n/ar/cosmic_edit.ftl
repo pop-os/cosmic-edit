@@ -1,4 +1,6 @@
 cosmic-text-editor = محرِّر نصوص COSMIC
+comment = محرِّر نصوص لسطح مكتب COSMIC
+keywords = نص;محرر;
 new-document = مستند جديد
 open-project = افتح مشروعًا
 todo = المهامّ

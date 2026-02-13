@@ -1,3 +1,5 @@
+comment = Textredigerare för skrivbordsmiljön COSMIC
+keywords = Text;Editor;Redigerare;
 new-document = Nytt dokument
 open-project = Öppna projekt
 todo = TODO
