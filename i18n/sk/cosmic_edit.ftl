@@ -1,6 +1,5 @@
 cosmic-text-editor = Textový editor COSMIC
 comment = Textový editor pre pracovné prostredie COSMIC
-keywords = Text;Editor;Poznámky;
 new-document = Nový dokument
 open-project = Otvoriť projekt
 todo = Úloha

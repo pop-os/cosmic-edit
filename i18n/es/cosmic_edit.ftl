@@ -1,6 +1,5 @@
 cosmic-text-editor = Editor de texto COSMIC
 comment = Editor de texto de escritorio COSMIC
-keywords = Texto;Editor;Notas;
 new-document = Nuevo documento
 open-project = Abrir proyecto
 todo = TODO

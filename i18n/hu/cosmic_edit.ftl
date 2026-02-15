@@ -1,6 +1,5 @@
 cosmic-text-editor = COSMIC Szövegszerkesztő
 comment = Szövegszerkesztő a COSMIC asztali környezethez
-keywords = szöveg;szerkesztő;
 new-document = Új dokumentum
 open-project = Projekt megnyitása
 todo = Teendők
