@@ -1,6 +1,5 @@
 cosmic-text-editor = Editor de Texto COSMIC
 comment = Editor de texto do desktop COSMIC
-keywords = Texto;Editor;Notas;
 new-document = Novo documento
 open-project = Abrir projeto
 todo = TODO
@@ -56,7 +55,7 @@ syntax-dark = Sintaxe em tema escuro
 syntax-light = Sintaxe em tema claro
 default-font = Fonte padrão
 default-font-size = Tamanho padrão da fonte
-default-zoom-step = Etapas de zoom
+default-zoom-step = Incremento de zoom
 
 ### Keyboard shortcuts
 
