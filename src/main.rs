@@ -1451,6 +1451,7 @@ impl Application for App {
             .icon(icon::from_name(Self::APP_ID))
             .version(env!("CARGO_PKG_VERSION"))
             .author("System76")
+            .comments(fl!("comment"))
             .license("GPL-3.0-only")
             .developers([("Jeremy Soller", "jeremy@system76.com")])
             .links([

@@ -1,6 +1,6 @@
 [package]
 name = "cosmic-edit"
-version = "1.0.5"
+version = "1.0.6"
 authors = ["Jeremy Soller <jeremy@system76.com>"]
 edition = "2024"
 license = "GPL-3.0-only"
@@ -51,6 +51,9 @@ features = ["about", "multi-window", "tokio", "winit", "surface-message"]
 
 [target.'cfg(unix)'.dependencies]
 fork = "0.2"
+
+[build-dependencies]
+xdgen = "0.1"
 
 [features]
 default = ["dbus-config", "gvfs", "wgpu", "wayland"]
