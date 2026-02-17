@@ -1,7 +1,7 @@
 cosmic-text-editor = COSMIC Tekstbewerker
 new-document = Nieuw document
-open-project = Open een project
-todo = Te doen
+open-project = Project openen
+todo = Takenlijst
 
 # Context Pages
 
@@ -12,32 +12,32 @@ todo = Te doen
 ## Document statistics
 
 document-statistics = Documentstatistieken
-word-count = Woordenaantal
-character-count = Aantal lettertekens
+word-count = Aantal woorden
+character-count = Lettertekens
 character-count-no-spaces = Lettertekens (zonder spaties)
 line-count = Regels
 
 ## Git management
 
 git-management = Git-beheer
-git-management-description = Git-beheer is een ontwikkelaarshulpmiddel dat voor versiebeheer gebruikt wordt.
+git-management-description = Git-beheer is een ontwikkelaarshulpmiddel voor versiebeheer.
 git-management-loading = Git-beheer wordt geladen…
-stage = Zet in stage
+stage = Indexeren
 staged-changes = Geïndexeerde wijzigingen
-unstage = Uit stage halen
+unstage = Indexering ongedaan maken
 unstaged-changes = Niet-geïndexeerde wijzigingen
 
 ## Project search
 
-project-search = Doorzoek project
+project-search = Project zoeken
 
 ## Prompt save changes
 
-prompt-save-changes-title = Wijzigingen opslaan voor afsluiten?
-prompt-unsaved-changes = Er zijn niet-opgeslagen wijzigingen. Als u doorgaat zonder op te slaan, gaan deze wijzigingen verloren.
+prompt-save-changes-title = Wijzigingen opslaan voor sluiten?
+prompt-unsaved-changes = Uw wijzigingen zijn niet opgeslagen. Als u doorgaat zonder op te slaan, gaan deze wijzigingen verloren.
 cancel = Annuleren
-discard = Verwerp wijzigingen
-save-all = Sla alles op
+discard = Wijzigingen verwerpen
+save-all = Alles opslaan
 
 ## Settings
 
@@ -47,28 +47,28 @@ settings = Instellingen
 
 appearance = Uiterlijk
 theme = Thema
-match-desktop = Maak gelijk aan bureaublad
+match-desktop = Systeemstandaard
 dark = Donker
 light = Licht
-syntax-dark = Donkere opmaak
-syntax-light = Lichte opmaak
+syntax-dark = Donkere syntaxis
+syntax-light = Lichte syntaxis
 default-font = Standaardlettertype
-default-font-size = Standaard lettertypegrootte
+default-font-size = Standaardlettergrootte
 default-zoom-step = Zoomstappen
 
 ### Keyboard shortcuts
 
-keyboard-shortcuts = Snelkoppelingen
-enable-vim-bindings = Schakel Vim-sneltoetsen in
+keyboard-shortcuts = Toetsencombinaties
+enable-vim-bindings = Vim-sneltoetsen inschakelen
 # Find
-find-placeholder = Zoek…
-find-previous = Zoek vorige
-find-next = Zoek volgende
-replace-placeholder = Vervang...
+find-placeholder = Zoeken…
+find-previous = Vorige zoeken
+find-next = Volgende zoeken
+replace-placeholder = Vervangen…
 replace = Vervangen
-replace-all = Vervang alles
+replace-all = Alles vervangen
 case-sensitive = Hoofdlettergevoelig
-use-regex = Gebruik reguliere expressies
+use-regex = Reguliere expressies gebruiken
 wrap-around = Tekstomloop
 
 # Menu
@@ -78,56 +78,56 @@ wrap-around = Tekstomloop
 
 file = Bestand
 new-file = Nieuw bestand
-new-window = Nieuw venster openen
-open-file = Bestand openen...
-close-file = Sluit bestand
+new-window = Nieuw venster
+open-file = Bestand openen…
+close-file = Bestand sluiten
 menu-open-project = Project openen…
 open-recent-project = Recent project openen
 close-project = Project sluiten
 save = Opslaan
 save-as = Opslaan als…
-revert-all-changes = Wijzigingen ongedaan maken
+revert-all-changes = Alle wijzigingen ongedaan maken
 menu-document-statistics = Documentstatistieken…
 document-type = Documenttype…
 encoding = Tekenset…
 menu-git-management = Git-beheer…
 print = Afdrukken
-quit = Beëindig
+quit = Sluiten
 
 ## Edit
 
-edit = Bewerk
-undo = Herstel
-redo = Overdoen
-cut = Knip
-copy = Kopiëer
-paste = Plak
-select-all = Selecteer alles
-find = Zoek
-find-in-project = Zoeken in project…
-spell-check = Spellingscontrole...
+edit = Bewerken
+undo = Ongedaan maken
+redo = Opnieuw
+cut = Knippen
+copy = Kopiëren
+paste = Plakken
+select-all = Alles selecteren
+find = Zoeken
+find-in-project = In project zoeken…
+spell-check = Spellingscontrole…
 
 ## View
 
 view = Beeld
-zoom-in = Zoom in
+zoom-in = Inzoomen
 default-size = Standaardgrootte
-zoom-out = Zoom uit
-indentation = Tekstinspringing
+zoom-out = Uitzoomen
+indentation = Inspringing
 
 ### Indentation
 
-automatic-indentation = Automatische tekstinspringing
+automatic-indentation = Automatische inspringing
 tab-width = Tabbreedte: { $tab_width }
-convert-indentation-to-spaces = Zet tekstinspringing om in spaties
-convert-indentation-to-tabs = Zet tekstinspringing om in tabs
+convert-indentation-to-spaces = Inspringing omzetten in spaties
+convert-indentation-to-tabs = Inspringing omzetten in tabs
 word-wrap = Woordafbreking
-show-line-numbers = Toon regelnummers
-highlight-current-line = Markeer huidige regel
-syntax-highlighting = Syntaxismarkering…
-menu-settings = Instellingen…
-menu-keyboard-shortcuts = Sneltoetsen...
-menu-about = Over COSMIC-tekstbewerker...
+show-line-numbers = Regelnummers tonen
+highlight-current-line = Huidige regel mankeren
+syntax-highlighting = Syntaxiskleuring…
+menu-settings = Instellingen...
+menu-keyboard-shortcuts = Toetsencombinaties…
+menu-about = Over COSMIC Tekstbewerker...
 open-recent-file = Recent bestand openen
 support = Ondersteuning
-repository = Bibliotheek
+repository = Broncode

@@ -1,6 +1,5 @@
 cosmic-text-editor = محرِّر نصوص COSMIC
 comment = محرِّر نصوص لسطح مكتب COSMIC
-keywords = نص;محرر;
 new-document = مستند جديد
 open-project = افتح مشروعًا
 todo = المهامّ
@@ -24,8 +23,8 @@ line-count = الأسطر
 ## Git management
 
 git-management = إدارة Git
-git-management-description = إدارة Git هي أداة يستخدمها المطورون لإدارة عمليات التحكم في الإصدارات.
-git-management-loading = جاري تحميل إدارة Git...
+git-management-description = إدارة Git هي أداة يستخدمها المطوِّرون لإدارة عمليات التحكم في الإصدار.
+git-management-loading = يُحمّل إدارة Git...
 stage = رحِّل
 staged-changes = تغييرات مرحَّلة
 unstage = ألغِ الترحيل
@@ -40,7 +39,7 @@ project-search = ابحث المشروع
 prompt-save-changes-title = احفظ التغييرات قبل الإغلاق؟
 prompt-unsaved-changes = لديك تغييرات غير محفوظة. إذا واصلت دون حفظ، فستفقد هذه التغييرات.
 cancel = ألغِ
-discard = تجاهل التغييرات
+discard = أهمِل التغييرات
 save-all = احفظ الكل
 
 ## Settings
