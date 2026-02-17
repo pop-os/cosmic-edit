@@ -1,5 +1,4 @@
-comment = Textový editor pro pracovní prostředí COSMIC
-keywords = Text;Editor;Poznámky;
+comment = Textový editor pro prostředí COSMIC
 new-document = Nový dokument
 open-project = Otevřít projekt
 

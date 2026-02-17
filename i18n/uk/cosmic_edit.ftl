@@ -131,3 +131,4 @@ zoom-in = Збільшити
 default-size = Стандартний розмір
 zoom-out = Зменшити
 wrap-around = Циклічний пошук
+comment = Текстовий редактор для середовища COSMIC

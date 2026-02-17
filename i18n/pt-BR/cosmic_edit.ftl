@@ -1,6 +1,5 @@
 cosmic-text-editor = Editor de Texto COSMIC
-comment = Editor de texto do desktop COSMIC
-keywords = Texto;Editor;Notas;
+comment = Editor de texto do ambiente COSMIC
 new-document = Novo documento
 open-project = Abrir projeto
 todo = TODO
@@ -56,7 +55,7 @@ syntax-dark = Sintaxe em tema escuro
 syntax-light = Sintaxe em tema claro
 default-font = Fonte padrão
 default-font-size = Tamanho padrão da fonte
-default-zoom-step = Etapas de zoom
+default-zoom-step = Incremento de zoom
 
 ### Keyboard shortcuts
 
@@ -93,7 +92,7 @@ revert-all-changes = Reverter todas alterações
 menu-document-statistics = Estatísticas do documento...
 document-type = Tipo de documento...
 encoding = Codificação...
-menu-git-management = Gestor do Git...
+menu-git-management = Gerenciamento do Git...
 print = Imprimir
 quit = Sair
 

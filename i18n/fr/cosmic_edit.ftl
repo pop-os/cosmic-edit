@@ -131,3 +131,4 @@ default-zoom-step = Niveaux de zoom
 zoom-in = Zoomer
 default-size = Taille par défaut
 zoom-out = Dézoomer
+comment = Éditeur de texte pour le bureau COSMIC

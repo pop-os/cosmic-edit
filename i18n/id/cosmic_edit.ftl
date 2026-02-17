@@ -88,3 +88,4 @@ convert-indentation-to-tabs = Ubah indentasi menjadi tab
 prompt-save-changes-title = Simpan perubahan sebelum menutup?
 prompt-unsaved-changes = Anda memiliki perubahan yang belum disimpan. Jika anda melanjutkan tanpa menyimpan, perubahan ini akan hilang.
 wrap-around = Bungkus
+comment = Penyuntingan teks untuk desktop COSMIC
