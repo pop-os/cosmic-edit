@@ -45,7 +45,7 @@ settings = Налаштування
 
 ## Appearance
 
-appearance = Зовнішній вигляд
+appearance = Вигляд
 theme = Тема
 match-desktop = Системна
 dark = Темна
