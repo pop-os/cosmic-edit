@@ -21,6 +21,95 @@ use crate::{Action, Config, ConfigState, Message, fl};
 static MENU_ID: LazyLock<cosmic::widget::Id> =
     LazyLock::new(|| cosmic::widget::Id::new("responsive-menu"));
 
+// Menu rows are fixed-height in libcosmic; wrapped labels get visually clipped.
+// Keep recent path labels short enough to stay on one line.
+const RECENT_MENU_LABEL_MAX_CHARS: usize = 40;
+
+fn char_count(value: &str) -> usize {
+    value.chars().count()
+}
+
+fn take_prefix_chars(value: &str, count: usize) -> String {
+    value.chars().take(count).collect()
+}
+
+fn take_suffix_chars(value: &str, count: usize) -> String {
+    let total = char_count(value);
+    if count >= total {
+        value.to_string()
+    } else {
+        value.chars().skip(total - count).collect()
+    }
+}
+
+fn truncate_middle(value: &str, max_chars: usize) -> String {
+    const ELLIPSIS: &str = "...";
+    if char_count(value) <= max_chars {
+        return value.to_string();
+    }
+
+    if max_chars <= ELLIPSIS.len() + 2 {
+        return take_prefix_chars(value, max_chars);
+    }
+
+    let prefix_len = (max_chars - ELLIPSIS.len()) / 2;
+    let suffix_len = max_chars - ELLIPSIS.len() - prefix_len;
+    format!(
+        "{}{}{}",
+        take_prefix_chars(value, prefix_len),
+        ELLIPSIS,
+        take_suffix_chars(value, suffix_len)
+    )
+}
+
+fn format_recent_menu_path(path: &PathBuf, home_dir_opt: Option<&PathBuf>) -> String {
+    const ELLIPSIS: &str = "...";
+
+    let display = if let Some(home_dir) = home_dir_opt {
+        if let Ok(part) = path.strip_prefix(home_dir) {
+            format!("~/{}", part.display())
+        } else {
+            path.display().to_string()
+        }
+    } else {
+        path.display().to_string()
+    };
+
+    if char_count(&display) <= RECENT_MENU_LABEL_MAX_CHARS {
+        return display;
+    }
+
+    let file_name = path.file_name().and_then(|name| name.to_str());
+    let parent_name = path
+        .parent()
+        .and_then(|parent| parent.file_name())
+        .and_then(|name| name.to_str());
+
+    let mut tails = Vec::new();
+    if let Some(file_name) = file_name {
+        tails.push(format!("/{}", file_name));
+        if let Some(parent_name) = parent_name {
+            tails.push(format!("/{}/{}", parent_name, file_name));
+        }
+    }
+
+    for tail in tails.into_iter().rev() {
+        let tail_len = char_count(&tail);
+        if tail_len + ELLIPSIS.len() >= RECENT_MENU_LABEL_MAX_CHARS {
+            continue;
+        }
+
+        let prefix_len = RECENT_MENU_LABEL_MAX_CHARS - ELLIPSIS.len() - tail_len;
+        if prefix_len < 6 {
+            continue;
+        }
+
+        return format!("{}{}{}", take_prefix_chars(&display, prefix_len), ELLIPSIS, tail);
+    }
+
+    truncate_middle(&display, RECENT_MENU_LABEL_MAX_CHARS)
+}
+
 pub fn context_menu<'a>(
     key_binds: &HashMap<KeyBind, Action>,
     entity: segmented_button::Entity,
@@ -99,19 +188,11 @@ pub fn menu_bar<'a>(
     };
 
     let home_dir_opt = dirs::home_dir();
-    let format_path = |path: &PathBuf| -> String {
-        if let Some(home_dir) = &home_dir_opt {
-            if let Ok(part) = path.strip_prefix(home_dir) {
-                return format!("~/{}", part.display());
-            }
-        }
-        path.display().to_string()
-    };
 
     let mut recent_files = Vec::with_capacity(config_state.recent_files.len());
     for (i, path) in config_state.recent_files.iter().enumerate() {
         recent_files.push(MenuItem::Button(
-            format_path(path),
+            format_recent_menu_path(path, home_dir_opt.as_ref()),
             None,
             Action::OpenRecentFile(i),
         ));
@@ -120,7 +201,7 @@ pub fn menu_bar<'a>(
     let mut recent_projects = Vec::with_capacity(config_state.recent_projects.len());
     for (i, path) in config_state.recent_projects.iter().enumerate() {
         recent_projects.push(MenuItem::Button(
-            format_path(path),
+            format_recent_menu_path(path, home_dir_opt.as_ref()),
             None,
             Action::OpenRecentProject(i),
         ));
