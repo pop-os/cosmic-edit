@@ -9,9 +9,9 @@ use cosmic::{
     iced_core::Border,
     theme,
     widget::{
-        self, divider, horizontal_space,
+        self, divider,
         menu::{ItemHeight, ItemWidth, menu_button},
-        responsive_menu_bar, segmented_button,
+        responsive_menu_bar, segmented_button, space,
     },
 };
 use std::{collections::HashMap, path::PathBuf, sync::LazyLock};
@@ -43,7 +43,7 @@ pub fn context_menu<'a>(
         }
         menu_button(vec![
             widget::text(menu_label).into(),
-            horizontal_space().into(),
+            space::horizontal().into(),
             widget::text(key)
                 .class(theme::Text::Custom(key_style))
                 .into(),
