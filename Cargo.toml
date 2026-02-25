@@ -74,6 +74,6 @@ onig = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
 onig_sys = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
 
 [patch.'https://github.com/pop-os/libcosmic']
-libcosmic = { git = "https://github.com/pop-os/libcosmic//", branch = "iced-rebase" }
+libcosmic = { git = "https://github.com/kenz-gelsoft/libcosmic.git", branch = "minimal-input-method-support" }
 cosmic-config = { git = "https://github.com/pop-os/libcosmic//", branch = "iced-rebase" }
 cosmic-theme = { git = "https://github.com/pop-os/libcosmic//", branch = "iced-rebase" }
