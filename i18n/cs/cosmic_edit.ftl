@@ -1,3 +1,4 @@
+comment = Textový editor pro prostředí COSMIC
 new-document = Nový dokument
 open-project = Otevřít projekt
 
@@ -19,14 +20,14 @@ settings = Nastavení
 ## Appearance
 
 appearance = Vzhled
-theme = Téma
+theme = Motiv
 default-font = Výchozí písmo
 default-font-size = Výchozí velikost písma
 
 ### Keyboard shortcuts
 
 keyboard-shortcuts = Klávesové zkratky
-enable-vim-bindings = Povolit Vim zkratky
+enable-vim-bindings = Povolit zkratky Vim
 
 # Menu
 
@@ -50,8 +51,8 @@ quit = Ukončit
 ## Edit
 
 edit = Úpravy
-undo = Vrátit
-redo = Opakovat
+undo = Zpět
+redo = Znovu
 cut = Vyjmout
 copy = Kopírovat
 paste = Vložit
@@ -87,8 +88,8 @@ prompt-unsaved-changes = Máte neuložené změny. Pokud je nyní neuložíte, p
 cancel = Zrušit
 discard = Zahodit změny
 save-all = Uložit vše
-dark = Tmavé
-light = Světlé
+dark = Tmavý
+light = Světlý
 default-zoom-step = Kroky přiblížení
 find-placeholder = Najít...
 find-previous = Najít předchozí

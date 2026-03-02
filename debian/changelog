@@ -1,3 +1,33 @@
+cosmic-edit (1.0.8) noble; urgency=medium
+
+  * Epoch 1.0.8 version update
+
+ -- Jeremy Soller <jeremy@system76.com>  Mon, 23 Feb 2026 08:12:49 -0700
+
+cosmic-edit (1.0.7) noble; urgency=medium
+
+  * Epoch 1.0.7 version update
+
+ -- Jeremy Soller <jeremy@system76.com>  Tue, 17 Feb 2026 07:58:11 -0700
+
+cosmic-edit (1.0.6) noble; urgency=medium
+
+  * Epoch 1.0.6 version update
+
+ -- Jeremy Soller <jeremy@system76.com>  Thu, 05 Feb 2026 15:22:49 -0700
+
+cosmic-edit (1.0.5) noble; urgency=medium
+
+  * Epoch 1.0.5 version update
+
+ -- Jeremy Soller <jeremy@system76.com>  Fri, 30 Jan 2026 17:16:13 -0700
+
+cosmic-edit (1.0.4) noble; urgency=medium
+
+  * Epoch 1.0.4 version update
+
+ -- Jeremy Soller <jeremy@system76.com>  Wed, 21 Jan 2026 10:13:44 -0700
+
 cosmic-edit (0.1.0) jammy; urgency=medium
 
   * Initial release.

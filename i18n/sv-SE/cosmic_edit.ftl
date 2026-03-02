@@ -1,3 +1,4 @@
+comment = Textredigerare för skrivbordsmiljön COSMIC
 new-document = Nytt dokument
 open-project = Öppna projekt
 todo = TODO
@@ -51,13 +52,13 @@ default-zoom-step = Zoom-steg
 ### Tangentbordsgenvägar
 
 keyboard-shortcuts = Tangentbordsgenvägar
-enable-vim-bindings = Aktivera Vimbindningar
+enable-vim-bindings = Aktivera Vim-bindningar
 # Sök
 find-placeholder = Sök…
 find-previous = Sök föregående
 find-next = Sök nästa
 replace-placeholder = Ersätt...
-replace = Byt ut
+replace = Ersätt
 replace-all = Ersätt alla
 case-sensitive = Skiftlägeskänslig
 use-regex = Använd regex

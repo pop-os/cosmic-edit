@@ -1,5 +1,5 @@
 use cosmic_text::{
-    Align, AttrsList, BufferLine, FontSystem, LayoutLine, LineEnding, Shaping, Wrap,
+    Align, AttrsList, BufferLine, Ellipsize, FontSystem, LayoutLine, LineEnding, Shaping, Wrap,
 };
 use std::collections::HashMap;
 
@@ -42,6 +42,7 @@ impl LineNumberCache {
                     1.0, /* font size adjusted later */
                     None,
                     Wrap::None,
+                    Ellipsize::None,
                     None,
                     8, /* default tab width */
                     Default::default(),

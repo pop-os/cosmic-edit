@@ -1,4 +1,5 @@
 cosmic-text-editor = Editor de Texto COSMIC
+comment = Editor de texto do ambiente COSMIC
 new-document = Novo documento
 open-project = Abrir projeto
 todo = TODO
@@ -19,7 +20,7 @@ line-count = Linhas
 
 ## Git management
 
-git-management = Gestor do Git
+git-management = Gerenciamento do Git
 git-management-description = Git é uma ferramenta de desenvolvimento usada para operações de controle de versão.
 git-management-loading = Carregando o gerenciamento do Git...
 stage = Adicionar à área de preparação
@@ -33,8 +34,8 @@ project-search = Localizar no projeto
 
 ## Prompt save changes
 
-prompt-save-changes-title = Alterações não salvas
-prompt-unsaved-changes = Você possui alterações não salvas. Deseja salvar?
+prompt-save-changes-title = Salvar alterações antes de fechar?
+prompt-unsaved-changes = Você possui alterações não salvas. Se você continuar sem salvar, estas alterações serão perdidas.
 cancel = Cancelar
 discard = Descartar alterações
 save-all = Salvar tudo
@@ -54,11 +55,11 @@ syntax-dark = Sintaxe em tema escuro
 syntax-light = Sintaxe em tema claro
 default-font = Fonte padrão
 default-font-size = Tamanho padrão da fonte
-default-zoom-step = Etapas de zoom
+default-zoom-step = Incremento de zoom
 
 ### Keyboard shortcuts
 
-keyboard-shortcuts = Atalhos do teclado
+keyboard-shortcuts = Atalhos de teclado
 enable-vim-bindings = Habilitar atalhos do Vim
 # Find
 find-placeholder = Localizar...
@@ -91,7 +92,7 @@ revert-all-changes = Reverter todas alterações
 menu-document-statistics = Estatísticas do documento...
 document-type = Tipo de documento...
 encoding = Codificação...
-menu-git-management = Gestor do Git...
+menu-git-management = Gerenciamento do Git...
 print = Imprimir
 quit = Sair
 
@@ -127,7 +128,7 @@ show-line-numbers = Mostrar números das linhas
 highlight-current-line = Destacar linha atual
 syntax-highlighting = Destaque de sintaxe...
 menu-settings = Configurações...
-menu-keyboard-shortcuts = Atalhos do teclado...
+menu-keyboard-shortcuts = Atalhos de teclado...
 menu-about = Sobre o Editor de Texto COSMIC...
 repository = Repositório
 support = Suporte

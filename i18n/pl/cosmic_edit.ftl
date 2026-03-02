@@ -1,4 +1,5 @@
 cosmic-text-editor = Edytor Tekstu COSMIC
+comment = Edytor tekstu pulpitu COSMIC
 new-document = Nowy dokument
 open-project = Otwórz projekt
 todo = TODO

@@ -1,4 +1,5 @@
-cosmic-text-editor = Текстовый редактор COSMIC
+cosmic-text-editor = Текстовый редактор
+comment = Текстовый редактор для среды COSMIC
 new-document = Новый документ
 open-project = Открыть проект
 todo = TODO
@@ -33,8 +34,8 @@ project-search = Поиск проекта
 
 ## Prompt save changes
 
-prompt-save-changes-title = Несохраненные изменения
-prompt-unsaved-changes = У вас есть несохранённые изменения. Сохранить их?
+prompt-save-changes-title = Сохранить изменения перед закрытием?
+prompt-unsaved-changes = У вас есть несохранённые изменения. Если продолжите без сохранения, они будут потеряны.
 cancel = Отмена
 discard = Отменить изменения
 save-all = Сохранить все
@@ -48,8 +49,8 @@ settings = Параметры
 appearance = Оформление
 theme = Тема
 match-desktop = Как в системе
-dark = Тёмное
-light = Светлое
+dark = Тёмная
+light = Светлая
 syntax-dark = Синтаксис темный
 syntax-light = Синтаксис светлый
 default-font = Шрифт по умолчанию

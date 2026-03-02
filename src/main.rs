@@ -3,7 +3,7 @@
 use cosmic::surface;
 use cosmic::widget::menu::action::MenuAction;
 use cosmic::widget::menu::key_bind::KeyBind;
-use cosmic::widget::segmented_button::Entity;
+use cosmic::widget::segmented_button::{Entity, ReorderEvent};
 use cosmic::{
     Application, ApplicationExt, Apply, Element, action,
     app::{Core, Settings, Task, context_drawer},
@@ -409,6 +409,7 @@ pub enum Message {
     Quit,
     QuitForce,
     Redo,
+    ReorderTab(ReorderEvent),
     RevertAllChanges,
     Save(Option<segmented_button::Entity>),
     SaveAll,
@@ -1415,9 +1416,8 @@ impl Application for App {
         let font_names = {
             let mut font_names = Vec::new();
             let mut font_system = font_system().write().unwrap();
-            let attrs = monospace_attrs();
             for face in font_system.raw().db().faces() {
-                if attrs.matches(face) && face.monospaced {
+                if face.monospaced {
                     //TODO: get localized name if possible
                     let font_name = face
                         .families
@@ -1457,6 +1457,7 @@ impl Application for App {
             .icon(icon::from_name(Self::APP_ID))
             .version(env!("CARGO_PKG_VERSION"))
             .author("System76")
+            .comments(fl!("comment"))
             .license("GPL-3.0-only")
             .developers([("Jeremy Soller", "jeremy@system76.com")])
             .links([
@@ -2555,6 +2556,13 @@ impl Application for App {
                     return self.update(Message::TabChanged(self.tab_model.active()));
                 }
             }
+            Message::ReorderTab(ReorderEvent {
+                dragged,
+                target,
+                position,
+            }) => {
+                _ = self.tab_model.reorder(dragged, target, position);
+            }
             Message::RevertAllChanges => {
                 if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
                     tab.reload();
@@ -3022,6 +3030,9 @@ impl Application for App {
                 .push(
                     widget::tab_bar::horizontal(&self.tab_model)
                         .button_height(32)
+                        .enable_tab_drag(String::from("x-cosmic-edit/tab"))
+                        .on_reorder(Message::ReorderTab)
+                        .tab_drag_threshold(25.)
                         .button_spacing(space_xxs)
                         .close_icon(icon_cache_get("window-close-symbolic", 16))
                         //TODO: this causes issues with small window sizes .minimum_button_width(240)
