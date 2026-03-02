@@ -57,22 +57,15 @@ impl EditorTab {
     pub fn new(config: &Config) -> Self {
         let attrs = crate::monospace_attrs();
 
-        let mut buffer = Buffer::new_empty(config.metrics(0));
+        let zoom_adj: i8 = Default::default();
+        let mut buffer = Buffer::new_empty(config.metrics(zoom_adj));
 
-        // In this build, these buffer methods require a FontSystem.
         {
             let mut fs_guard = font_system().write().expect("font system write");
             let fs = fs_guard.raw();
 
-            buffer.set_wrap(
-                fs,
-                if config.word_wrap {
-                    Wrap::WordOrGlyph
-                } else {
-                    Wrap::None
-                },
-            );
-            buffer.set_tab_width(fs, config.tab_width);
+            // Set a minimal size before it is updated by draw
+            buffer.set_size(fs, Some(0.0), Some(0.0));
             buffer.set_text(fs, "", &attrs, Shaping::Advanced, None);
         }
 
@@ -88,7 +81,7 @@ impl EditorTab {
             attrs,
             editor: Mutex::new(ViEditor::new(syntax_editor)),
             context_menu: None,
-            zoom_adj: 0,
+            zoom_adj,
         };
 
         tab.set_config(config);
@@ -135,19 +128,19 @@ impl EditorTab {
         let fs_raw = fs_guard.raw();
         let mut ed = editor.borrow_with(fs_raw);
 
-        ed.update_theme(config.syntax_theme());
+        // Matches master: tab width is configured on the editor.
+        ed.set_tab_width(config.tab_width);
 
         ed.with_buffer_mut(|buffer| {
             buffer.set_metrics(config.metrics(self.zoom_adj));
-
-            // In this build, these variants do NOT take a FontSystem.
             buffer.set_wrap(if config.word_wrap {
                 Wrap::WordOrGlyph
             } else {
                 Wrap::None
             });
-            buffer.set_tab_width(config.tab_width);
         });
+
+        ed.update_theme(config.syntax_theme());
     }
 
     pub fn set_path(&mut self, path: PathBuf) {
