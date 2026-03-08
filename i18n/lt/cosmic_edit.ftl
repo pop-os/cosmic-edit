@@ -25,7 +25,7 @@ default-font-size = Numatytas šrifto dydis
 
 ### Keyboard shortcuts
 
-keyboard-shortcuts = Klaviatūros spartieji klavišai
+keyboard-shortcuts = Klaviatūros greitieji klavišai
 enable-vim-bindings = Naudoti Vim sąsajas
 
 # Menu
@@ -51,7 +51,7 @@ quit = Išeiti
 
 edit = Redaguoti
 undo = Anuliuoti
-redo = Atstatyti
+redo = Atkurti
 cut = Iškirpti
 copy = Kopijuoti
 paste = Įklijuoti
@@ -75,7 +75,7 @@ show-line-numbers = Rodyti eilučių numerius
 highlight-current-line = Paryškinti dabartinę eilutę
 syntax-highlighting = Sintaksės tikrinimas...
 menu-settings = Nustatymai...
-menu-keyboard-shortcuts = Spartieji klavišai...
+menu-keyboard-shortcuts = Klaviatūros greitieji klavišai...
 menu-about = Apie COSMIC Text Editor...
 cancel = Atšaukti
 repository = Saugykla
@@ -114,3 +114,6 @@ use-regex = Naudoti regex
 wrap-around = Kelti į sekančią eilutę
 stage = Patvirtinti pakeitimai
 project-search = Paieška projekte
+dark = Tamsus
+light = Šviesus
+comment = COSMIC desktop teksto redaktorius

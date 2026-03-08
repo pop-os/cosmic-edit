@@ -45,7 +45,7 @@ settings = Socruithe
 
 ### Appearance
 
-appearance = Cuma
+appearance = Dealramh
 theme = Téama
 match-desktop = Meaitseáil deasc
 dark = Dorcha
@@ -131,3 +131,4 @@ default-zoom-step = Céimeanna súmála
 zoom-in = Súmáil isteach
 default-size = Méid réamhshocraithe
 zoom-out = Súmáil amach
+comment = Eagarthóir téacs don deasc COSMIC

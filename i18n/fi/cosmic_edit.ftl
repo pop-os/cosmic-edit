@@ -1,29 +1,35 @@
-new-document = Uusi Dokumentti
+new-document = Uusi asiakirja
 open-project = Avaa projekti
 todo = TODO
 
 # Context Pages
 
+
 ## Document statistics
-document-statistics = Dokumentin tilastot
+
+document-statistics = Asiakirjan tilastot
 word-count = Sanoja
-character-count = Merkkejä 
+character-count = Merkkejä
 character-count-no-spaces = Merkit (ilman välilyöntejä)
 line-count = Rivejä
 
 ## Git management
+
 git-management = Git-hallinta
 unstaged-changes = Vaiheistamattomat muutokset
 staged-changes = Vaiheistetut muutokset
 
 ## Project search
+
 project-search = Projektin haku
 
 ## Settings
+
 settings = Asetukset
 
 ## Appearance
-appearance = Ulkonäkö
+
+appearance = Ulkoasu
 theme = Teema
 match-desktop = Sovita työpöydän kanssa
 dark = Tumma
@@ -34,17 +40,20 @@ default-font = Oletusfontti
 default-font-size = Fontin oletuskoko
 
 ### Keyboard shortcuts
+
 keyboard-shortcuts = Pikanäppäimet
 enable-vim-bindings = Ota käyttöön Vim-komennot
 
 # Menu
 
+
 ## File
-file = Tiedosto 
+
+file = Tiedosto
 new-file = Uusi tiedosto
 new-window = Uusi ikkuna
 open-file = Avaa tiedosto...
-open-recent-file = Avaa viimeisin tiedosto
+open-recent-file = Avaa viimeaikainen tiedosto
 close-file = Sulje tiedosto
 menu-open-project = Avaa projekti...
 open-recent-project = Avaa viimeisin projekti
@@ -60,12 +69,13 @@ print = Tulosta
 quit = Lopeta
 
 ## Edit
+
 edit = Muokkaa
 undo = Kumoa
-redo = Palauta
+redo = Tee uudelleen
 cut = Leikkaa
 copy = Kopioi
-paste = Syötä
+paste = Liitä
 select-all = Valitse kaikki
 find = Etsi
 replace = Korvaa
@@ -73,19 +83,41 @@ find-in-project = Etsi projektista...
 spell-check = Tarkista oikeinkirjoitus...
 
 ## View
+
 view = Näytä
 indentation = Sisennys
 
 ### Indentation
-automatic-indentation = Automaattinen sisennys
-tab-width = Tab width: {$tab_width}
-convert-indentation-to-spaces = Muunna sisennykset välilyönneiksi
-convert-indentation-to-tabs = Muunna sisennykset tabeiksi
 
-word-wrap = Rivinvaihto
+automatic-indentation = Automaattinen sisennys
+tab-width = Sarkainleveys: { $tab_width }
+convert-indentation-to-spaces = Muunna sisennykset välilyönneiksi
+convert-indentation-to-tabs = Muunna sisennykset sarkaimiksi
+word-wrap = Rivitys
 show-line-numbers = Näytä rivinumerot
 highlight-current-line = Korosta nykyinen rivi
 syntax-highlighting = Syntaksi korostus...
-menu-settings = Asetukset...
-menu-keyboard-shortcuts = Pikanäppäimet...
+menu-settings = Asetukset…
+menu-keyboard-shortcuts = Pikanäppäimet…
 menu-about = Tietoa COSMIC-tekstieditorista
+cosmic-text-editor = COSMICin tekstimuokkain
+cancel = Peru
+repository = Tietovarasto
+support = Tuki
+git-management-description = Git-hallinta on kehittäjätyökalu versionhallintaan.
+git-management-loading = Ladataan Git-hallintaa...
+prompt-save-changes-title = Tallennetaanko muutokset ennen sulkemista?
+prompt-unsaved-changes = Sinulla on tallentamattomia muutoksia. Jos jatkat tallentamatta, ne menetetään.
+discard = Hylkää muutokset
+save-all = Tallenna kaikki
+find-previous = Etsi edellinen
+find-next = Etsi seuraava
+replace-all = Korvaa kaikki
+case-sensitive = Huomioi kirjainkoko
+use-regex = Käytä säännöllistä lauseketta
+wrap-around = Rivitä
+zoom-in = Lähennä
+default-size = Oletuskoko
+zoom-out = Loitonna
+comment = Tekstimuokkain COSMIC-työpöydälle
+find-placeholder = Etsi…
