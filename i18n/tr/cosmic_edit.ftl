@@ -11,11 +11,11 @@ todo = TODO
 
 ## Document statistics
 
-document-statistics = Belge istatikleri
+document-statistics = Belge istatistikleri
 word-count = Sözcük sayısı
-character-count = Karakterler
-character-count-no-spaces = Karakterler (boşluksuz)
-line-count = Satırlar
+character-count = Karakter sayısı
+character-count-no-spaces = Karakter sayısı (boşluksuz)
+line-count = Satır sayısı
 
 ## Git management
 
@@ -29,14 +29,14 @@ unstaged-changes = Hazırlanmamış değişiklikler
 
 ## Project search
 
-project-search = Proje arama
+project-search = Proje ara
 
 ## Prompt save changes
 
-prompt-save-changes-title = Değişiklikler Kaydedilmedi
-prompt-unsaved-changes = Kaydedilmemiş değişiklikler var, kaydedilsin mi?
+prompt-save-changes-title = Kapatmadan önce değişiklikler kaydedilsin mi?
+prompt-unsaved-changes = Kaydedilmemiş değişiklikleriniz var. Kaydetmeden devam ederseniz, bu değişiklikler kaybolacaktır.
 cancel = Vazgeç
-discard = Gözden çıkar
+discard = Değişiklikleri iptal et
 save-all = Tümünü kaydet
 
 ## Settings
@@ -58,7 +58,7 @@ default-font-size = Öntanımlı yazı tipi boyutu
 ### Keyboard shortcuts
 
 keyboard-shortcuts = Klavye kısayolları
-enable-vim-bindings = Vim tuşlarını kullan
+enable-vim-bindings = Vim kısayollarını etkinleştir
 # Find
 find-placeholder = Bul...
 find-previous = Öncekini bul
@@ -78,17 +78,17 @@ file = Dosya
 new-file = Yeni dosya
 new-window = Yeni pencere
 open-file = Dosya aç...
-open-recent-file = Son kullanılan dosyalardan aç
+open-recent-file = Son kullanılan dosyayı aç
 close-file = Dosyayı kapat
 menu-open-project = Proje aç...
-open-recent-project = Son kullanılan projelerden aç
+open-recent-project = Son kullanılan projeyi aç
 close-project = Projeyi kapat
 save = Kaydet
 save-as = Farklı kaydet...
 revert-all-changes = Bütün değişiklikleri geri al
 menu-document-statistics = Belge istatistikleri...
 document-type = Belge türü...
-encoding = Kodlama...
+encoding = Kodlanıyor...
 menu-git-management = Git yönetimi...
 print = Yazdır
 quit = Çıkış
@@ -97,7 +97,7 @@ quit = Çıkış
 
 edit = Düzenle
 undo = Geri al
-redo = Yinele
+redo = İleri al
 cut = Kes
 copy = Kopyala
 paste = Yapıştır
@@ -113,21 +113,22 @@ indentation = Girintileme
 
 ### Indentation
 
-automatic-indentation = Kendiliğinden girintile
+automatic-indentation = Kendiliğinden Girintile
 tab-width = Sekme genişliği: { $tab_width }
 convert-indentation-to-spaces = Girintileri boşluklara çevir
 convert-indentation-to-tabs = Girintileri sekmelere çevir
 word-wrap = Sözcük kaydırma
 show-line-numbers = Satır numaralarını göster
 highlight-current-line = Geçerli satırı vurgula
-syntax-highlighting = Söz dizimi vurgulama...
+syntax-highlighting = Sözdizimi vurgulanıyor….
 menu-settings = Ayarlar...
 menu-keyboard-shortcuts = Klavye kısayolları...
-menu-about = COSMIC Metin Düzenleyici Hakkında ...
+menu-about = COSMIC Metin Düzenleyici Hakkında...
 repository = Depo
 support = Destek
 default-zoom-step = Yakınlaştırma adımları
-wrap-around = Etrafını Sar
+wrap-around = Sona gelince başa dön
 zoom-in = Yakınlaştır
 default-size = Varsayılan boyut
 zoom-out = Uzaklaştır
+comment = COSMIC masaüstü için metin editörü

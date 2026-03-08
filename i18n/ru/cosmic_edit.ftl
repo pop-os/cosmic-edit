@@ -37,7 +37,7 @@ project-search = Поиск проекта
 prompt-save-changes-title = Сохранить изменения перед закрытием?
 prompt-unsaved-changes = У вас есть несохранённые изменения. Если продолжите без сохранения, они будут потеряны.
 cancel = Отмена
-discard = Отменить изменения
+discard = Не сохранять
 save-all = Сохранить все
 
 ## Settings
@@ -46,7 +46,7 @@ settings = Параметры
 
 ## Appearance
 
-appearance = Оформление
+appearance = Внешний вид
 theme = Тема
 match-desktop = Как в системе
 dark = Тёмная
