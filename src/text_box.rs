@@ -46,6 +46,7 @@ pub struct TextBox<'a, Message> {
     padding: Padding,
     on_auto_scroll: Option<Box<dyn Fn(Option<f32>) -> Message + 'a>>,
     on_changed: Option<Message>,
+    on_edit: Option<Message>,
     on_focus: Option<Message>,
     click_timing: Duration,
     has_context_menu: bool,
@@ -66,6 +67,7 @@ where
             padding: Padding::new(0.0),
             on_auto_scroll: None,
             on_changed: None,
+            on_edit: None,
             on_focus: None,
             click_timing: Duration::from_millis(500),
             has_context_menu: false,
@@ -92,6 +94,12 @@ where
 
     pub fn on_changed(mut self, on_changed: Message) -> Self {
         self.on_changed = Some(on_changed);
+        self
+    }
+
+    /// Called on every content-modifying edit (keystroke, paste, delete, etc.)
+    pub fn on_edit(mut self, on_edit: Message) -> Self {
+        self.on_edit = Some(on_edit);
         self
     }
 
@@ -1004,6 +1012,7 @@ where
         }
 
         let mut status = Status::Ignored;
+        let mut content_edited = false;
         match event {
             Event::Keyboard(KeyEvent::KeyPressed {
                 modified_key: Key::Named(key),
@@ -1048,16 +1057,19 @@ where
                 }
                 Named::Enter => {
                     editor.action(Action::Enter);
+                    content_edited = true;
                     status = Status::Captured;
                 }
                 Named::Backspace => {
                     delete_modifiers(&mut editor, Motion::LeftWord, modifiers);
                     editor.action(Action::Backspace);
+                    content_edited = true;
                     status = Status::Captured;
                 }
                 Named::Delete => {
                     delete_modifiers(&mut editor, Motion::RightWord, modifiers);
                     editor.action(Action::Delete);
+                    content_edited = true;
                     status = Status::Captured;
                 }
                 Named::Tab => {
@@ -1067,6 +1079,7 @@ where
                         } else {
                             editor.action(Action::Indent);
                         }
+                        content_edited = true;
                         status = Status::Captured;
                     }
                 }
@@ -1078,6 +1091,7 @@ where
                 if !state.modifiers.logo() && !state.modifiers.control() && !state.modifiers.alt() {
                     if !character.is_control() {
                         editor.action(Action::Insert(character));
+                        content_edited = true;
                     }
                     status = Status::Captured;
                 }
@@ -1334,6 +1348,13 @@ where
                 || (&parser.mode, &parser.cmd) != (&last_parser_mode, &last_parser_cmd)
             {
                 shell.publish(on_changed.clone());
+            }
+        }
+
+        // Fire on_edit for every content modification (for inactivity-based auto-save)
+        if content_edited {
+            if let Some(on_edit) = &self.on_edit {
+                shell.publish(on_edit.clone());
             }
         }
 
