@@ -118,3 +118,4 @@ syntax-dark = 다크 구문 테마
 syntax-light = 라이트모드 구문 테마
 default-zoom-step = 확대/축소 간격
 wrap-around = 끝에서 다시 시작
+comment = COSMIC 데스크톱용 텍스트 편집기

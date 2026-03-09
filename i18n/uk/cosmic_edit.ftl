@@ -36,8 +36,8 @@ project-search = Пошук проєкту
 prompt-save-changes-title = Зберегти зміни перед закриттям?
 prompt-unsaved-changes = У вас є незбережені зміни. Якщо продовжите без збереження, зміни будуть втрачені.
 cancel = Скасувати
-discard = Відкинути зміни
-save-all = Зберегти всі
+discard = Відкинути
+save-all = Зберегти
 
 ## Settings
 
@@ -45,7 +45,7 @@ settings = Налаштування
 
 ## Appearance
 
-appearance = Зовнішній вигляд
+appearance = Вигляд
 theme = Тема
 match-desktop = Системна
 dark = Темна
@@ -82,7 +82,7 @@ close-file = Закрити файл
 menu-open-project = Відкрити проєкт...
 open-recent-project = Відкрити нещодавній проєкт
 close-project = Закрити проєкт
-save = Зберегти
+save = Зберегти тут
 save-as = Зберегти як…
 revert-all-changes = Скасувати всі зміни
 menu-document-statistics = Статистики документа...

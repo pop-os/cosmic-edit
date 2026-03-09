@@ -1,4 +1,4 @@
-cosmic-text-editor = COSMIC Text Editor
+cosmic-text-editor = COSMIC Texteditor
 new-document = Neues Dokument
 open-project = Projekt öffnen
 todo = TODO
@@ -12,7 +12,7 @@ todo = TODO
 ## Dokument-Statistiken
 
 document-statistics = Dokument-Statistiken
-word-count = Wörter
+word-count = Wortanzahl
 character-count = Zeichen
 character-count-no-spaces = Zeichen (ohne Leerzeichen)
 line-count = Zeilen
@@ -33,7 +33,7 @@ project-search = Projektsuche
 
 ## Aufforderung zum Speichern von Änderungen
 
-prompt-save-changes-title = Ungespeicherte Änderungen
+prompt-save-changes-title = Änderungen vor dem Schließen speichern?
 prompt-unsaved-changes = Es existieren ungespeicherte Änderungen. Speichern?
 cancel = Abbrechen
 discard = Änderungen verwerfen
@@ -50,10 +50,10 @@ theme = Thema
 match-desktop = An Desktop anpassen
 dark = Dunkel
 light = Hell
-syntax-dark = Syntax Dunkel
-syntax-light = Syntax Hell
-default-font = Standard-Schriftart
-default-font-size = Standard-Schriftgröße
+syntax-dark = Syntax dunkel
+syntax-light = Syntax hell
+default-font = Standardschriftart
+default-font-size = Standardschriftgröße
 default-zoom-step = Zoomstufen
 
 ### Tastenkombinationen
@@ -69,7 +69,7 @@ replace = Ersetzen
 replace-all = Alles ersetzen
 case-sensitive = Groß-/Kleinschreibung beachten
 use-regex = Reguläre Ausdrücke verwenden
-wrap-around = Umlauf
+wrap-around = Umlaufen
 
 # Menü
 
@@ -119,7 +119,7 @@ indentation = Einrückung
 ### Einrückung
 
 automatic-indentation = Automatische Einrückung
-tab-width = Tabulator-Breite: { $tab_width }
+tab-width = Tabulatorbreite: { $tab_width }
 convert-indentation-to-spaces = Einrückung in Leerzeichen umwandeln
 convert-indentation-to-tabs = Einrückung in Tabulatoren umwandeln
 word-wrap = Zeilenumbruch
@@ -128,5 +128,6 @@ highlight-current-line = Aktuelle Zeile hervorheben
 syntax-highlighting = Syntaxhervorhebung...
 menu-settings = Einstellungen...
 menu-keyboard-shortcuts = Tastenkombinationen...
-menu-about = Über COSMIC Text Editor
+menu-about = Über COSMIC Texteditor...
 repository = Repository
+support = Unterstützung
