@@ -28,6 +28,7 @@ use cosmic_files::{
 use cosmic_text::{Cursor, Edit, Family, Selection, SwashCache, SyntaxSystem, ViMode};
 use notify::{RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
+use std::hash::Hash;
 use std::{
     any::TypeId,
     collections::{HashMap, HashSet},
@@ -466,7 +467,7 @@ pub struct App {
     theme_names: Vec<String>,
     context_page: ContextPage,
     text_box_id: widget::Id,
-    auto_scroll: Option<f32>,
+    auto_scroll: Option<(f32, u32)>,
     dialog_opt: Option<Dialog<Message>>,
     dialog_page_opt: Option<DialogPage>,
     find_opt: Option<FindField>,
@@ -1092,7 +1093,7 @@ impl App {
                                 widget::row::with_children(vec![
                                     icon.into(),
                                     widget::text(text.clone()).into(),
-                                    widget::horizontal_space().into(),
+                                    widget::space::horizontal().into(),
                                     widget::button::standard(fl!("stage"))
                                         .on_press(Message::GitStage(
                                             project_path.clone(),
@@ -1133,7 +1134,7 @@ impl App {
                                 widget::row::with_children(vec![
                                     icon.into(),
                                     widget::text(text.clone()).into(),
-                                    widget::horizontal_space().into(),
+                                    widget::space::horizontal().into(),
                                     widget::button::standard(fl!("unstage"))
                                         .on_press(Message::GitUnstage(
                                             project_path.clone(),
@@ -1672,7 +1673,7 @@ impl Application for App {
                     if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(*entity) {
                         let mut row = widget::row::with_capacity(3).align_y(Alignment::Center);
                         row = row.push(widget::text(tab.title()));
-                        row = row.push(widget::horizontal_space());
+                        row = row.push(widget::space::horizontal());
                         if let Some(_path) = &tab.path_opt {
                             row = row.push(
                                 widget::button::standard(fl!("save"))
@@ -1741,7 +1742,14 @@ impl Application for App {
                 return self.update_config();
             }
             Message::AutoScroll(auto_scroll) => {
-                self.auto_scroll = auto_scroll;
+                self.auto_scroll = auto_scroll.map(|new| {
+                    (
+                        new,
+                        self.auto_scroll
+                            .map(|old| old.1.wrapping_add(1))
+                            .unwrap_or_default(),
+                    )
+                });
             }
             Message::Config(config) => {
                 if config != self.config {
@@ -3186,7 +3194,7 @@ impl Application for App {
                     widget::tooltip::Position::Top,
                 )
                 .into(),
-                widget::horizontal_space().into(),
+                widget::space::horizontal().into(),
                 button::custom(icon_cache_get("window-close-symbolic", 16))
                     .on_press(Message::Find(None))
                     .padding(space_xxs)
@@ -3243,13 +3251,16 @@ impl Application for App {
 
             column = column.push(
                 widget::row::with_children(vec![
-                    widget::checkbox(fl!("case-sensitive"), self.config.find_case_sensitive)
+                    widget::checkbox(self.config.find_case_sensitive)
+                        .label(fl!("case-sensitive"))
                         .on_toggle(Message::FindCaseSensitive)
                         .into(),
-                    widget::checkbox(fl!("use-regex"), self.config.find_use_regex)
+                    widget::checkbox(self.config.find_use_regex)
+                        .label(fl!("use-regex"))
                         .on_toggle(Message::FindUseRegex)
                         .into(),
-                    widget::checkbox(fl!("wrap-around"), self.config.find_wrap_around)
+                    widget::checkbox(self.config.find_wrap_around)
+                        .label(fl!("wrap-around"))
                         .on_toggle(Message::FindWrapAround)
                         .into(),
                 ])
@@ -3299,67 +3310,74 @@ impl Application for App {
                 }
                 _ => None,
             }),
-            Subscription::run_with_id(
-                TypeId::of::<WatcherSubscription>(),
-                stream::channel(100, |mut output| async move {
-                    let watcher_res = {
-                        let mut output = output.clone();
-                        //TODO: debounce
-                        notify::recommended_watcher(
-                            move |event_res: Result<notify::Event, notify::Error>| match event_res {
-                                Ok(event) => {
-                                    match &event.kind {
-                                        notify::EventKind::Access(_)
-                                        | notify::EventKind::Modify(
-                                            notify::event::ModifyKind::Metadata(_),
-                                        ) => {
-                                            // Data not mutated
-                                            return;
-                                        }
-                                        _ => {}
-                                    }
+            Subscription::run_with(TypeId::of::<WatcherSubscription>(), |_| {
+                stream::channel(
+                    100,
+                    |mut output: futures::channel::mpsc::Sender<Message>| async move {
+                        let watcher_res = {
+                            let mut output = output.clone();
+                            //TODO: debounce
+                            notify::recommended_watcher(
+                                move |event_res: Result<notify::Event, notify::Error>| {
+                                    match event_res {
+                                        Ok(event) => {
+                                            match &event.kind {
+                                                notify::EventKind::Access(_)
+                                                | notify::EventKind::Modify(
+                                                    notify::event::ModifyKind::Metadata(_),
+                                                ) => {
+                                                    // Data not mutated
+                                                    return;
+                                                }
+                                                _ => {}
+                                            }
 
-                                    match futures::executor::block_on(async {
-                                        output.send(Message::NotifyEvent(event)).await
-                                    }) {
-                                        Ok(()) => {}
+                                            match futures::executor::block_on(async {
+                                                output.send(Message::NotifyEvent(event)).await
+                                            }) {
+                                                Ok(()) => {}
+                                                Err(err) => {
+                                                    log::warn!(
+                                                        "failed to send notify event: {:?}",
+                                                        err
+                                                    );
+                                                }
+                                            }
+                                        }
                                         Err(err) => {
-                                            log::warn!("failed to send notify event: {:?}", err);
+                                            log::warn!("failed to watch files: {:?}", err);
                                         }
                                     }
-                                }
-                                Err(err) => {
-                                    log::warn!("failed to watch files: {:?}", err);
-                                }
-                            },
-                        )
-                    };
+                                },
+                            )
+                        };
 
-                    match watcher_res {
-                        Ok(watcher) => {
-                            match output
-                                .send(Message::NotifyWatcher(WatcherWrapper {
-                                    watcher_opt: Some(watcher),
-                                }))
-                                .await
-                            {
-                                Ok(()) => {}
-                                Err(err) => {
-                                    log::warn!("failed to send notify watcher: {:?}", err);
+                        match watcher_res {
+                            Ok(watcher) => {
+                                match output
+                                    .send(Message::NotifyWatcher(WatcherWrapper {
+                                        watcher_opt: Some(watcher),
+                                    }))
+                                    .await
+                                {
+                                    Ok(()) => {}
+                                    Err(err) => {
+                                        log::warn!("failed to send notify watcher: {:?}", err);
+                                    }
                                 }
                             }
+                            Err(err) => {
+                                log::warn!("failed to create file watcher: {:?}", err);
+                            }
                         }
-                        Err(err) => {
-                            log::warn!("failed to create file watcher: {:?}", err);
-                        }
-                    }
 
-                    //TODO: how to properly kill this task?
-                    loop {
-                        time::sleep(time::Duration::new(1, 0)).await;
-                    }
-                }),
-            ),
+                        //TODO: how to properly kill this task?
+                        loop {
+                            time::sleep(time::Duration::new(1, 0)).await;
+                        }
+                    },
+                )
+            }),
             cosmic_config::config_subscription(
                 TypeId::of::<ConfigSubscription>(),
                 Self::APP_ID.into(),
@@ -3403,9 +3421,24 @@ impl Application for App {
         ];
 
         if let Some(auto_scroll) = self.auto_scroll {
+            #[derive(Clone, Copy)]
+            struct AutoScroll {
+                counter: u32,
+                auto_scroll: f32,
+            }
+
+            impl Hash for AutoScroll {
+                fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+                    self.counter.hash(state);
+                }
+            }
             subscriptions.push(
                 iced::time::every(time::Duration::from_millis(10))
-                    .map(move |_| Message::Scroll(auto_scroll)),
+                    .with(AutoScroll {
+                        auto_scroll: auto_scroll.0,
+                        counter: auto_scroll.1,
+                    })
+                    .map(move |(auto_scroll, _)| Message::Scroll(auto_scroll.auto_scroll)),
             );
         }
 
