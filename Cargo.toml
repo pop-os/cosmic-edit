@@ -4,7 +4,7 @@ version = "1.0.8"
 authors = ["Jeremy Soller <jeremy@system76.com>"]
 edition = "2024"
 license = "GPL-3.0-only"
-rust-version = "1.89"
+rust-version = "1.90"
 
 [dependencies]
 dirs = "6"
@@ -34,8 +34,6 @@ rust-embed = "8"
 
 [dependencies.cosmic-files]
 git = "https://github.com/pop-os/cosmic-files.git"
-branch = "iced-rebase"
-# path = "../cosmic-files"
 default-features = false
 
 [dependencies.cosmic-syntax-theme]
@@ -47,7 +45,6 @@ features = ["syntect", "vi"]
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"
-branch = "iced-rebase"
 default-features = false
 #TODO: a11y feature crashes file choser dialog
 features = ["about", "multi-window", "tokio", "winit", "surface-message"]
@@ -73,7 +70,7 @@ debug = true
 onig = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
 onig_sys = { git = "https://github.com/rust-onig/rust-onig.git", branch = "main" }
 
-[patch.'https://github.com/pop-os/libcosmic']
-libcosmic = { git = "https://github.com/pop-os/libcosmic//", branch = "iced-rebase" }
-cosmic-config = { git = "https://github.com/pop-os/libcosmic//", branch = "iced-rebase" }
-cosmic-theme = { git = "https://github.com/pop-os/libcosmic//", branch = "iced-rebase" }
+# [patch.'https://github.com/pop-os/libcosmic']
+# libcosmic = { git = "https://github.com/pop-os/libcosmic//" }
+# cosmic-config = { git = "https://github.com/pop-os/libcosmic//" }
+# cosmic-theme = { git = "https://github.com/pop-os/libcosmic//" }
