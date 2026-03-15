@@ -34,7 +34,7 @@ project-search = Projektsuche
 ## Aufforderung zum Speichern von Änderungen
 
 prompt-save-changes-title = Änderungen vor dem Schließen speichern?
-prompt-unsaved-changes = Es existieren ungespeicherte Änderungen. Speichern?
+prompt-unsaved-changes = Du hast ungespeicherte Änderungen. Wenn du ohne zu speichern fortfährst, gehen diese Änderungen verloren.
 cancel = Abbrechen
 discard = Änderungen verwerfen
 save-all = Alles speichern
