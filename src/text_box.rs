@@ -1016,7 +1016,7 @@ where
                 modified_key: Key::Named(key),
                 modifiers,
                 ..
-            }) if state.is_focused && !matches!(key, Named::Space) => match key {
+            }) if state.is_focused => match key {
                 Named::ArrowLeft => {
                     motion_modifiers(&mut editor, Motion::Left, *modifiers);
                     shell.capture_event();
