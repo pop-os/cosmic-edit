@@ -2771,9 +2771,9 @@ impl Application for App {
                 self.tab_model.remove(entity);
                 self.update_watcher();
 
-                // If that was the last tab, make a new empty one
+                // If that was the last tab, exit the application
                 if self.tab_model.iter().next().is_none() {
-                    self.open_tab(None);
+                    return self.update(Message::QuitForce)
                 }
 
                 // Close PromptSaveClose dialog if open for this entity
