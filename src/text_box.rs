@@ -133,7 +133,6 @@ where
     fn input_method<'b>(
         &self,
         state: &'b State,
-        editor: &BorrowedWithFontSystem<'_, ViEditor<'static, 'static>>,
         scale_factor: f32,
         layout: Layout<'_>,
     ) -> InputMethod<&'b str> {
@@ -142,7 +141,7 @@ where
         };
 
         let editor_pos = layout.position() + [self.padding.left, self.padding.top].into();
-        let (caret_x, caret_y) = editor.cursor_position().unwrap_or_default();
+        let (caret_x, caret_y) = state.caret_position;
         InputMethod::Enabled {
             cursor: Rectangle::new(
                 Point::new(
@@ -1396,12 +1395,10 @@ where
                 }
             }
             Event::Window(WindowEvent::RedrawRequested(_now)) => {
-                shell.request_input_method(&self.input_method(
-                    state,
-                    &editor,
-                    scale_factor,
-                    layout,
-                ));
+                if state.is_focused {
+                    state.caret_position = editor.cursor_position().unwrap_or(state.caret_position);
+                }
+                shell.request_input_method(&self.input_method(state, scale_factor, layout));
             }
             _ => (),
         }
@@ -1452,6 +1449,7 @@ pub struct State {
     scrollbar_h_rect: Cell<Option<Rectangle<f32>>>,
     handle_opt: Mutex<Option<image::Handle>>,
     shift_anchor: Mutex<Option<Cursor>>,
+    caret_position: (i32, i32),
     preedit: Option<Preedit>,
 }
 
@@ -1470,6 +1468,7 @@ impl State {
             scrollbar_h_rect: Cell::new(None),
             handle_opt: Mutex::new(None),
             shift_anchor: Mutex::new(None),
+            caret_position: (0, 0),
             preedit: None,
         }
     }
