@@ -1226,7 +1226,9 @@ where
             }
             Event::Mouse(MouseEvent::ButtonReleased(Button::Left)) => {
                 state.dragging = None;
-                shell.capture_event();
+                if cursor_position.position_in(layout.bounds()).is_some() {
+                    shell.capture_event();
+                }
                 if let Some(on_auto_scroll) = &self.on_auto_scroll {
                     shell.publish(on_auto_scroll(None));
                 }
