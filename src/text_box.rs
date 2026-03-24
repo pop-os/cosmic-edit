@@ -744,7 +744,6 @@ where
 
         // Draw vertical scrollbar
         if let Some(scrollbar_v_rect) = state.scrollbar_v_rect.get() {
-
             // neutral_3, 0.7
             let track_color = cosmic_theme
                 .palette
