@@ -104,7 +104,12 @@ fn format_recent_menu_path(path: &PathBuf, home_dir_opt: Option<&PathBuf>) -> St
             continue;
         }
 
-        return format!("{}{}{}", take_prefix_chars(&display, prefix_len), ELLIPSIS, tail);
+        return format!(
+            "{}{}{}",
+            take_prefix_chars(&display, prefix_len),
+            ELLIPSIS,
+            tail
+        );
     }
 
     truncate_middle(&display, RECENT_MENU_LABEL_MAX_CHARS)
