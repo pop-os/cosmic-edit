@@ -2052,6 +2052,9 @@ impl Application for App {
                         has_focus,
                     };
                 }
+                if !has_focus {
+                    return self.update_focus();
+                }
             }
             Message::GitProjectStatus(project_status) => {
                 self.git_project_status = Some(project_status);
