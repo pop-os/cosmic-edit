@@ -1414,8 +1414,10 @@ impl operation::Focusable for State {
     }
 
     fn focus(&mut self) {
+        if !self.is_focused {
+            self.emit_focus = true;
+        }
         self.is_focused = true;
-        self.emit_focus = true;
     }
 
     fn unfocus(&mut self) {
