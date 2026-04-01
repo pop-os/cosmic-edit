@@ -455,7 +455,6 @@ where
         // Set metrics and size
         editor.with_buffer_mut(|buffer| {
             buffer.set_metrics_and_size(
-                font_system.raw(),
                 metrics,
                 Some((image_w - editor_offset_x) as f32),
                 Some(image_h as f32),
