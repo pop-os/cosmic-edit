@@ -5,8 +5,9 @@ use cosmic::widget::menu::key_bind::KeyBind;
 use cosmic::{
     Element,
     app::Core,
-    iced::{Background, Length, advanced::widget::text::Style as TextStyle, widget::column},
-    iced_core::Border,
+    iced::{
+        Background, Border, Length, advanced::widget::text::Style as TextStyle, widget::column,
+    },
     theme,
     widget::{
         self, divider,
