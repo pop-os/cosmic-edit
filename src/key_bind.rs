@@ -1,5 +1,5 @@
 use cosmic::widget::menu::key_bind::{KeyBind, Modifier};
-use cosmic::{iced::keyboard::Key, iced_core::keyboard::key::Named};
+use cosmic::{iced::core::keyboard::key::Named, iced::keyboard::Key};
 use std::collections::HashMap;
 
 use crate::Action;

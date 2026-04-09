@@ -3,14 +3,7 @@
 use cosmic::{
     Renderer,
     cosmic_theme::palette::{WithAlpha, blend::Compose},
-    iced::{
-        Color, Element, Length, Padding, Point, Rectangle, Size, Vector,
-        advanced::graphics::text::{Raw, font_system},
-        event::{Event, Status},
-        keyboard::{Event as KeyEvent, Modifiers},
-        mouse::{self, Button, Event as MouseEvent, ScrollDelta},
-    },
-    iced_core::{
+    iced::core::{
         Border, Radians, Shell, Transformation,
         clipboard::Clipboard,
         image,
@@ -23,6 +16,13 @@ use cosmic::{
             operation::{self, Operation},
             tree,
         },
+    },
+    iced::{
+        Color, Element, Length, Padding, Point, Rectangle, Size, Vector,
+        advanced::graphics::text::{Raw, font_system},
+        event::Event,
+        keyboard::{Event as KeyEvent, Modifiers},
+        mouse::{self, Button, Event as MouseEvent, ScrollDelta},
     },
     theme::Theme,
 };
