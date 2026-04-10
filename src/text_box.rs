@@ -1397,8 +1397,8 @@ where
             Event::Window(WindowEvent::RedrawRequested(_now)) => {
                 if state.is_focused {
                     state.caret_position = editor.cursor_position().unwrap_or(state.caret_position);
+                    shell.request_input_method(&self.input_method(state, scale_factor, layout));
                 }
-                shell.request_input_method(&self.input_method(state, scale_factor, layout));
             }
             _ => (),
         }
