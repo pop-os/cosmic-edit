@@ -480,6 +480,7 @@ pub struct App {
     project_search_id: widget::Id,
     project_search_value: String,
     project_search_result: Option<ProjectSearchResult>,
+    project_search_has_focus: bool,
     watcher_opt: Option<(
         notify::RecommendedWatcher,
         HashSet<(PathBuf, RecursiveMode)>,
@@ -792,7 +793,7 @@ impl App {
     fn update_focus(&self) -> Task<Message> {
         if self.core.window.show_context {
             match self.context_page {
-                ContextPage::ProjectSearch => {
+                ContextPage::ProjectSearch if self.project_search_has_focus => {
                     widget::text_input::focus(self.project_search_id.clone())
                 }
                 _ => Task::none(),
@@ -1495,6 +1496,7 @@ impl Application for App {
             project_search_id: widget::Id::unique(),
             project_search_value: String::new(),
             project_search_result: None,
+            project_search_has_focus: false,
             watcher_opt: None,
             modifiers: Modifiers::empty(),
         };
@@ -2053,6 +2055,7 @@ impl Application for App {
                     };
                 }
                 if !has_focus {
+                    self.project_search_has_focus = false;
                     return self.update_focus();
                 }
             }
@@ -2440,6 +2443,7 @@ impl Application for App {
                 };
 
                 if let Some((path, cursor)) = path_cursor_opt {
+                    self.project_search_has_focus = false;
                     if let Some(entity) = self.open_tab(Some(path)) {
                         return Task::batch([
                             //TODO: why must this be done in a command?
@@ -2502,6 +2506,7 @@ impl Application for App {
             }
             Message::ProjectSearchResult(project_search_result) => {
                 self.project_search_result = Some(project_search_result);
+                self.project_search_has_focus = true;
 
                 // Focus correct input
                 return self.update_focus();
@@ -2537,6 +2542,7 @@ impl Application for App {
                 }
             }
             Message::ProjectSearchValue(value) => {
+                self.project_search_has_focus = true;
                 self.project_search_value = value;
             }
             Message::PromptSaveChanges(entity) => {
@@ -2853,6 +2859,9 @@ impl Application for App {
                     self.context_page = context_page;
                     self.core.window.show_context = true;
                 }
+
+                self.project_search_has_focus = self.core.window.show_context
+                    && self.context_page == ContextPage::ProjectSearch;
 
                 // Execute commands for specific pages
                 if self.core.window.show_context && self.context_page == ContextPage::GitManagement
