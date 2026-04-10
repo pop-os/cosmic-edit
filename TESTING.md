@@ -41,3 +41,7 @@ This document provides a regression testing checklist for COSMIC Edit. The check
 - [ ] Make a change in a file.
 - [ ] File -> Git management shows the change and staging it works.
 - [ ] Make another change while Git management's open; it updates to show the new change.
+
+### Additional Usage
+
+- [ ] Open a large file (e.g. `sudo dmesg > dmesg.txt`), click and drag to select all of its text, cut, and paste.
