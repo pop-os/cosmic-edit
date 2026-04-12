@@ -20,7 +20,7 @@ line-count = Zeilen
 ## Git-Verwaltung
 
 git-management = Git-Verwaltung
-git-management-description = Git-Verwaltung ist ein Entwicklerwerkzeug für die Versionskontrolle.
+git-management-description = Git-Verwaltung ist ein Entwicklerwerkzeug, das für die Versionskontrolle eingesetzt wird.
 git-management-loading = Git-Verwaltung wird geladen...
 stage = Vormerken
 staged-changes = Vorgemerkte Änderungen
@@ -34,7 +34,7 @@ project-search = Projektsuche
 ## Aufforderung zum Speichern von Änderungen
 
 prompt-save-changes-title = Änderungen vor dem Schließen speichern?
-prompt-unsaved-changes = Es existieren ungespeicherte Änderungen. Speichern?
+prompt-unsaved-changes = Du hast ungespeicherte Änderungen. Wenn du ohne zu speichern fortfährst, gehen diese Änderungen verloren.
 cancel = Abbrechen
 discard = Änderungen verwerfen
 save-all = Alles speichern
@@ -131,3 +131,4 @@ menu-keyboard-shortcuts = Tastenkombinationen...
 menu-about = Über COSMIC Texteditor...
 repository = Repository
 support = Unterstützung
+comment = Texteditor für den COSMIC Desktop
