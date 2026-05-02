@@ -14,7 +14,7 @@ line-count = Eilučių skaičius
 
 ## Settings
 
-settings = Nustatymai
+settings = Nuostatos
 
 ## Appearance
 
@@ -25,7 +25,7 @@ default-font-size = Numatytas šrifto dydis
 
 ### Keyboard shortcuts
 
-keyboard-shortcuts = Klaviatūros greitieji klavišai
+keyboard-shortcuts = Spartieji klavišai
 enable-vim-bindings = Naudoti Vim sąsajas
 
 # Menu
@@ -36,14 +36,14 @@ enable-vim-bindings = Naudoti Vim sąsajas
 file = Failas
 new-file = Naujas failas
 new-window = Naujas langas
-open-file = Atidaryti failą...
+open-file = Atverti failą...
 todo = TODO
 save = Išsaugoti
 save-as = Išsaugoti kaip...
-revert-all-changes = Atstatyti visus pakeitimus
+revert-all-changes = Atšaukti visus keitimus
 menu-document-statistics = Apie dokumentą...
 document-type = Dokumento tipas...
-encoding = Kodavimas...
+encoding = Koduotė...
 print = Spausdinti
 quit = Išeiti
 
@@ -51,13 +51,13 @@ quit = Išeiti
 
 edit = Redaguoti
 undo = Anuliuoti
-redo = Atkurti
+redo = Grąžinti
 cut = Iškirpti
 copy = Kopijuoti
-paste = Įklijuoti
-find = Surasti
-replace = Pakeisti
-spell-check = Rašybos tikrinimas...
+paste = Įdėti
+find = Rasti
+replace = Keisti
+spell-check = Tikrinti rašybą...
 
 ## View
 
@@ -70,50 +70,51 @@ automatic-indentation = Automatinė įtrauka
 tab-width = Tabuliavimo žingsnio plotis: { $tab_width }
 convert-indentation-to-spaces = Pakeisti įtrauką tarpais
 convert-indentation-to-tabs = Pakeisti įtrauką tabuliavimo žingsniu
-word-wrap = Žodžių perkėlimas
+word-wrap = Žodžių kėlimas
 show-line-numbers = Rodyti eilučių numerius
 highlight-current-line = Paryškinti dabartinę eilutę
 syntax-highlighting = Sintaksės tikrinimas...
-menu-settings = Nustatymai...
-menu-keyboard-shortcuts = Klaviatūros greitieji klavišai...
-menu-about = Apie COSMIC Text Editor...
+menu-settings = Nuostatos...
+menu-keyboard-shortcuts = Spartieji klavišai...
+menu-about = Apie COSMIC Rašyklę...
 cancel = Atšaukti
 repository = Saugykla
 support = Palaikymas
-cosmic-text-editor = COSMIC Text Editor
+cosmic-text-editor = COSMIC Rašyklė
 git-management = Git valdymas
 git-management-description = Git valdymas - kūrėjų įrankis, naudojamas versijų kontrolės sistemos operacijoms įvykdyti.
 git-management-loading = Kraunamas Git valdymas...
 save-all = Išsaugoti viską
 syntax-dark = Tamsi sintaksė
-default-zoom-step = Priartinimo žingsniai
-open-recent-file = Atidaryti pastararąjį failą
+default-zoom-step = Artinimo žingsniai
+open-recent-file = Atverti pastarąjį failą
 close-file = Uždaryti failą
 menu-open-project = Atidaryti projektą...
 open-recent-project = Atidaryti pastarąjį projektą
 close-project = Uždaryti projektą
-select-all = Pažymėti viską
+select-all = Žymėti viską
 find-in-project = Ieškoti projekte...
-zoom-in = Priartinti
+zoom-in = Artinti
 default-size = Numatytas dydis
-zoom-out = Nutolinti
+zoom-out = Tolinti
 menu-git-management = Git valdymas...
-staged-changes = Patvirtinti pokyčiai
-unstaged-changes = Nepatvirtinti pokyčiai
+staged-changes = Patvirtinti keitimai
+unstaged-changes = Nepatvirtinti keitimai
 prompt-save-changes-title = Išsaugoti pakeitimus prieš uždarant?
-prompt-unsaved-changes = Yra neišsaugotų pakeitimų. Jeigu tęsite neišsaugojus, jūsų pakeitimai bus prarasti.
-discard = Pašalinti pakeitimus
+prompt-unsaved-changes = Yra neišsaugotų keitimų. Jei tęsite neišsaugoję, šie keitimai dings.
+discard = Pašalinti keitimus
 match-desktop = Pagal darbalaukio temą
-find-placeholder = Surasti...
-find-previous = Atgalinis ieškojimas
-find-next = Ieškoti sekančio
-replace-placeholder = Pakeisti...
+find-placeholder = Rasti...
+find-previous = Ieškoti ankstesnio
+find-next = Ieškoti tolesnio
+replace-placeholder = Keisti...
 replace-all = Pakeisti visus
 case-sensitive = Skirti raidžių dydžius
 use-regex = Naudoti regex
-wrap-around = Kelti į sekančią eilutę
+wrap-around = Laikinai skaidyti eilutes
 stage = Patvirtinti pakeitimai
 project-search = Paieška projekte
 dark = Tamsus
 light = Šviesus
-comment = COSMIC desktop teksto redaktorius
+comment = COSMIC aplinkos rašyklė
+unstage = Atšaukti patvirtinimą
