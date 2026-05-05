@@ -825,7 +825,7 @@ where
             let scrollbar_color = if pressed {
                 // pressed_state_color, 0.5
                 cosmic_theme
-                    .background
+                    .background(theme.transparent)
                     .component
                     .pressed
                     .without_alpha()
@@ -834,7 +834,7 @@ where
             } else if hover {
                 // hover_state_color, 0.2
                 cosmic_theme
-                    .background
+                    .background(theme.transparent)
                     .component
                     .hover
                     .without_alpha()
@@ -921,7 +921,7 @@ where
             let scrollbar_color = if pressed {
                 // pressed_state_color, 0.5
                 cosmic_theme
-                    .background
+                    .background(theme.transparent)
                     .component
                     .pressed
                     .without_alpha()
@@ -930,7 +930,7 @@ where
             } else if hover {
                 // hover_state_color, 0.2
                 cosmic_theme
-                    .background
+                    .background(theme.transparent)
                     .component
                     .hover
                     .without_alpha()

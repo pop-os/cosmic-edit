@@ -121,7 +121,7 @@ pub fn context_menu<'a>(
     entity: segmented_button::Entity,
 ) -> Element<'a, Message> {
     fn key_style(theme: &cosmic::Theme) -> TextStyle {
-        let mut color = theme.cosmic().background.component.on;
+        let mut color = theme.cosmic().background(theme.transparent).component.on;
         color.alpha *= 0.75;
         TextStyle {
             color: Some(color.into()),
@@ -146,20 +146,22 @@ pub fn context_menu<'a>(
         .on_press(Message::TabContextAction(entity, menu_action))
     };
 
-    widget::container(column!(
-        menu_item(fl!("undo"), Action::Undo),
-        menu_item(fl!("redo"), Action::Redo),
-        divider::horizontal::light(),
-        menu_item(fl!("cut"), Action::Cut),
-        menu_item(fl!("copy"), Action::Copy),
-        menu_item(fl!("paste"), Action::Paste),
-        menu_item(fl!("select-all"), Action::SelectAll),
-    ))
+    widget::container(
+        cosmic::widget::menu::menu_column::MenuColumn::with_children([
+            menu_item(fl!("undo"), Action::Undo).into(),
+            menu_item(fl!("redo"), Action::Redo).into(),
+            divider::horizontal::light().into(),
+            menu_item(fl!("cut"), Action::Cut).into(),
+            menu_item(fl!("copy"), Action::Copy).into(),
+            menu_item(fl!("paste"), Action::Paste).into(),
+            menu_item(fl!("select-all"), Action::SelectAll).into(),
+        ]),
+    )
     .padding(1)
     //TODO: move style to libcosmic
     .style(|theme| {
         let cosmic = theme.cosmic();
-        let component = &cosmic.background.component;
+        let component = &cosmic.background(theme.transparent).component;
         widget::container::Style {
             icon_color: Some(component.on.into()),
             text_color: Some(component.on.into()),
