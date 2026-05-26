@@ -1,10 +1,10 @@
 [package]
 name = "cosmic-edit"
-version = "1.0.13"
+version = "1.0.14"
 authors = ["Jeremy Soller <jeremy@system76.com>"]
 edition = "2024"
 license = "GPL-3.0-only"
-rust-version = "1.90"
+rust-version = "1.93"
 
 [dependencies]
 dirs = "6"
