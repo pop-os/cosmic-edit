@@ -366,7 +366,7 @@ pub enum Message {
     GitProjectStatus(Vec<(String, PathBuf, Vec<GitStatus>)>),
     GitStage(PathBuf, PathBuf),
     GitUnstage(PathBuf, PathBuf),
-    Key(Modifiers, keyboard::Key),
+    Key(Modifiers, keyboard::key::Physical, keyboard::Key),
     LaunchUrl(String),
     Modifiers(Modifiers),
     NewFile,
@@ -2124,9 +2124,9 @@ impl Application for App {
                     |x| x,
                 );
             }
-            Message::Key(modifiers, key) => {
+            Message::Key(modifiers, physical, key) => {
                 for (key_bind, action) in self.key_binds.iter() {
-                    if key_bind.matches(modifiers, &key) {
+                    if key_bind.matches(modifiers, &key, Some(&physical)) {
                         return self.update(action.message(None));
                     }
                 }
@@ -2779,7 +2779,7 @@ impl Application for App {
 
                 // If that was the last tab, exit the application
                 if self.tab_model.iter().next().is_none() {
-                    return self.update(Message::QuitForce)
+                    return self.update(Message::QuitForce);
                 }
 
                 // Close PromptSaveClose dialog if open for this entity
@@ -3307,12 +3307,15 @@ impl Application for App {
 
         let mut subscriptions = vec![
             event::listen_with(|event, status, window_id| match event {
-                event::Event::Keyboard(keyboard::Event::KeyPressed { modifiers, key, .. }) => {
-                    match status {
-                        event::Status::Ignored => Some(Message::Key(modifiers, key)),
-                        event::Status::Captured => None,
-                    }
-                }
+                event::Event::Keyboard(keyboard::Event::KeyPressed {
+                    modifiers,
+                    physical_key,
+                    key,
+                    ..
+                }) => match status {
+                    event::Status::Ignored => Some(Message::Key(modifiers, physical_key, key)),
+                    event::Status::Captured => None,
+                },
                 event::Event::Keyboard(keyboard::Event::ModifiersChanged(modifiers)) => {
                     Some(Message::Modifiers(modifiers))
                 }
