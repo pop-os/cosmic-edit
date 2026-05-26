@@ -25,8 +25,8 @@ git-management-description = A Git-kezelő egy verziókezeléssel kapcsolatos fe
 git-management-loading = Git-kezelő betöltése…
 stage = Előkészítés
 staged-changes = Előkészített változtatások
-unstage = Változtatások visszavonása előkészítésből
-unstaged-changes = Előkészítésből visszavont változtatások
+unstage = Előkészítés visszavonása
+unstaged-changes = Nem előkészített változtatások
 
 ## Project search
 
@@ -35,7 +35,7 @@ project-search = Projektkereső
 ## Prompt save changes
 
 prompt-save-changes-title = Mented a változtatásokat bezárás előtt?
-prompt-unsaved-changes = Vannak nem mentett változtatások. Ha nem mentesz, ezek el fognak veszni!
+prompt-unsaved-changes = Vannak nem mentett változtatások. Ha nem mentesz, ezek el fognak veszni.
 cancel = Mégse
 discard = Változtatások elvetése
 save-all = Összes mentése
@@ -68,7 +68,7 @@ find-next = Következő találat
 replace-placeholder = Csere…
 replace = Csere
 replace-all = Összes lecserélése
-case-sensitive = Kis- és nagybetű érzékenység
+case-sensitive = Kis- és nagybetű-érzékenység
 use-regex = Regex használata
 wrap-around = Körbefutás
 
@@ -100,7 +100,7 @@ quit = Kilépés
 
 edit = Szerkesztés
 undo = Visszavonás
-redo = Visszaállítás
+redo = Újra
 cut = Kivágás
 copy = Másolás
 paste = Beillesztés
