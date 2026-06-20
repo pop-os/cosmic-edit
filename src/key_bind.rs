@@ -26,6 +26,9 @@ pub fn key_binds() -> HashMap<KeyBind, Action> {
     bind!([Ctrl], Key::Character("f".into()), Find);
     bind!([Ctrl], Key::Character("h".into()), FindAndReplace);
     bind!([Ctrl], Key::Character("v".into()), Paste);
+    bind!([Shift], Key::Named(Named::Insert), Paste);
+    bind!([Ctrl], Key::Named(Named::Insert), Copy);
+    bind!([Shift], Key::Named(Named::Delete), Cut);
     bind!([Ctrl], Key::Character("t".into()), NewFile);
     bind!([Ctrl], Key::Character("n".into()), NewWindow);
     bind!([Ctrl], Key::Character("o".into()), OpenFileDialog);
