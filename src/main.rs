@@ -691,13 +691,7 @@ impl App {
                     return Some(NewTab::Exists(entity));
                 }
 
-                // Add to recent files, ensuring only one entry
-                self.config_state.recent_files.retain(|x| x != &canonical);
-                self.config_state
-                    .recent_files
-                    .push_front(canonical.to_path_buf());
-                self.config_state.recent_files.truncate(10);
-                self.save_config_state();
+                self.add_to_recents(&canonical);
 
                 let mut tab = EditorTab::new(&self.config);
                 tab.open(canonical);
@@ -705,6 +699,15 @@ impl App {
             }
             None => Some(NewTab::Tab(EditorTab::new(&self.config))),
         }
+    }
+
+    fn add_to_recents(&mut self, canonical: &PathBuf) {
+        self.config_state.recent_files.retain(|x| x != canonical);
+        self.config_state
+            .recent_files
+            .push_front(canonical.to_path_buf());
+        self.config_state.recent_files.truncate(10);
+        self.save_config_state();
     }
 
     fn update_config(&mut self) -> Task<Message> {
@@ -2586,11 +2589,18 @@ impl Application for App {
 
                 let entity = entity_opt.unwrap_or_else(|| self.tab_model.active());
                 if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                    if tab.path_opt.is_none() {
-                        return self.update(Message::SaveAsDialog(Some(entity)));
+                    match tab.path_opt.clone() {
+                        Some(path) => {
+                            title_opt = Some(tab.title());
+                            tab.save();
+                            if let Ok(canonical) = fs::canonicalize(&path) {
+                                self.add_to_recents(&canonical);
+                            }
+                        }
+                        None => {
+                            return self.update(Message::SaveAsDialog(Some(entity)));
+                        }
                     }
-                    title_opt = Some(tab.title());
-                    tab.save();
                 }
                 if let Some(title) = title_opt {
                     self.tab_model.text_set(self.tab_model.active(), title);
@@ -2601,10 +2611,17 @@ impl Application for App {
                 let entities: Vec<_> = self.tab_model.iter().collect();
                 for entity in entities {
                     if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                        if tab.path_opt.is_none() {
-                            log::warn!("{} has no path when doing save all", tab.title());
+                        match tab.path_opt.clone() {
+                            Some(path) => {
+                                tab.save();
+                                if let Ok(canonical) = fs::canonicalize(&path) {
+                                    self.add_to_recents(&canonical);
+                                }
+                            }
+                            None => {
+                                log::warn!("{} has no path when doing save all", tab.title());
+                            }
                         }
-                        tab.save();
                     }
                 }
                 return self.update_dialogs();
@@ -2648,6 +2665,11 @@ impl Application for App {
                                 tab.path_opt = Some(paths.remove(0));
                                 title_opt = Some(tab.title());
                                 tab.save();
+                                if let Some(path) = tab.path_opt.clone() {
+                                    if let Ok(canonical) = fs::canonicalize(&path) {
+                                        self.add_to_recents(&canonical);
+                                    }
+                                }
                             }
                             if let Some(title) = title_opt {
                                 self.tab_model.text_set(entity, title);
