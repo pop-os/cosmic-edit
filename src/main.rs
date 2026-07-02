@@ -194,6 +194,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum Action {
     Todo,
+    NoOp,
     About,
     CloseFile,
     CloseProject(usize),
@@ -244,6 +245,7 @@ impl Action {
     fn message(&self, entity_opt: Option<Entity>) -> Message {
         match self {
             Self::Todo => Message::Todo,
+            Self::NoOp => Message::NoOp,
             Self::About => Message::ToggleContextPage(ContextPage::About),
             Self::CloseFile => Message::CloseFile,
             Self::CloseProject(project_i) => Message::CloseProject(*project_i),
@@ -371,6 +373,7 @@ pub enum Message {
     Modifiers(Modifiers),
     NewFile,
     NewWindow,
+    NoOp,
     NotifyEvent(notify::Event),
     NotifyWatcher(WatcherWrapper),
     OpenFile(PathBuf),
@@ -2161,6 +2164,9 @@ impl Application for App {
                     }
                 }
             }
+            Message::NoOp => {
+                // Do nothing
+            }
             Message::NotifyEvent(event) => {
                 // Reload tabs that changed
                 let mut tab_reload = Vec::new();
@@ -3027,12 +3033,19 @@ impl Application for App {
     }
 
     fn header_start(&self) -> Vec<Element<'_, Message>> {
+        let has_selection = match self.active_tab() {
+            Some(Tab::Editor(tab)) => tab.editor.lock().unwrap().selection() != Selection::None,
+            Some(Tab::GitDiff(_)) => false,
+            None => false,
+        };
+
         vec![menu_bar(
             &self.core,
             &self.config,
             &self.config_state,
             &self.key_binds,
             &self.projects,
+            has_selection,
         )]
     }
 
@@ -3088,9 +3101,10 @@ impl Application for App {
                     text_box = text_box.line_numbers();
                 }
                 let mut popover = widget::popover(text_box);
+                let has_selection = tab.editor.lock().unwrap().selection() != Selection::None;
                 if let Some(point) = tab.context_menu {
                     popover = popover
-                        .popup(menu::context_menu(&self.key_binds, tab_id))
+                        .popup(menu::context_menu(&self.key_binds, tab_id, has_selection))
                         .position(widget::popover::Position::Point(point));
                 }
                 tab_column = tab_column.push(popover);
