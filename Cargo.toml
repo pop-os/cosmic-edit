@@ -67,6 +67,9 @@ inherits = "release"
 debug = true
 
 # [patch.'https://github.com/pop-os/libcosmic']
-# libcosmic = { git = "https://github.com/pop-os/libcosmic//" }
-# cosmic-config = { git = "https://github.com/pop-os/libcosmic//" }
-# cosmic-theme = { git = "https://github.com/pop-os/libcosmic//" }
+# libcosmic = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
+# cosmic-config = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
+# cosmic-theme = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
+
+# [patch."https://github.com/pop-os/cosmic-files.git"]
+# cosmic-files = { git = "https://github.com/pop-os/cosmic-files//", branch = "theme-v2" }
