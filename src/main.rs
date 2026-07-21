@@ -346,7 +346,7 @@ pub enum RecentKind {
 pub enum Message {
     AppTheme(AppTheme),
     AutoScroll(Option<f32>),
-    CheckRecentFiles,
+    CheckRecentKind,
     Config(Config),
     ConfigState(ConfigState),
     ClearRecentFiles,
@@ -455,7 +455,7 @@ pub enum ContextPage {
 enum DialogPage {
     PromptSaveClose(segmented_button::Entity),
     PromptSaveQuit(Vec<segmented_button::Entity>),
-    PromptRecentFilesNotFound {
+    PromptRecentKindNotFound {
         files: Vec<PathBuf>,
         projects: Vec<PathBuf>,
     },
@@ -819,7 +819,7 @@ impl App {
                     self.dialog_page_opt = Some(DialogPage::PromptSaveQuit(unsaved));
                 }
             }
-            Some(DialogPage::PromptRecentFilesNotFound {..}) => {}
+            Some(DialogPage::PromptRecentKindNotFound {..}) => {}
             None => {}
         }
         Task::none()
@@ -1558,7 +1558,7 @@ impl Application for App {
         //TODO: try update_config here? It breaks loading system theme by default
         let command = Task::batch(vec![
             app.update_tab(),
-            Task::perform(async { cosmic::Action::App(Message::CheckRecentFiles) }, |x| x),
+            Task::perform(async { cosmic::Action::App(Message::CheckRecentKind) }, |x| x),
         ]);
         (app, command)
     }
@@ -1752,9 +1752,9 @@ impl Application for App {
 
                 Some(dialog.into())
             }
-            DialogPage::PromptRecentFilesNotFound { files, projects } => {
+            DialogPage::PromptRecentKindNotFound { files, projects } => {
                 let try_again_button = widget::button::text(fl!("try-again"))
-                    .on_press(Message::CheckRecentFiles);
+                    .on_press(Message::CheckRecentKind);
                 let ok_button = widget::button::suggested(fl!("ok"))
                     .on_press(Message::RemoveMissingRecents);
 
@@ -1848,7 +1848,7 @@ impl Application for App {
                     )
                 });
             }
-            Message::CheckRecentFiles => {
+            Message::CheckRecentKind => {
                 let missing_files: Vec<PathBuf> = self.config_state.recent_files
                     .iter()
                     .filter(|p| !p.exists())
@@ -1863,7 +1863,7 @@ impl Application for App {
                 if missing_files.is_empty() && missing_projects.is_empty() {
                     self.dialog_page_opt = None;
                 } else {
-                    self.dialog_page_opt = Some(DialogPage::PromptRecentFilesNotFound {
+                    self.dialog_page_opt = Some(DialogPage::PromptRecentKindNotFound {
                         files: missing_files,
                         projects: missing_projects,
                     });
