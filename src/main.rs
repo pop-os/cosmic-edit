@@ -195,6 +195,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 pub enum Action {
     Todo,
     About,
+    ClearRecentFiles,
+    ClearRecentProjects,
     CloseFile,
     CloseProject(usize),
     Copy,
@@ -245,6 +247,8 @@ impl Action {
         match self {
             Self::Todo => Message::Todo,
             Self::About => Message::ToggleContextPage(ContextPage::About),
+            Self::ClearRecentFiles => Message::ClearRecentFiles,
+            Self::ClearRecentProjects => Message::ClearRecentProjects,
             Self::CloseFile => Message::CloseFile,
             Self::CloseProject(project_i) => Message::CloseProject(*project_i),
             Self::Copy => Message::Copy,
@@ -331,15 +335,25 @@ enum NewTab {
     Exists(Entity),
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum RecentKind {
+    File,
+    Project,
+}
+
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub enum Message {
     AppTheme(AppTheme),
     AutoScroll(Option<f32>),
+    CheckRecentKind,
     Config(Config),
     ConfigState(ConfigState),
+    ClearRecentFiles,
+    ClearRecentProjects,
     CloseFile,
     CloseProject(usize),
+    CloseToast(widget::ToastId),
     CloseWindow(window::Id),
     Copy,
     Cut,
@@ -391,8 +405,10 @@ pub enum Message {
     PromptSaveChanges(segmented_button::Entity),
     Quit,
     QuitForce,
+    RecentKindNotFound(RecentKind, PathBuf),
     Redo,
     ReorderTab(ReorderEvent),
+    RemoveMissingRecents,
     RevertAllChanges,
     Save(Option<segmented_button::Entity>),
     SaveAll,
@@ -439,6 +455,10 @@ pub enum ContextPage {
 enum DialogPage {
     PromptSaveClose(segmented_button::Entity),
     PromptSaveQuit(Vec<segmented_button::Entity>),
+    PromptRecentKindNotFound {
+        files: Vec<PathBuf>,
+        projects: Vec<PathBuf>,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -486,6 +506,7 @@ pub struct App {
         HashSet<(PathBuf, RecursiveMode)>,
     )>,
     modifiers: Modifiers,
+    toasts: widget::Toasts<Message>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -710,6 +731,16 @@ impl App {
         self.save_config_state();
     }
 
+    fn clear_recent_files(&mut self) {
+        self.config_state.recent_files.clear();
+        self.save_config_state();
+    }
+
+    fn clear_recent_projects(&mut self) {
+        self.config_state.recent_projects.clear();
+        self.save_config_state();
+    }
+
     fn update_config(&mut self) -> Task<Message> {
         //TODO: provide iterator over data
         let entities: Vec<_> = self.tab_model.iter().collect();
@@ -788,6 +819,7 @@ impl App {
                     self.dialog_page_opt = Some(DialogPage::PromptSaveQuit(unsaved));
                 }
             }
+            Some(DialogPage::PromptRecentKindNotFound {..}) => {}
             None => {}
         }
         Task::none()
@@ -848,7 +880,7 @@ impl App {
                 match expand_opt {
                     Some(id) => {
                         //TODO: can this be optimized?
-                        // Task not used becuase opening a folder just returns Task::none
+                        // Task not used because opening a folder just returns Task::none
                         let _ = self.on_nav_select(id);
                     }
                     None => {
@@ -1502,6 +1534,7 @@ impl Application for App {
             project_search_has_focus: false,
             watcher_opt: None,
             modifiers: Modifiers::empty(),
+            toasts: widget::Toasts::new(Message::CloseToast),
         };
 
         // Do not show nav bar by default. Will be opened by open_project if needed
@@ -1523,7 +1556,10 @@ impl Application for App {
         }
 
         //TODO: try update_config here? It breaks loading system theme by default
-        let command = app.update_tab();
+        let command = Task::batch(vec![
+            app.update_tab(),
+            Task::perform(async { cosmic::Action::App(Message::CheckRecentKind) }, |x| x),
+        ]);
         (app, command)
     }
 
@@ -1716,6 +1752,62 @@ impl Application for App {
 
                 Some(dialog.into())
             }
+            DialogPage::PromptRecentKindNotFound { files, projects } => {
+                let try_again_button = widget::button::text(fl!("try-again"))
+                    .on_press(Message::CheckRecentKind);
+                let ok_button = widget::button::suggested(fl!("ok"))
+                    .on_press(Message::RemoveMissingRecents);
+
+                let mut content = widget::column::with_capacity(
+                    files.len() + projects.len() + 4
+                ).spacing(space_xxs);
+
+                if !files.is_empty() {
+                    content = content.push(widget::text::heading(fl!("missing-files")));
+                    for path in files {
+                        content = content.push(
+                            widget::text(path.display().to_string())
+                        );
+                    }
+                }
+
+                if !projects.is_empty() {
+                    content = content.push(widget::text::heading(fl!("missing-projects")));
+                    for path in projects {
+                        content = content.push(
+                            widget::text(path.display().to_string())
+                        );
+                    }
+                }
+
+                let dialog = widget::dialog()
+                    .title(fl!("recent-paths-not-found-title"))
+                    .icon(icon::from_name("dialog-warning-symbolic").size(64))
+                    .control(widget::container(
+                        widget::scrollable(content)
+                            .height(Length::Fixed(150.0))
+                            .width(Length::Fill)
+                    )
+                        .padding(8)
+                        .style(|theme| {
+                            let cosmic = theme.cosmic();
+                            widget::container::Style {
+                                background: Some(cosmic::iced::Background::Color(
+                                    cosmic::iced::Color::WHITE
+                                )),
+                                border: cosmic::iced::Border {
+                                    color: cosmic.accent_color().into(),
+                                    width: 1.0,
+                                    radius: cosmic.corner_radii.radius_s.into(),
+                                },
+                                ..Default::default()
+                            }
+                        }))
+                    .primary_action(ok_button)
+                    .secondary_action(try_again_button);
+
+                Some(dialog.into())
+            }
         }
     }
 
@@ -1756,6 +1848,27 @@ impl Application for App {
                     )
                 });
             }
+            Message::CheckRecentKind => {
+                let missing_files: Vec<PathBuf> = self.config_state.recent_files
+                    .iter()
+                    .filter(|p| !p.exists())
+                    .cloned()
+                    .collect();
+                let missing_projects: Vec<PathBuf> = self.config_state.recent_projects
+                    .iter()
+                    .filter(|p| !p.exists())
+                    .cloned()
+                    .collect();
+
+                if missing_files.is_empty() && missing_projects.is_empty() {
+                    self.dialog_page_opt = None;
+                } else {
+                    self.dialog_page_opt = Some(DialogPage::PromptRecentKindNotFound {
+                        files: missing_files,
+                        projects: missing_projects,
+                    });
+                }
+            }
             Message::Config(config) => {
                 if config != self.config {
                     log::info!("update config");
@@ -1769,6 +1882,14 @@ impl Application for App {
                     log::info!("update config state");
                     self.config_state = config_state;
                 }
+            }
+            Message::ClearRecentFiles => {
+                log::info!("clear recent files");
+                self.clear_recent_files();
+            }
+            Message::ClearRecentProjects => {
+                log::info!("clear recent projects");
+                self.clear_recent_projects();
             }
             Message::CloseFile => {
                 return self.update(Message::TabClose(self.tab_model.active()));
@@ -1806,6 +1927,9 @@ impl Application for App {
                     }
                     self.update_nav_bar_placeholder();
                 }
+            }
+            Message::CloseToast(toast_id) => {
+                self.toasts.remove(toast_id)
             }
             Message::CloseWindow(window_id) => {
                 if Some(window_id) == self.core.main_window_id() {
@@ -2410,15 +2534,26 @@ impl Application for App {
                     }
                 }
             }
+
+            // TODO: With the creation of `RecentKind` could we consider merging these into one
             Message::OpenRecentFile(index) => {
                 if let Some(path) = self.config_state.recent_files.get(index).cloned() {
-                    self.open_tab(Some(path));
-                    return self.update_tab();
+                    if path.exists() {
+                        self.open_tab(Some(path));
+                        return self.update_tab();
+                    } else {
+                        return self.update(Message::RecentKindNotFound(RecentKind::File, path));
+                    }
+
                 }
             }
             Message::OpenRecentProject(index) => {
                 if let Some(path) = self.config_state.recent_projects.get(index).cloned() {
-                    self.open_project(path);
+                    if path.exists() {
+                       self.open_project(path)
+                    } else {
+                        return self.update(Message::RecentKindNotFound(RecentKind::Project, path));
+                    }
                 }
             }
             Message::OpenSearchResult(file_i, line_i) => {
@@ -2560,6 +2695,22 @@ impl Application for App {
             Message::QuitForce => {
                 process::exit(0);
             }
+            Message::RecentKindNotFound(kind, path) => {
+                let msg = match kind {
+                    RecentKind::File => {
+                        self.config_state.recent_files.retain(|x| x != &path);
+                        fl!("recent-file-not-found",
+                            path = path.display().to_string())
+                    },
+                    RecentKind::Project => {
+                        self.config_state.recent_projects.retain(|x| x != &path);
+                        fl!("recent-project-not-found",
+                            path = path.display().to_string())
+                    }
+                };
+                self.save_config_state();
+                return self.toasts.push(widget::Toast::new(msg)).map(cosmic::Action::App)
+            }
             Message::Redo => {
                 if let Some(Tab::Editor(tab)) = self.active_tab() {
                     {
@@ -2569,6 +2720,12 @@ impl Application for App {
 
                     return self.update(Message::TabChanged(self.tab_model.active()));
                 }
+            }
+            Message::RemoveMissingRecents => {
+                self.config_state.recent_files.retain(|p| p.exists());
+                self.config_state.recent_projects.retain(|p| p.exists());
+                self.save_config_state();
+                self.dialog_page_opt = None;
             }
             Message::ReorderTab(ReorderEvent {
                 dragged,
@@ -3311,7 +3468,7 @@ impl Application for App {
 
         // Uncomment to debug layout:
         //content.explain(cosmic::iced::Color::WHITE)
-        content
+        widget::toaster(&self.toasts, content)
     }
 
     fn view_window(&self, window_id: window::Id) -> Element<'_, Message> {
