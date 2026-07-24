@@ -1,5 +1,5 @@
 cosmic-text-editor = COSMIC 文字編輯器
-new-document = 新建文件
+new-document = 新文件
 open-project = 開啟專案
 todo = 待辦事項
 
@@ -71,8 +71,8 @@ use-regex = 使用正規表示式
 ## File
 
 file = 檔案
-new-file = 新建檔案
-new-window = 新建視窗
+new-file = 新增檔案
+new-window = 新增視窗
 open-file = 開啟檔案...
 open-recent-file = 開啟最近使用的檔案
 close-file = 關閉檔案
@@ -87,7 +87,7 @@ document-type = 文件類型...
 encoding = 編碼...
 menu-git-management = Git 管理...
 print = 列印
-quit = 退出
+quit = 結束
 
 ## Edit
 
@@ -124,7 +124,7 @@ stage = 暫存
 unstage = 取消暫存
 cancel = 取消
 save-all = 全部儲存
-repository = 軟體庫源
+repository = 軟體庫
 support = 支援
 default-zoom-step = 縮放步進
 zoom-in = 放大
