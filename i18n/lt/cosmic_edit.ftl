@@ -14,7 +14,7 @@ line-count = Eilučių skaičius
 
 ## Settings
 
-settings = Nuostatos
+settings = Nuostatai
 
 ## Appearance
 
@@ -45,7 +45,7 @@ menu-document-statistics = Apie dokumentą...
 document-type = Dokumento tipas...
 encoding = Koduotė...
 print = Spausdinti
-quit = Išeiti
+quit = Išjungti
 
 ## Edit
 
@@ -74,7 +74,7 @@ word-wrap = Žodžių kėlimas
 show-line-numbers = Rodyti eilučių numerius
 highlight-current-line = Paryškinti dabartinę eilutę
 syntax-highlighting = Sintaksės tikrinimas...
-menu-settings = Nuostatos...
+menu-settings = Nuostatai...
 menu-keyboard-shortcuts = Spartieji klavišai...
 menu-about = Apie COSMIC Rašyklę...
 cancel = Atšaukti
