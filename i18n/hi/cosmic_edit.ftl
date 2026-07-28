@@ -1,7 +1,7 @@
 cosmic-text-editor = कॉस्मिक टेक्स्ट एडिटर
 new-document = नया दस्तावेज़
 open-project = प्रोजेक्ट खोलें
-todo = करने के लिए
+todo = कार्य-सूची
 
 # Context Pages
 
@@ -13,41 +13,41 @@ todo = करने के लिए
 
 document-statistics = दस्तावेज़ आँकड़े
 word-count = शब्दों की संख्या
-character-count = अक्षरों की संख्या
-character-count-no-spaces = अक्षरों की संख्या (स्पेस के बिना)
+character-count = अक्षर
+character-count-no-spaces = अक्षर (बिना स्थान के)
 line-count = पंक्तियाँ
 
 ## Git management
 
-git-management = Git प्रबंधन
-git-management-description = Git प्रबंधन एक डेवलपर टूल है जो संस्करण नियंत्रण कार्यों के लिए उपयोग किया जाता है।
-git-management-loading = Git प्रबंधन लोड हो रहा है...
-stage = स्टेज
-staged-changes = स्टेज पर बदली गई चीज़ें
-unstage = स्टेज से हटाएँ
-unstaged-changes = बिना स्टेज की गई चीज़ें
+git-management = गिट प्रबंधन
+git-management-description = गिट प्रबंधन एक डेवलपर उपकरण है जिसका उपयोग संस्करण नियंत्रण संचालन के लिए किया जाता है।
+git-management-loading = गिट प्रबंधन लोड हो रहा है..।
+stage = स्टेज करें
+staged-changes = स्टेज किए गए बदलाव
+unstage = अनस्टेज करें
+unstaged-changes = अनस्टेज किए गए बदलाव
 
 ## Project search
 
-project-search = प्रोजेक्ट खोज
+project-search = परियोजना खोज
 
 ## Prompt save changes
 
-prompt-save-changes-title = बिना सहेजे हुए बदलाव
-prompt-unsaved-changes = आपके पास बिना सहेजे हुए बदलाव हैं। सहेजना है?
-cancel = रद्द करो
-discard = बदलाव को खारिज करें
-save-all = सब कुछ सहेजें
+prompt-save-changes-title = बंद करने से पहले बदलाव सहेजें?
+prompt-unsaved-changes = आपके पास अनसहेजे बदलाव हैं। यदि आप बिना सहेजे जारी रखते हैं, तो ये बदलाव नष्ट हो जाएँगे।
+cancel = रद्द करें
+discard = बदलावों को खारिज करें
+save-all = सभी सहेजें
 
 ## Settings
 
-settings = सेटिंग
+settings = सेटिंग्स
 
 ### Appearance
 
-appearance = दिखावट
-theme = थीम
-match-desktop = डेस्कटॉप से मेल करें
+appearance = रुप-रंग
+theme = प्रसंग
+match-desktop = डेस्कटॉप से मेल खाएँ
 dark = डार्क
 light = लाइट
 syntax-dark = सिंटैक्स डार्क
@@ -60,14 +60,14 @@ default-font-size = डिफ़ॉल्ट फ़ॉन्ट आकार
 keyboard-shortcuts = कीबोर्ड शॉर्टकट्स
 enable-vim-bindings = Vim बाइंडिंग्स सक्षम करें
 # Find
-find-placeholder = खोजें...
+find-placeholder = खोजें..।
 find-previous = पिछला खोजें
 find-next = अगला खोजें
-replace-placeholder = बदलें...
+replace-placeholder = बदलें..।
 replace = बदलें
 replace-all = सब कुछ बदलें
-case-sensitive = केस-सेंसिटिव
-use-regex = Regex का उपयोग करें
+case-sensitive = अक्षर संवेदनशील
+use-regex = रिगैक्स का उपयोग करें
 
 # Menu
 
@@ -77,34 +77,34 @@ use-regex = Regex का उपयोग करें
 file = फ़ाइल
 new-file = नई फ़ाइल
 new-window = नई विंडो
-open-file = फ़ाइल खोलें...
+open-file = फ़ाइल खोलें..।
 open-recent-file = हाल की फ़ाइल खोलें
 close-file = फ़ाइल बंद करें
-menu-open-project = प्रोजेक्ट खोलें...
-open-recent-project = हाल का प्रोजेक्ट खोलें
-close-project = प्रोजेक्ट बंद करें
+menu-open-project = परियोजना खोलें..।
+open-recent-project = हालिया परियोजना खोलें
+close-project = परियोजना बंद करें
 save = सहेजें
-save-as = इस रूप में सहेजें...
+save-as = इस रूप में सहेजें..।
 revert-all-changes = सभी बदलावों को पलटें
-menu-document-statistics = दस्तावेज़ आँकड़े...
-document-type = दस्तावेज़ प्रकार...
-encoding = एन्कोडिंग...
-menu-git-management = Git प्रबंधन...
-print = प्रिंट करें
-quit = बंद करें
+menu-document-statistics = दस्तावेज़ आँकड़े..।
+document-type = दस्तावेज़ प्रकार..।
+encoding = एनकोडिंग..।
+menu-git-management = गिट प्रबंधन..।
+print = छापें
+quit = बाहर जाएँ
 
 ## Edit
 
-edit = संपादित करें
+edit = संपादन
 undo = पूर्ववत करें
 redo = फिर से करें
 cut = काटें
 copy = कॉपी करें
-paste = पेस्ट करें
-select-all = सब कुछ चुनें
+paste = चिपकाएँ
+select-all = सभी चुनें
 find = खोजें
-find-in-project = प्रोजेक्ट में खोजें...
-spell-check = वर्तनी की जांच...
+find-in-project = परियोजना में खोजें..।
+spell-check = वर्तनी जाँच..।
 
 ## View
 
@@ -116,13 +116,19 @@ indentation = इंडेंटेशन
 automatic-indentation = स्वचालित इंडेंटेशन
 tab-width = टैब चौड़ाई: { $tab_width }
 convert-indentation-to-spaces = इंडेंटेशन को स्पेस में बदलें
-convert-indentation-to-tabs = इंडेंटेशन को टैब्स में बदलें
-word-wrap = वर्ड रैप
+convert-indentation-to-tabs = इंडेंटेशन को टैब में बदलें
+word-wrap = शब्द लपेटन
 show-line-numbers = पंक्ति संख्या दिखाएँ
 highlight-current-line = वर्तमान पंक्ति को हाइलाइट करें
-syntax-highlighting = सिंटैक्स हाइलाइटिंग...
-menu-settings = सेटिंग्स...
-menu-keyboard-shortcuts = कीबोर्ड शॉर्टकट्स...
-menu-about = कॉस्मिक टेक्स्ट एडिटर के बारे में...
+syntax-highlighting = सिंटैक्स हाइलाइटिंग..।
+menu-settings = सेटिंग्स..।
+menu-keyboard-shortcuts = कीबोर्ड शॉर्टकट्स..।
+menu-about = कॉस्मिक टेक्स्ट एडिटर के बारे में..।
 repository = रिपॉजिटरी
-support = सहायता
+support = समर्थन
+comment = कॉस्मिक डेस्कटॉप के लिए टेक्स्ट एडिटर
+default-zoom-step = ज़ूम चरण
+wrap-around = लपेटें
+zoom-in = बड़ा करें
+default-size = मूल आकार
+zoom-out = छोटा करें

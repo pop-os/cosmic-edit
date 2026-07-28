@@ -49,7 +49,7 @@ settings = الإعدادات
 ### Appearance
 
 appearance = المظهر
-theme = النسق
+theme = السمة
 match-desktop = طابق سطح المكتب
 dark = داكن
 light = فاتح
@@ -96,7 +96,7 @@ document-type = نوع المستند...
 encoding = الترميز...
 menu-git-management = إدارة Git...
 print = اطبع
-quit = أنهِ
+quit = إنهِ
 
 ## Edit
 
