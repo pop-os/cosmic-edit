@@ -208,12 +208,30 @@ pub fn menu_bar<'a>(
         ));
     }
 
+    if !recent_files.is_empty() {
+        recent_files.push(MenuItem::Divider);
+        recent_files.push(MenuItem::Button(
+            fl!("clear-recent-files"),
+            None,
+            Action::ClearRecentFiles,
+        ));
+    }
+
     let mut recent_projects = Vec::with_capacity(config_state.recent_projects.len());
     for (i, path) in config_state.recent_projects.iter().enumerate() {
         recent_projects.push(MenuItem::Button(
             format_recent_menu_path(path, home_dir_opt.as_ref()),
             None,
             Action::OpenRecentProject(i),
+        ));
+    }
+
+    if !recent_projects.is_empty() {
+        recent_projects.push(MenuItem::Divider);
+        recent_projects.push(MenuItem::Button(
+            fl!("clear-recent-projects"),
+            None,
+            Action::ClearRecentProjects,
         ));
     }
 
