@@ -2787,7 +2787,9 @@ impl Application for App {
             }
             Message::TabCloseForce(entity) => {
                 // Activate closest item
-                if let Some(position) = self.tab_model.position(entity) {
+                if self.tab_model.active() == entity
+                    && let Some(position) = self.tab_model.position(entity)
+                {
                     if position > 0 {
                         self.tab_model.activate_position(position - 1);
                     } else {
