@@ -1412,6 +1412,10 @@ where
                 shell.publish(on_changed.clone());
             }
         }
+
+        if editor.redraw() {
+            shell.request_redraw();
+        }
     }
 }
 
