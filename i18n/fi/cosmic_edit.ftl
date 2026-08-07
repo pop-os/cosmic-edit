@@ -31,7 +31,7 @@ settings = Asetukset
 
 appearance = Ulkoasu
 theme = Teema
-match-desktop = Sovita työpöytään
+match-desktop = Sama kuin työpöytä
 dark = Tumma
 light = Vaalea
 syntax-dark = Tumma syntaksi
