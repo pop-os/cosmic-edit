@@ -1089,11 +1089,13 @@ where
                 Named::Backspace => {
                     delete_modifiers(&mut editor, Motion::LeftWord, *modifiers);
                     editor.action(Action::Backspace);
+                    editor.set_redraw(true);
                     shell.capture_event();
                 }
                 Named::Delete => {
                     delete_modifiers(&mut editor, Motion::RightWord, *modifiers);
                     editor.action(Action::Delete);
+                    editor.set_redraw(true);
                     shell.capture_event();
                 }
                 Named::Tab => {
@@ -1411,6 +1413,10 @@ where
             {
                 shell.publish(on_changed.clone());
             }
+        }
+
+        if editor.redraw() {
+            shell.request_redraw();
         }
     }
 }
