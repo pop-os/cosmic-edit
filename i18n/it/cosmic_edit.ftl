@@ -1,8 +1,8 @@
-cosmic-text-editor = COSMIC Text Editor
-comment = Editor di testo di COSMIC
+cosmic-text-editor = Editor di testo COSMIC
+comment = Editor di testo per il desktop COSMIC
 new-document = Nuovo documento
 open-project = Apri progetto
-todo = TODO
+todo = A fare
 
 # Context Pages
 
@@ -15,15 +15,15 @@ support = Supporto
 ## Document statistics
 
 document-statistics = Statistiche documento
-word-count = Conteggio parole
+word-count = Conteggio delle parole
 character-count = Caratteri
 character-count-no-spaces = Caratteri (senza spazi)
-line-count = Righe
+line-count = Linee
 
 ## Git management
 
 git-management = Gestione Git
-git-management-description = Gestione Git è uno strumento per sviluppatori, usato per le operazioni di controllo versione.
+git-management-description = Gestione Git è uno strumento per sviluppatori, usato per le operazioni di controllo di versione.
 git-management-loading = Caricamento Gestione Git...
 stage = Prepara modifiche
 staged-changes = Modifiche preparate
@@ -35,8 +35,8 @@ project-search = Ricerca nel progetto
 
 ## Prompt save changes
 
-prompt-save-changes-title = Modifiche non salvate
-prompt-unsaved-changes = Hai delle modifiche non salvate. Vuoi salvarle?
+prompt-save-changes-title = Salvare le modifiche prima di chiudere?
+prompt-unsaved-changes = Sono presenti modifiche non salvate. Se continui senza salvare, queste modifiche andranno perse.
 cancel = Annulla
 discard = Ignora modifiche
 save-all = Salva tutto
@@ -49,7 +49,7 @@ settings = Impostazioni
 
 appearance = Aspetto
 theme = Tema
-match-desktop = Sistema
+match-desktop = Abbina al desktop
 dark = Scuro
 light = Chiaro
 syntax-dark = Sintassi scura
@@ -89,8 +89,8 @@ close-project = Chiudi progetto
 save = Salva
 save-as = Salva come...
 revert-all-changes = Annulla tutte le modifiche
-menu-document-statistics = Statistiche documento...
-document-type = Tipo documento...
+menu-document-statistics = Statistiche di documento...
+document-type = Tipo di documento...
 encoding = Codifica...
 menu-git-management = Gestione Git...
 print = Stampa
