@@ -66,10 +66,12 @@ wayland = ["libcosmic/wayland", "cosmic-files/wayland"]
 inherits = "release"
 debug = true
 
-# [patch.'https://github.com/pop-os/libcosmic']
-# libcosmic = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
-# cosmic-config = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
-# cosmic-theme = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
+[patch.'https://github.com/pop-os/libcosmic']
+libcosmic = { git = "https://github.com/pop-os/libcosmic//", branch = "update-iced" }
+cosmic-config = { git = "https://github.com/pop-os/libcosmic//", branch = "update-iced" }
+cosmic-theme = { git = "https://github.com/pop-os/libcosmic//", branch = "update-iced" }
+# cosmic-config = { path = "../libcosmic/cosmic-config/" }
+# libcosmic = { path = "../libcosmic/" }
 
 # [patch."https://github.com/pop-os/cosmic-files.git"]
 # cosmic-files = { git = "https://github.com/pop-os/cosmic-files//", branch = "theme-v2" }
