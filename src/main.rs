@@ -403,7 +403,7 @@ pub enum Message {
     SaveAsResult(segmented_button::Entity, DialogResult),
     Scroll(f32),
     SelectAll,
-    Surface(surface::Action),
+    Surface(surface::Action<Message>),
     SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
     TabActivate(segmented_button::Entity),
@@ -2712,9 +2712,7 @@ impl Application for App {
                 }
             }
             Message::Surface(a) => {
-                return cosmic::task::message(cosmic::Action::Cosmic(
-                    cosmic::app::Action::Surface(a),
-                ));
+                return cosmic::task::message(cosmic::Action::Surface(a));
             }
             Message::SystemThemeModeChange(_theme_mode) => {
                 return self.update_config();
