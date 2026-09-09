@@ -88,6 +88,15 @@ encoding = Encoding...
 menu-git-management = Git management...
 print = Print
 quit = Quit
+clear-recent-files = Clear Recent Files
+clear-recent-projects = Clear Recent Projects
+recent-file-not-found = { $path } may have been moved or deleted. It has been removed from recent files.
+recent-project-not-found = { $path } may have been moved or deleted. It has been removed from recent projects.
+recent-paths-not-found-title = Missing Recents.
+try-again = Try Again
+missing-files = Files
+missing-projects = Projects
+
 
 ## Edit
 edit = Edit
@@ -100,6 +109,7 @@ select-all = Select all
 find = Find
 find-in-project = Find in project...
 spell-check = Spell check...
+ok = Ok
 
 ## View
 view = View
@@ -121,3 +131,4 @@ syntax-highlighting = Syntax highlighting...
 menu-settings = Settings...
 menu-keyboard-shortcuts = Keyboard shortcuts...
 menu-about = About COSMIC Text Editor...
+
