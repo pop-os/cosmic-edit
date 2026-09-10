@@ -14,6 +14,7 @@ use std::{
     process::{Command, Stdio},
     sync::{Arc, Mutex},
 };
+use sanitise_file_name::sanitise;
 
 use crate::{Config, SYNTAX_SYSTEM, fl, git::GitDiff};
 
@@ -305,6 +306,9 @@ impl EditorTab {
             let mut first_line = editor.with_buffer(|buffer| {
                 buffer.lines[0].text().to_string()
             });
+
+            // Make the first line safe for saving
+            first_line = sanitise(&first_line);
 
             // Use the first line, but truncated
             if first_line.len() > max_chars {
