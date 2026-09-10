@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
+use crate::mime_icon::{FALLBACK_MIME_ICON, mime_for_path, mime_icon};
 use cosmic::{iced::advanced::graphics::text::font_system, widget::icon};
-use cosmic_files::mime_icon::{FALLBACK_MIME_ICON, mime_for_path, mime_icon};
 use cosmic_text::{Attrs, Buffer, Cursor, Edit, Selection, Shaping, SyntaxEditor, ViEditor, Wrap};
 use regex::Regex;
 use std::{
@@ -278,7 +278,7 @@ impl EditorTab {
 
     pub fn icon(&self, size: u16) -> icon::Icon {
         match &self.path_opt {
-            Some(path) => icon::icon(mime_icon(mime_for_path(path, None, false), size)).size(size),
+            Some(path) => icon::icon(mime_icon(mime_for_path(path), size)).size(size),
             None => icon::from_name(FALLBACK_MIME_ICON).size(size).icon(),
         }
     }

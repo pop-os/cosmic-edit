@@ -12,6 +12,7 @@ env_logger = "0.11.8"
 grep = "0.3.2"
 ignore = "0.4.23"
 log = "0.4.28"
+mime_guess = "2"
 notify = "8.2.0"
 open = "5.3.2"
 paste = "1.0.15"
@@ -25,16 +26,13 @@ two-face = "0.4.3"
 # Internationalization
 icu = { version = "2.0.0", features = ["compiled_data"] }
 unicode-segmentation = "1.12"
+xdg-mime = { git = "https://github.com/ebassi/xdg-mime-rs" }
 i18n-embed = { version = "0.16", features = [
     "fluent-system",
     "desktop-requester",
 ] }
 i18n-embed-fl = "0.10"
 rust-embed = "8"
-
-[dependencies.cosmic-files]
-git = "https://github.com/pop-os/cosmic-files.git"
-default-features = false
 
 [dependencies.cosmic-syntax-theme]
 git = "https://github.com/pop-os/cosmic-syntax-theme.git"
@@ -46,8 +44,7 @@ features = ["syntect", "vi"]
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"
 default-features = false
-#TODO: a11y feature crashes file choser dialog
-features = ["about", "multi-window", "tokio", "winit", "surface-message"]
+features = ["about", "multi-window", "tokio", "winit", "surface-message", "rfd"]
 
 [target.'cfg(unix)'.dependencies]
 fork = "0.2"
@@ -56,11 +53,10 @@ fork = "0.2"
 xdgen = "0.1"
 
 [features]
-default = ["dbus-config", "gvfs", "wgpu", "wayland"]
+default = ["dbus-config", "wgpu", "wayland"]
 dbus-config = ["libcosmic/dbus-config"]
-gvfs = ["cosmic-files/gvfs"]
-wgpu = ["libcosmic/wgpu", "cosmic-files/wgpu"]
-wayland = ["libcosmic/wayland", "cosmic-files/wayland"]
+wgpu = ["libcosmic/wgpu"]
+wayland = ["libcosmic/wayland"]
 
 [profile.release-with-debug]
 inherits = "release"
@@ -71,5 +67,3 @@ debug = true
 # cosmic-config = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
 # cosmic-theme = { git = "https://github.com/pop-os/libcosmic//", branch = "theme-v2" }
 
-# [patch."https://github.com/pop-os/cosmic-files.git"]
-# cosmic-files = { git = "https://github.com/pop-os/cosmic-files//", branch = "theme-v2" }
