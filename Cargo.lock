@@ -1400,6 +1400,7 @@ dependencies = [
  "patch",
  "regex",
  "rust-embed",
+ "sanitise-file-name",
  "serde",
  "syntect",
  "tokio",
@@ -2832,7 +2833,7 @@ dependencies = [
  "log",
  "presser",
  "thiserror 2.0.20",
- "windows 0.56.0",
+ "windows 0.62.2",
 ]
 
 [[package]]
@@ -3153,7 +3154,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.56.0",
+ "windows-core 0.62.2",
 ]
 
 [[package]]
@@ -6503,6 +6504,12 @@ checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
 ]
+
+[[package]]
+name = "sanitise-file-name"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19d36299972b96b8ae7e8f04ecbf75fb41a27bf3781af00abcf57609774cb911"
 
 [[package]]
 name = "scoped-tls"
