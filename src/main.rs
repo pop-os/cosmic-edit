@@ -902,10 +902,11 @@ impl App {
         let window_title = format!("{title} - {}", fl!("cosmic-text-editor"));
         Task::batch([
             if let Some(window_id) = self.core.main_window_id() {
-                self.set_window_title(window_title, window_id)
+                self.set_window_title(window_title.clone(), window_id)
             } else {
                 Task::none()
             },
+            self.set_header_title(window_title).into(),
             self.update_focus(),
         ])
     }
@@ -3051,6 +3052,18 @@ impl Application for App {
         )]
     }
 
+    fn header_end(&self) -> Vec<Element<'_, Message>> {
+        let mut elements = Vec::new();
+        elements.push(
+            widget::button::icon(icon::from_name("list-add-symbolic"))
+                .on_press(Message::NewFile)
+                .padding(8)
+                .selected(true)
+                .into()
+        );
+        elements
+    }
+
     fn view(&self) -> Element<'_, Message> {
         let cosmic_theme::Spacing {
             space_none,
@@ -3059,31 +3072,28 @@ impl Application for App {
         } = self.core().system_theme().cosmic().spacing;
 
         let mut tab_column = widget::column::with_capacity(3).padding([space_none, space_xxs]);
+        if self.tab_model.len() > 1 {
+            tab_column = widget::column::with_capacity(2).padding([space_none, space_xxs]);
 
-        tab_column = tab_column.push(
-            widget::row::with_capacity(2)
-                .align_y(Alignment::Center)
-                .push(
-                    widget::tab_bar::horizontal(&self.tab_model)
-                        .button_height(32)
-                        .enable_tab_drag(String::from("x-cosmic-edit/tab"))
-                        .on_reorder(Message::ReorderTab)
-                        .tab_drag_threshold(25.)
-                        .button_spacing(space_xxs)
-                        .close_icon(icon_cache_get("window-close-symbolic", 16))
-                        //TODO: this causes issues with small window sizes .minimum_button_width(240)
-                        .on_activate(Message::TabActivate)
-                        .on_close(Message::TabClose)
-                        .width(Length::Shrink),
-                )
-                .push(
-                    button::custom(icon_cache_get("list-add-symbolic", 16))
-                        .on_press(Message::NewFile)
-                        .padding(space_xxs)
-                        .class(style::Button::Icon),
-                ),
-        );
+            tab_column = tab_column.push(
+                widget::row::with_capacity(2)
+                    .align_y(Alignment::Center)
+                    .push(
+                        widget::tab_bar::horizontal(&self.tab_model)
+                            .button_height(32)
+                            .enable_tab_drag(String::from("x-cosmic-edit/tab"))
+                            .on_reorder(Message::ReorderTab)
+                            .tab_drag_threshold(25.)
+                            .button_spacing(space_xxs)
+                            .close_icon(icon_cache_get("window-close-symbolic", 16))
+                            //TODO: this causes issues with small window sizes .minimum_button_width(240)
+                            .on_activate(Message::TabActivate)
+                            .on_close(Message::TabClose)
+                            .width(Length::Fill),
+                    )
+            );
 
+        }
         let tab_id = self.tab_model.active();
         match self.tab_model.data::<Tab>(tab_id) {
             Some(Tab::Editor(tab)) => {

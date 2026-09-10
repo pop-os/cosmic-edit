@@ -6,7 +6,7 @@ use cosmic::{
     Element,
     app::Core,
     iced::{
-        Background, Border, Length, advanced::widget::text::Style as TextStyle, widget::column,
+        Background, Border, Length, advanced::widget::text::Style as TextStyle,
     },
     theme,
     widget::{
