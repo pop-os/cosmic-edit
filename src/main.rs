@@ -851,7 +851,7 @@ impl App {
                 match expand_opt {
                     Some(id) => {
                         //TODO: can this be optimized?
-                        // Task not used becuase opening a folder just returns Task::none
+                        // Task not used because opening a folder just returns Task::none
                         let _ = self.on_nav_select(id);
                     }
                     None => {
@@ -884,29 +884,69 @@ impl App {
         }
     }
 
-    // Call this any time the tab changes
-    pub fn update_tab(&mut self) -> Task<Message> {
-        self.update_nav_bar_active();
-
-        let title = match self.active_tab() {
+    pub fn update_titles(&mut self) -> Task<Message> {
+        let (mut title, tab_changed) = match self.active_tab() {
             Some(tab) => {
+                let mut changed = false;
                 if let Tab::Editor(inner) = tab {
                     // Force redraw on tab switches
                     inner.editor.lock().unwrap().set_redraw(true);
+                    changed = inner.editor.lock().unwrap().changed();
                 }
-                tab.title()
+                (tab.title(), changed)
             }
-            None => "No Open File".to_string(),
+            None => ("No Open File".to_string(), false),
         };
-
-        let window_title = format!("{title} - {}", fl!("cosmic-text-editor"));
+        let mut window_title = format!("{title} - {}", fl!("cosmic-text-editor"));
+        if tab_changed {
+            window_title.push_str(" \u{2022}");
+            title.push_str(" \u{2022}");
+        }
         Task::batch([
+            self.set_header_title(title).into(),
             if let Some(window_id) = self.core.main_window_id() {
                 self.set_window_title(window_title.clone(), window_id)
             } else {
                 Task::none()
             },
-            self.set_header_title(window_title).into(),
+        ])
+    }
+
+    fn update_nav_bar_changed(&mut self, entity: Entity) -> Task<Message> {
+        if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+            if let Some(tab_path) = &tab.path_opt {
+                let mut entity_id: Option<nav_bar::Id> = None;
+                for id in self.nav_model.iter() {
+                    if let Some(node) = self.nav_model.data(id) {
+                        match node {
+                            ProjectNode::File { path, .. } => {
+                                if path == tab_path {
+                                    entity_id = Some(id);
+                                    break;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                if let Some(node_id) = entity_id {
+                    let mut title = tab.title();
+                    //TODO: better way of adding change indicator
+                    if tab.changed() {
+                        title.push_str(" \u{2022}");
+                    }
+                    self.nav_model.text_set(node_id, title);
+                }
+            }
+        }
+        Task::none()
+    }
+
+    // Call this any time the tab changes
+    pub fn update_tab(&mut self) -> Task<Message> {
+        self.update_nav_bar_active();
+        Task::batch([
+            self.update_titles(),
             self.update_focus(),
         ])
     }
@@ -2765,6 +2805,10 @@ impl Application for App {
                         title.push_str(" \u{2022}");
                     }
                     self.tab_model.text_set(entity, title);
+                    return Task::batch([
+                        self.update_nav_bar_changed(entity),
+                        self.update_titles(),
+                    ])
                 }
             }
             Message::TabClose(entity) => {
