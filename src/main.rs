@@ -3130,10 +3130,10 @@ impl Application for App {
                             .tab_drag_threshold(25.)
                             .button_spacing(space_xxs)
                             .close_icon(icon_cache_get("window-close-symbolic", 16))
-                            //TODO: this causes issues with small window sizes .minimum_button_width(240)
                             .on_activate(Message::TabActivate)
                             .on_close(Message::TabClose)
-                            .width(Length::Fill),
+                            .width(Length::Fill)
+                            .minimum_button_width(140 as u16),
                     )
             );
 
