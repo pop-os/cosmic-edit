@@ -542,6 +542,16 @@ checksum = "628d228f918ac3b82fe590352cc719d30664a0c13ca3a60266fe02c7132d480a"
 [[package]]
 name = "atomicwrites"
 version = "0.4.2"
+source = "git+https://github.com/jackpot51/rust-atomicwrites?rev=043ab4859d53ffd3d55334685303d8df39c9f768#043ab4859d53ffd3d55334685303d8df39c9f768"
+dependencies = [
+ "rustix 0.38.44",
+ "tempfile",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "atomicwrites"
+version = "0.4.2"
 source = "git+https://github.com/jackpot51/rust-atomicwrites#043ab4859d53ffd3d55334685303d8df39c9f768"
 dependencies = [
  "rustix 0.38.44",
@@ -1352,7 +1362,7 @@ name = "cosmic-config"
 version = "1.0.0"
 source = "git+https://github.com/pop-os/libcosmic.git#b728852754db54201002b84d9279a207f00de8f2"
 dependencies = [
- "atomicwrites",
+ "atomicwrites 0.4.2 (git+https://github.com/jackpot51/rust-atomicwrites)",
  "cosmic-config-derive",
  "cosmic-settings-daemon",
  "dirs 6.0.0",
@@ -1381,6 +1391,7 @@ dependencies = [
 name = "cosmic-edit"
 version = "1.8.0"
 dependencies = [
+ "atomicwrites 0.4.2 (git+https://github.com/jackpot51/rust-atomicwrites?rev=043ab4859d53ffd3d55334685303d8df39c9f768)",
  "cosmic-files",
  "cosmic-syntax-theme",
  "cosmic-text",
@@ -1401,6 +1412,7 @@ dependencies = [
  "regex",
  "rust-embed",
  "serde",
+ "serde_json",
  "syntect",
  "tokio",
  "two-face",

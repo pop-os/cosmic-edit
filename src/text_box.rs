@@ -48,6 +48,7 @@ pub struct TextBox<'a, Message> {
     padding: Padding,
     on_auto_scroll: Option<Box<dyn Fn(Option<f32>) -> Message + 'a>>,
     on_changed: Option<Message>,
+    on_edit: Option<Message>,
     on_focus: Option<Message>,
     click_timing: Duration,
     has_context_menu: bool,
@@ -68,6 +69,7 @@ where
             padding: Padding::new(0.0),
             on_auto_scroll: None,
             on_changed: None,
+            on_edit: None,
             on_focus: None,
             click_timing: Duration::from_millis(500),
             has_context_menu: false,
@@ -94,6 +96,11 @@ where
 
     pub fn on_changed(mut self, on_changed: Message) -> Self {
         self.on_changed = Some(on_changed);
+        self
+    }
+
+    pub fn on_edit(mut self, on_edit: Message) -> Self {
+        self.on_edit = Some(on_edit);
         self
     }
 
@@ -168,6 +175,22 @@ where
     Message: Clone,
 {
     TextBox::new(editor, metrics)
+}
+
+fn shape_as_needed_for_layout<'buffer>(
+    editor: &mut impl Edit<'buffer>,
+    font_system: &mut cosmic_text::FontSystem,
+) {
+    // A restored cursor is shaped during the first layout pass. Defer that work until draw has
+    // replaced the buffer initial zero size, or cosmic-text scrolls horizontally to fit a
+    // cursor into a zero-width viewport and clips the beginning of the line.
+    let has_drawable_size = editor.with_buffer(|buffer| {
+        let (width, height) = buffer.size();
+        width.is_some_and(|width| width > 0.0) && height.is_some_and(|height| height > 0.0)
+    });
+    if has_drawable_size {
+        editor.shape_as_needed(font_system, true);
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -312,10 +335,8 @@ where
         let limits = limits.width(Length::Fill).height(Length::Fill);
 
         let mut editor = self.editor.lock().unwrap();
-        //TODO: set size?
-        editor
-            .borrow_with(font_system().write().unwrap().raw())
-            .shape_as_needed(true);
+        let mut font_system = font_system().write().unwrap();
+        shape_as_needed_for_layout(&mut *editor, font_system.raw());
 
         editor.with_buffer(|buffer| {
             let mut layout_lines = 0;
@@ -1040,6 +1061,7 @@ where
             shell.publish(on_focus.clone());
         }
 
+        let mut content_edited = false;
         match event {
             Event::Keyboard(KeyEvent::KeyPressed {
                 modified_key: Key::Named(key),
@@ -1084,18 +1106,21 @@ where
                 }
                 Named::Enter => {
                     editor.action(Action::Enter);
+                    content_edited = true;
                     shell.capture_event();
                 }
                 Named::Backspace => {
                     delete_modifiers(&mut editor, Motion::LeftWord, *modifiers);
                     editor.action(Action::Backspace);
                     editor.set_redraw(true);
+                    content_edited = true;
                     shell.capture_event();
                 }
                 Named::Delete => {
                     delete_modifiers(&mut editor, Motion::RightWord, *modifiers);
                     editor.action(Action::Delete);
                     editor.set_redraw(true);
+                    content_edited = true;
                     shell.capture_event();
                 }
                 Named::Tab => {
@@ -1105,6 +1130,7 @@ where
                         } else {
                             editor.action(Action::Indent);
                         }
+                        content_edited = true;
                         shell.capture_event();
                     }
                 }
@@ -1121,6 +1147,7 @@ where
                 if !state.modifiers.logo() && !state.modifiers.control() && !state.modifiers.alt() {
                     if !character.is_control() {
                         editor.action(Action::Insert(character));
+                        content_edited = true;
                     }
                     shell.capture_event();
                 }
@@ -1157,6 +1184,7 @@ where
                         editor.start_change();
                         editor.insert_string(&text, None);
                         editor.finish_change();
+                        content_edited = true;
                         shell.capture_event();
                     }
                 }
@@ -1413,6 +1441,10 @@ where
             {
                 shell.publish(on_changed.clone());
             }
+        }
+
+        if content_edited && let Some(on_edit) = &self.on_edit {
+            shell.publish(on_edit.clone());
         }
 
         if editor.redraw() {
