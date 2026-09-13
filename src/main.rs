@@ -2720,6 +2720,8 @@ impl Application for App {
                             }
                             if let Some(title) = title_opt {
                                 self.tab_model.text_set(entity, title);
+                                self.update_nav_bar_changed(entity);
+                                self.update_titles();
                             }
                             return self.update_dialogs();
                         }
