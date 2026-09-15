@@ -60,7 +60,7 @@ default-zoom-step = Nagyítási mérték
 ### Keyboard shortcuts
 
 keyboard-shortcuts = Gyorsbillentyűk
-enable-vim-bindings = Vim billentyűkombinációk engedélyezése
+enable-vim-bindings = Vim-billentyűkombinációk engedélyezése
 # Find
 find-placeholder = Keresés…
 find-previous = Előző találat
