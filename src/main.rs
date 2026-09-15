@@ -900,8 +900,8 @@ impl App {
         };
         let mut window_title = format!("{title} - {}", fl!("cosmic-text-editor"));
         if tab_changed {
-            window_title.push_str(" \u{2022}");
-            title.push_str(" \u{2022}");
+            window_title.insert_str(0, "\u{2022} ");
+            title.insert_str(0, "\u{2022} ");
         }
         Task::batch([
             self.set_header_title(title).into(),
@@ -934,7 +934,7 @@ impl App {
                     let mut title = tab.title();
                     //TODO: better way of adding change indicator
                     if tab.changed() {
-                        title.push_str(" \u{2022}");
+                        title.insert_str(0, "\u{2022} ");
                     }
                     self.nav_model.text_set(node_id, title);
                 }
@@ -2817,7 +2817,7 @@ impl Application for App {
                     let mut title = tab.title();
                     //TODO: better way of adding change indicator
                     if tab.changed() {
-                        title.push_str(" \u{2022}");
+                        title.insert_str(0, "\u{2022} ");
                     }
                     self.tab_model.text_set(entity, title);
                     return Task::batch([
@@ -3136,7 +3136,7 @@ impl Application for App {
 
             tab_column = tab_column.push(
                 widget::row::with_capacity(2)
-                    .align_y(Alignment::Center)
+                    .align_y(Alignment::Center) 
                     .push(
                         widget::tab_bar::horizontal(&self.tab_model)
                             .button_height(32)
