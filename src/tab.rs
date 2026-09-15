@@ -300,7 +300,28 @@ impl EditorTab {
                 None => format!("{}", path.display()),
             }
         } else {
-            fl!("new-document")
+            let editor = self.editor.lock().unwrap();
+            let max_chars = 45;
+            let mut first_line = editor.with_buffer(|buffer| {
+                buffer.lines[0].text().to_string()
+            });
+
+            // Use the first line, but truncated
+            if first_line.len() > max_chars {
+                let end_point = first_line.char_indices().map(|(i, _)| i).nth(max_chars).unwrap_or(first_line.len());
+                first_line.truncate(end_point);
+                first_line
+            }
+
+            // Use the first line as is
+            else if first_line.len() > 3 {
+                first_line
+            }
+
+            // Default to the "New document" localized string
+            else {
+                fl!("new-document")
+            }
         }
     }
 
