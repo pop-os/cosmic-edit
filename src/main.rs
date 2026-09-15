@@ -1417,6 +1417,7 @@ impl App {
         ])
         .into()
     }
+
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -2720,8 +2721,8 @@ impl Application for App {
                             }
                             if let Some(title) = title_opt {
                                 self.tab_model.text_set(entity, title);
-                                self.update_nav_bar_changed(entity);
-                                self.update_titles();
+                                let _ = self.update_nav_bar_changed(entity);
+                                let _ = self.update_titles();
                             }
                             return self.update_dialogs();
                         }
@@ -3553,4 +3554,5 @@ impl Application for App {
 
         Subscription::batch(subscriptions)
     }
+
 }
