@@ -36,8 +36,33 @@ cancel = Cancel
 discard = Discard changes
 save-all = Save all
 
+## Hot exit error
+hot-exit-error-title = Could not preserve the current session
+hot-exit-error-body = COSMIC Text Editor will remain open to protect your work. Check that the cache directory is writable, then retry.
+retry = Retry
+
+## Restore sessions
+restore-sessions-title = Restore previous sessions?
+restore-sessions-body = { $count } previous sessions are available to restore.
+confirm = Confirm
+
+# Radio button options
+restore-option-discard-all = Discard all sessions
+restore-option-restore-count = Restore { $count } sessions and discard the rest (Recommended)
+restore-option-restore-all = Restore all { $count } sessions
+
+# Warning messages
+restore-warning-discard-all = Warning: All { $count } sessions and their unsaved changes will be permanently deleted.
+restore-warning-restore-count = { $restore_count } sessions will be restored. { $discard_count } sessions will be discarded.
+restore-warning-restore-all = All { $count } sessions will be restored in separate windows.
+
 ## Settings
 settings = Settings
+
+### Startup and recovery
+startup-and-recovery = Startup and recovery
+reopen-on-start = Reopen projects and tabs on start
+auto-save = Automatically save files
 
 ### Appearance
 appearance = Appearance
