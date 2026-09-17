@@ -51,7 +51,7 @@ pub struct TextBox<'a, Message> {
     on_focus: Option<Message>,
     click_timing: Duration,
     has_context_menu: bool,
-    on_context_menu: Option<Box<dyn Fn(Option<Point>) -> Message + 'a>>,
+    on_context_menu: Option<Box<dyn Fn(bool) -> Message + 'a>>,
     highlight_current_line: bool,
     line_numbers: bool,
 }
@@ -107,10 +107,7 @@ where
         self
     }
 
-    pub fn on_context_menu(
-        mut self,
-        on_context_menu: impl Fn(Option<Point>) -> Message + 'a,
-    ) -> Self {
+    pub fn on_context_menu(mut self, on_context_menu: impl Fn(bool) -> Message + 'a) -> Self {
         self.on_context_menu = Some(Box::new(on_context_menu));
         self
     }
@@ -1267,14 +1264,9 @@ where
 
                     // Update context menu state
                     if let Some(on_context_menu) = &self.on_context_menu {
-                        shell.publish((on_context_menu)(if self.has_context_menu {
-                            None
-                        } else {
-                            match button {
-                                Button::Right => Some(p),
-                                _ => None,
-                            }
-                        }));
+                        shell.publish((on_context_menu)(
+                            !self.has_context_menu && matches!(button, Button::Right),
+                        ));
                     }
 
                     shell.capture_event();

@@ -1,5 +1,5 @@
 cosmic-text-editor = Edytor Tekstu COSMIC
-comment = Edytor tekstu pulpitu COSMIC
+comment = Edytor tekstu dla środowiska COSMIC
 new-document = Nowy dokument
 open-project = Otwórz projekt
 todo = TODO
@@ -64,7 +64,7 @@ default-zoom-step = Stopniowanie powiększania
 keyboard-shortcuts = Skróty klawiszowe
 enable-vim-bindings = Włącz tryb Vim
 # Find
-find-placeholder = Szukaj…
+find-placeholder = Wyszukaj…
 find-previous = Znajdź poprzedni
 find-next = Znajdź następny
 replace-placeholder = Zastąp…
@@ -106,8 +106,8 @@ cut = Wytnij
 copy = Kopiuj
 paste = Wklej
 select-all = Zaznacz wszystko
-find = Szukaj
-find-in-project = Szukaj w projekcie…
+find = Wyszukaj
+find-in-project = Wyszukaj w projekcie…
 spell-check = Sprawdź ortografię…
 
 ## View

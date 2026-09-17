@@ -1,15 +1,12 @@
 #!/usr/bin/make -f
 
 export DESTDIR = debian/cosmic-edit
-export VENDOR ?= 1
 
 %:
 	dh $@
 
 override_dh_auto_clean:
-	if ! ischroot && test "${VENDOR}" = "1"; then \
-		just vendor; \
-	fi
+	ischroot || just vendor
 
 override_dh_auto_build:
 	just build-vendored

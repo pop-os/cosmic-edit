@@ -11,7 +11,7 @@ use cosmic::{
     cosmic_theme, executor,
     font::Font,
     iced::{
-        self, Alignment, Background, Color, Length, Limits, Point, Subscription,
+        self, Alignment, Background, Color, Length, Limits, Subscription,
         advanced::graphics::text::font_system,
         clipboard, event,
         futures::{self, SinkExt},
@@ -403,7 +403,7 @@ pub enum Message {
     SaveAsResult(segmented_button::Entity, DialogResult),
     Scroll(f32),
     SelectAll,
-    Surface(surface::Action),
+    Surface(surface::Action<Message>),
     SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
     TabActivate(segmented_button::Entity),
@@ -412,7 +412,7 @@ pub enum Message {
     TabClose(segmented_button::Entity),
     TabCloseForce(segmented_button::Entity),
     TabContextAction(segmented_button::Entity, Action),
-    TabContextMenu(segmented_button::Entity, Option<Point>),
+    TabContextMenu(segmented_button::Entity, bool),
     TabNext,
     TabPrev,
     TabSetCursor(segmented_button::Entity, Cursor),
@@ -2756,9 +2756,7 @@ impl Application for App {
                 }
             }
             Message::Surface(a) => {
-                return cosmic::task::message(cosmic::Action::Cosmic(
-                    cosmic::app::Action::Surface(a),
-                ));
+                return cosmic::task::message(cosmic::Action::Surface(a));
             }
             Message::SystemThemeModeChange(_theme_mode) => {
                 return self.update_config();
@@ -2870,15 +2868,15 @@ impl Application for App {
             Message::TabContextAction(entity, action) => {
                 if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
                     // Close context menu
-                    tab.context_menu = None;
+                    tab.context_menu_open = false;
                     // Run action's message
                     return self.update(action.message(None));
                 }
             }
-            Message::TabContextMenu(entity, position_opt) => {
+            Message::TabContextMenu(entity, open) => {
                 if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
                     // Update context menu
-                    tab.context_menu = position_opt;
+                    tab.context_menu_open = open;
                 }
             }
             Message::TabNext => {
@@ -3149,24 +3147,25 @@ impl Application for App {
                     .on_focus(Message::FindFocused(false))
                     .on_auto_scroll(Message::AutoScroll)
                     .on_changed(Message::TabChanged(tab_id))
-                    .has_context_menu(tab.context_menu.is_some())
-                    .on_context_menu(move |position_opt| {
-                        Message::TabContextMenu(tab_id, position_opt)
-                    });
+                    .has_context_menu(tab.context_menu_open)
+                    .on_context_menu(move |open| Message::TabContextMenu(tab_id, open));
                 if self.config.highlight_current_line {
                     text_box = text_box.highlight_current_line();
                 }
                 if self.config.line_numbers {
                     text_box = text_box.line_numbers();
                 }
-                let mut popover = widget::popover(text_box);
                 let has_selection = tab.editor.lock().unwrap().selection() != Selection::None;
-                if let Some(point) = tab.context_menu {
-                    popover = popover
-                        .popup(menu::context_menu(&self.key_binds, tab_id, has_selection))
-                        .position(widget::popover::Position::Point(point));
+                let mut context_menu = widget::context_menu(
+                    text_box,
+                    Some(menu::context_menu(&self.key_binds, tab_id, has_selection)),
+                )
+                .on_close(Message::TabContextMenu(tab_id, false))
+                .on_surface_action(Message::Surface);
+                if let Some(window_id) = self.core().main_window_id() {
+                    context_menu = context_menu.window_id(window_id);
                 }
-                tab_column = tab_column.push(popover);
+                tab_column = tab_column.push(context_menu);
                 if self.config.vim_bindings {
                     let status = {
                         let editor = tab.editor.lock().unwrap();
