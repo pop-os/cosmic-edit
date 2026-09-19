@@ -53,7 +53,7 @@ dark = Sötét
 light = Világos
 syntax-dark = Sötét szintaxis
 syntax-light = Világos szintaxis
-default-font = Alapértelmezett betűtípus
+default-font = Alapértelmezett betűkészlet
 default-font-size = Alapértelmezett betűméret
 default-zoom-step = Nagyítási mérték
 
