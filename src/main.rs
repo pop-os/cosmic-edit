@@ -404,7 +404,7 @@ pub enum Message {
     Scroll(f32),
     SelectAll,
     SetAppendTxt(bool),
-    Surface(surface::Action),
+    Surface(surface::Action<Message>),
     SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
     TabActivate(segmented_button::Entity),
@@ -2724,9 +2724,7 @@ impl Application for App {
                 return self.update_config();
             }
             Message::Surface(a) => {
-                return cosmic::task::message(cosmic::Action::Cosmic(
-                    cosmic::app::Action::Surface(a),
-                ));
+                return cosmic::task::message(cosmic::Action::Surface(a));
             }
             Message::SystemThemeModeChange(_theme_mode) => {
                 return self.update_config();
