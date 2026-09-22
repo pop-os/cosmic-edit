@@ -317,9 +317,8 @@ where
         editor.with_buffer(|buffer| {
             let mut layout_lines = 0;
             for line in buffer.lines.iter() {
-                match line.layout_opt() {
-                    Some(layout) => layout_lines += layout.len(),
-                    None => (),
+                if let Some(layout) = line.layout_opt() {
+                    layout_lines += layout.len()
                 }
             }
 
@@ -755,7 +754,7 @@ where
                     match editor.buffer_ref() {
                         cosmic_text::BufferRef::Arc(buffer) => {
                             renderer.fill_raw(Raw {
-                                buffer: Arc::downgrade(&buffer),
+                                buffer: Arc::downgrade(buffer),
                                 position: pos,
                                 color: Color::from_rgba(1.0, 1.0, 1.0, 1.0),
                                 clip_bounds,
@@ -1095,15 +1094,13 @@ where
                     editor.set_redraw(true);
                     shell.capture_event();
                 }
-                Named::Tab => {
-                    if !modifiers.control() && !modifiers.alt() {
-                        if modifiers.shift() {
-                            editor.action(Action::Unindent);
-                        } else {
-                            editor.action(Action::Indent);
-                        }
-                        shell.capture_event();
+                Named::Tab if !modifiers.control() && !modifiers.alt() => {
+                    if modifiers.shift() {
+                        editor.action(Action::Unindent);
+                    } else {
+                        editor.action(Action::Indent);
                     }
+                    shell.capture_event();
                 }
                 _ => (),
             },
@@ -1152,7 +1149,7 @@ where
                 InputMethodEvent::Commit(text) => {
                     if state.is_focused {
                         editor.start_change();
-                        editor.insert_string(&text, None);
+                        editor.insert_string(text, None);
                         editor.finish_change();
                         shell.capture_event();
                     }
@@ -1174,13 +1171,13 @@ where
                         let y = y_logical * scale_factor;
 
                         // Do this first as the horizontal scrollbar is on top of the buffer
-                        if let Some(scrollbar_h_rect) = state.scrollbar_h_rect.get() {
-                            if scrollbar_h_rect.contains(Point::new(x_logical, y_logical)) {
-                                state.dragging = Some(Dragging::ScrollbarH {
-                                    start_x: x,
-                                    start_scroll: editor.with_buffer(|buffer| buffer.scroll()),
-                                });
-                            }
+                        if let Some(scrollbar_h_rect) = state.scrollbar_h_rect.get()
+                            && scrollbar_h_rect.contains(Point::new(x_logical, y_logical))
+                        {
+                            state.dragging = Some(Dragging::ScrollbarH {
+                                start_x: x,
+                                start_scroll: editor.with_buffer(|buffer| buffer.scroll()),
+                            });
                         }
 
                         if matches!(state.dragging, Some(Dragging::ScrollbarH { .. })) {
@@ -1207,7 +1204,7 @@ where
                                     ClickKind::Single
                                 };
                             let maybe_anchor = if state.modifiers.shift() {
-                                state.shift_anchor.lock().unwrap().clone()
+                                *state.shift_anchor.lock().unwrap()
                             } else {
                                 None
                             };
@@ -1388,11 +1385,9 @@ where
                     shell.capture_event();
                 }
             }
-            Event::Window(WindowEvent::RedrawRequested(_now)) => {
-                if state.is_focused {
-                    state.caret_position = editor.cursor_position().unwrap_or(state.caret_position);
-                    shell.request_input_method(&self.input_method(state, scale_factor, layout));
-                }
+            Event::Window(WindowEvent::RedrawRequested(_now)) if state.is_focused => {
+                state.caret_position = editor.cursor_position().unwrap_or(state.caret_position);
+                shell.request_input_method(&self.input_method(state, scale_factor, layout));
             }
             _ => (),
         }
