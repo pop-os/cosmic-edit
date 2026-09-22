@@ -29,15 +29,15 @@ impl ProjectNode {
         let path = fs::canonicalize(path)?;
         let name = path
             .file_name()
-            .ok_or(io::Error::new(
-                io::ErrorKind::Other,
-                format!("path {:?} has no file name", path),
-            ))?
+            .ok_or(io::Error::other(format!(
+                "path {:?} has no file name",
+                path
+            )))?
             .to_str()
-            .ok_or(io::Error::new(
-                io::ErrorKind::Other,
-                format!("path {:?} is not valid UTF-8", path),
-            ))?
+            .ok_or(io::Error::other(format!(
+                "path {:?} is not valid UTF-8",
+                path
+            )))?
             .to_string();
         Ok(if path.is_dir() {
             Self::Folder {
