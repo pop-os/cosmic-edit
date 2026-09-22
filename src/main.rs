@@ -5,7 +5,7 @@ use cosmic::widget::menu::action::MenuAction;
 use cosmic::widget::menu::key_bind::KeyBind;
 use cosmic::widget::segmented_button::{Entity, ReorderEvent};
 use cosmic::{
-    Application, ApplicationExt, Apply, Element, action,
+    Application, ApplicationExt, Element, action,
     app::{Core, Settings, Task, context_drawer},
     cosmic_config::{self, CosmicConfigEntry},
     cosmic_theme, executor,
@@ -403,7 +403,7 @@ pub enum Message {
     SaveAsResult(segmented_button::Entity, DialogResult),
     Scroll(f32),
     SelectAll,
-    Surface(surface::Action),
+    Surface(surface::Action<Message>),
     SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
     TabActivate(segmented_button::Entity),
@@ -1530,43 +1530,21 @@ impl Application for App {
         (app, command)
     }
 
-    // The default nav_bar widget needs to be condensed for cosmic-edit
-    fn nav_bar(&self) -> Option<Element<'_, action::Action<Self::Message>>> {
-        if !self.core().nav_bar_active() {
+    fn nav_bar(&self) -> Option<Element<'_, cosmic::Action<Self::Message>>> {
+        if !self.core.nav_bar_active() {
             return None;
         }
 
         let nav_model = self.nav_model()?;
+        let mut nav = cosmic::widget::nav_bar(nav_model, |entity| {
+            cosmic::Action::Cosmic(cosmic::app::Action::NavBar(entity))
+        }).into_container();
 
-        let cosmic_theme::Spacing {
-            space_none,
-            space_s,
-            space_xxxs,
-            ..
-        } = self.core().system_theme().cosmic().spacing;
-
-        let mut nav = segmented_button::vertical(nav_model)
-            .button_height(space_xxxs + 20 /* line height */ + space_xxxs)
-            .button_padding([space_s, space_xxxs, space_s, space_xxxs])
-            .button_spacing(space_xxxs)
-            .on_activate(|entity| action::cosmic(cosmic::app::Action::NavBar(entity)))
-            .spacing(space_none)
-            .style(theme::SegmentedButton::FileNav)
-            .apply(widget::container)
-            .padding(space_s)
-            .width(Length::Shrink);
-
-        if !self.core().is_condensed() {
+        if !self.core.is_condensed() {
             nav = nav.max_width(280);
         }
 
-        Some(
-            nav.apply(widget::scrollable)
-                .apply(widget::container)
-                .height(Length::Fill)
-                .class(theme::Container::custom(nav_bar::nav_bar_style))
-                .into(),
-        )
+        Some(Element::from(nav.width(Length::Shrink).height(Length::Fill)))
     }
 
     fn nav_model(&self) -> Option<&nav_bar::Model> {
@@ -2711,10 +2689,8 @@ impl Application for App {
                     });
                 }
             }
-            Message::Surface(a) => {
-                return cosmic::task::message(cosmic::Action::Cosmic(
-                    cosmic::app::Action::Surface(a),
-                ));
+            Message::Surface(action) => {
+                return cosmic::task::message(cosmic::Action::Surface(action));
             }
             Message::SystemThemeModeChange(_theme_mode) => {
                 return self.update_config();
