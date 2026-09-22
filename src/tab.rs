@@ -309,8 +309,25 @@ impl EditorTab {
 
             // Use the first line, but truncated
             if first_line.len() > max_chars {
-                let end_point = first_line.char_indices().map(|(i, _)| i).nth(max_chars).unwrap_or(first_line.len());
+                let end_point: usize = first_line
+                    .char_indices()
+                    .map(|(i, _)| i)
+                    .nth(max_chars)
+                    .unwrap_or(first_line.len());
                 first_line.truncate(end_point);
+
+                // Truncate again to word boundary if within offest
+                let max_chars_offset = 5;
+                let word_end_point: usize = first_line
+                    .char_indices()
+                    .rev()
+                    .take(max_chars_offset)
+                    .find(|(_, c)| c.is_whitespace())
+                    .map(|(i, _)| i)
+                    .unwrap_or(end_point);
+                if word_end_point != end_point {
+                    first_line.truncate(word_end_point);
+                }
                 first_line
             }
 
