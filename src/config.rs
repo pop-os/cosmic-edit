@@ -112,17 +112,8 @@ impl Config {
     }
 }
 
-#[derive(Clone, CosmicConfigEntry, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, CosmicConfigEntry, Debug, Deserialize, Eq, PartialEq, Serialize, Default)]
 pub struct ConfigState {
     pub recent_files: VecDeque<PathBuf>,
     pub recent_projects: VecDeque<PathBuf>,
-}
-
-impl Default for ConfigState {
-    fn default() -> Self {
-        Self {
-            recent_files: VecDeque::new(),
-            recent_projects: VecDeque::new(),
-        }
-    }
 }

@@ -124,7 +124,7 @@ impl GitRepository {
                 msg.push_str("\nstderr> ");
                 msg.push_str(line);
             }
-            Err(io::Error::new(io::ErrorKind::Other, msg))
+            Err(io::Error::other(msg))
         }
     }
 

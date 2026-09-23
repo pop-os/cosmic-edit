@@ -1,0 +1,47 @@
+name: Continuous integration
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  DEBIAN_FRONTEND: noninteractive
+
+jobs:
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: install toolchain
+        run: rustup toolchain install nightly --component rustfmt
+      - name: fmt
+        run: cargo +nightly fmt --all --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglib2.0-dev libxkbcommon-dev libwayland-dev
+      - name: install toolchain
+        run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - name: clippy
+        run: cargo clippy --all-features --all-targets -- -D warnings
+
+  test:
+    name: Test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libglib2.0-dev libxkbcommon-dev libwayland-dev
+      - name: install toolchain
+        run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - name: test
+        run: cargo test --all-features
