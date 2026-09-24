@@ -851,7 +851,7 @@ impl App {
                 match expand_opt {
                     Some(id) => {
                         //TODO: can this be optimized?
-                        // Task not used becuase opening a folder just returns Task::none
+                        // Task not used because opening a folder just returns Task::none
                         let _ = self.on_nav_select(id);
                     }
                     None => {
@@ -884,28 +884,69 @@ impl App {
         }
     }
 
-    // Call this any time the tab changes
-    pub fn update_tab(&mut self) -> Task<Message> {
-        self.update_nav_bar_active();
-
-        let title = match self.active_tab() {
+    pub fn update_titles(&mut self) -> Task<Message> {
+        let (mut title, tab_changed) = match self.active_tab() {
             Some(tab) => {
+                let mut changed = false;
                 if let Tab::Editor(inner) = tab {
                     // Force redraw on tab switches
                     inner.editor.lock().unwrap().set_redraw(true);
+                    changed = inner.editor.lock().unwrap().changed();
                 }
-                tab.title()
+                (tab.title(), changed)
             }
-            None => "No Open File".to_string(),
+            None => ("No Open File".to_string(), false),
         };
-
-        let window_title = format!("{title} - {}", fl!("cosmic-text-editor"));
+        let mut window_title = format!("{title} - {}", fl!("cosmic-text-editor"));
+        if tab_changed {
+            window_title.insert_str(0, "\u{2022} ");
+            title.insert_str(0, "\u{2022} ");
+        }
         Task::batch([
+            self.set_header_title(title).into(),
             if let Some(window_id) = self.core.main_window_id() {
-                self.set_window_title(window_title, window_id)
+                self.set_window_title(window_title.clone(), window_id)
             } else {
                 Task::none()
             },
+        ])
+    }
+
+    fn update_nav_bar_changed(&mut self, entity: Entity) -> Task<Message> {
+        if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
+            if let Some(tab_path) = &tab.path_opt {
+                let mut entity_id: Option<nav_bar::Id> = None;
+                for id in self.nav_model.iter() {
+                    if let Some(node) = self.nav_model.data(id) {
+                        match node {
+                            ProjectNode::File { path, .. } => {
+                                if path == tab_path {
+                                    entity_id = Some(id);
+                                    break;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+                if let Some(node_id) = entity_id {
+                    let mut title = tab.title();
+                    //TODO: better way of adding change indicator
+                    if tab.changed() {
+                        title.insert_str(0, "\u{2022} ");
+                    }
+                    self.nav_model.text_set(node_id, title);
+                }
+            }
+        }
+        Task::none()
+    }
+
+    // Call this any time the tab changes
+    pub fn update_tab(&mut self) -> Task<Message> {
+        self.update_nav_bar_active();
+        Task::batch([
+            self.update_titles(),
             self.update_focus(),
         ])
     }
@@ -1316,6 +1357,13 @@ impl App {
             .position(|zoom_step| zoom_step == &self.config.font_size_zoom_step_mul_100);
         widget::settings::view_column(vec![
             widget::settings::section()
+                .title(fl!("files"))
+                .add(
+                    widget::settings::item::builder(fl!("append-txt-for-new-files"))
+                        .toggler(self.config.append_txt, Message::SetAppendTxt),
+                )
+                .into(),
+            widget::settings::section()
                 .title(fl!("appearance"))
                 .add(
                     widget::settings::item::builder(fl!("theme")).control(widget::dropdown(
@@ -1376,6 +1424,7 @@ impl App {
         ])
         .into()
     }
+
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -2644,7 +2693,7 @@ impl Application for App {
                                     .unwrap_or(String::new()),
                                 path.parent().map(|x| x.to_path_buf()),
                             ),
-                            None => (String::new(), None),
+                            None => (if self.config.append_txt { tab.title() + ".txt" } else { tab.title() }, None),
                         };
                         let mut settings =
                             DialogSettings::new().kind(DialogKind::SaveFile { filename });
@@ -2679,6 +2728,8 @@ impl Application for App {
                             }
                             if let Some(title) = title_opt {
                                 self.tab_model.text_set(entity, title);
+                                let _ = self.update_nav_bar_changed(entity);
+                                let _ = self.update_titles();
                             }
                             return self.update_dialogs();
                         }
@@ -2710,6 +2761,10 @@ impl Application for App {
                         buffer.set_scroll(scroll);
                     });
                 }
+            }
+            Message::SetAppendTxt(append_txt) => {
+                config_set!(append_txt, append_txt);
+                return self.update_config();
             }
             Message::Surface(a) => {
                 return cosmic::task::message(cosmic::Action::Surface(a));
@@ -2759,9 +2814,13 @@ impl Application for App {
                     let mut title = tab.title();
                     //TODO: better way of adding change indicator
                     if tab.changed() {
-                        title.push_str(" \u{2022}");
+                        title.insert_str(0, "\u{2022} ");
                     }
                     self.tab_model.text_set(entity, title);
+                    return Task::batch([
+                        self.update_nav_bar_changed(entity),
+                        self.update_titles(),
+                    ])
                 }
             }
             Message::TabClose(entity) => {
@@ -3049,6 +3108,18 @@ impl Application for App {
         )]
     }
 
+    fn header_end(&self) -> Vec<Element<'_, Message>> {
+        let mut elements = Vec::new();
+        elements.push(
+            widget::button::icon(icon::from_name("list-add-symbolic"))
+                .on_press(Message::NewFile)
+                .padding(8)
+                .selected(true)
+                .into()
+        );
+        elements
+    }
+
     fn view(&self) -> Element<'_, Message> {
         let cosmic_theme::Spacing {
             space_none,
@@ -3057,31 +3128,28 @@ impl Application for App {
         } = self.core().system_theme().cosmic().spacing;
 
         let mut tab_column = widget::column::with_capacity(3).padding([space_none, space_xxs]);
+        if self.tab_model.len() > 1 {
+            tab_column = widget::column::with_capacity(2).padding([space_none, space_xxs]);
 
-        tab_column = tab_column.push(
-            widget::row::with_capacity(2)
-                .align_y(Alignment::Center)
-                .push(
-                    widget::tab_bar::horizontal(&self.tab_model)
-                        .button_height(32)
-                        .enable_tab_drag(String::from("x-cosmic-edit/tab"))
-                        .on_reorder(Message::ReorderTab)
-                        .tab_drag_threshold(25.)
-                        .button_spacing(space_xxs)
-                        .close_icon(icon_cache_get("window-close-symbolic", 16))
-                        //TODO: this causes issues with small window sizes .minimum_button_width(240)
-                        .on_activate(Message::TabActivate)
-                        .on_close(Message::TabClose)
-                        .width(Length::Shrink),
-                )
-                .push(
-                    button::custom(icon_cache_get("list-add-symbolic", 16))
-                        .on_press(Message::NewFile)
-                        .padding(space_xxs)
-                        .class(style::Button::Icon),
-                ),
-        );
+            tab_column = tab_column.push(
+                widget::row::with_capacity(2)
+                    .align_y(Alignment::Center) 
+                    .push(
+                        widget::tab_bar::horizontal(&self.tab_model)
+                            .button_height(32)
+                            .enable_tab_drag(String::from("x-cosmic-edit/tab"))
+                            .on_reorder(Message::ReorderTab)
+                            .tab_drag_threshold(25.)
+                            .button_spacing(space_xxs)
+                            .close_icon(icon_cache_get("window-close-symbolic", 16))
+                            .on_activate(Message::TabActivate)
+                            .on_close(Message::TabClose)
+                            .width(Length::Fill)
+                            .minimum_button_width(140 as u16),
+                    )
+            );
 
+        }
         let tab_id = self.tab_model.active();
         match self.tab_model.data::<Tab>(tab_id) {
             Some(Tab::Editor(tab)) => {
@@ -3496,4 +3564,5 @@ impl Application for App {
 
         Subscription::batch(subscriptions)
     }
+
 }
