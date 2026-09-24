@@ -403,6 +403,7 @@ pub enum Message {
     SaveAsResult(segmented_button::Entity, DialogResult),
     Scroll(f32),
     SelectAll,
+    SetAppendTxt(bool),
     Surface(surface::Action<Message>),
     SystemThemeModeChange(cosmic_theme::ThemeMode),
     SyntaxTheme(usize, bool),
@@ -1315,6 +1316,13 @@ impl App {
             .iter()
             .position(|zoom_step| zoom_step == &self.config.font_size_zoom_step_mul_100);
         widget::settings::view_column(vec![
+            widget::settings::section()
+                .title(fl!("files"))
+                .add(
+                    widget::settings::item::builder(fl!("append-txt-for-new-files"))
+                        .toggler(self.config.append_txt, Message::SetAppendTxt),
+                )
+                .into(),
             widget::settings::section()
                 .title(fl!("appearance"))
                 .add(
@@ -2644,7 +2652,7 @@ impl Application for App {
                                     .unwrap_or(String::new()),
                                 path.parent().map(|x| x.to_path_buf()),
                             ),
-                            None => (String::new(), None),
+                            None => (if self.config.append_txt { tab.title() + ".txt" } else { tab.title() }, None),
                         };
                         let mut settings =
                             DialogSettings::new().kind(DialogKind::SaveFile { filename });
@@ -2710,6 +2718,10 @@ impl Application for App {
                         buffer.set_scroll(scroll);
                     });
                 }
+            }
+            Message::SetAppendTxt(append_txt) => {
+                config_set!(append_txt, append_txt);
+                return self.update_config();
             }
             Message::Surface(a) => {
                 return cosmic::task::message(cosmic::Action::Surface(a));

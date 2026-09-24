@@ -39,6 +39,10 @@ save-all = Save all
 ## Settings
 settings = Settings
 
+### Files
+files = Files
+append-txt-for-new-files = Append .txt for new file names
+
 ### Appearance
 appearance = Appearance
 theme = Theme
