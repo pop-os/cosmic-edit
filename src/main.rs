@@ -1461,7 +1461,8 @@ impl Application for App {
             .author("System76")
             .comments(fl!("comment"))
             .license("GPL-3.0-only")
-            .developers([("Jeremy Soller", "jeremy@system76.com")])
+            .license_url("https://spdx.org/licenses/GPL-3.0-only")
+            .developers([("System76", "info@system76.com")])
             .links([
                 (fl!("repository"), "https://github.com/pop-os/cosmic-edit"),
                 (
