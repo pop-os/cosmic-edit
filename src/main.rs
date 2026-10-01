@@ -328,6 +328,7 @@ impl PartialEq for WatcherWrapper {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 enum NewTab {
     Tab(EditorTab),
     Exists(Entity),
@@ -529,7 +530,7 @@ impl App {
                 continue;
             }
             let entry_path = entry.path();
-            let node = match ProjectNode::new(&entry_path) {
+            let node = match ProjectNode::new(entry_path) {
                 Ok(ok) => ok,
                 Err(err) => {
                     log::error!(
@@ -682,11 +683,11 @@ impl App {
                 //TODO: allow files to be open multiple times
                 let mut activate_opt = None;
                 for entity in self.tab_model.iter() {
-                    if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
-                        if tab.path_opt.as_ref() == Some(&canonical) {
-                            activate_opt = Some(entity);
-                            break;
-                        }
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity)
+                        && tab.path_opt.as_ref() == Some(&canonical)
+                    {
+                        activate_opt = Some(entity);
+                        break;
                     }
                 }
                 if let Some(entity) = activate_opt {
@@ -734,10 +735,10 @@ impl App {
             }
             let entities: Vec<_> = self.tab_model.iter().collect();
             for entity in entities {
-                if self.tab_model.is_active(entity) {
-                    if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                        tab.set_config(&self.config);
-                    }
+                if self.tab_model.is_active(entity)
+                    && let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity)
+                {
+                    tab.set_config(&self.config);
                 }
             }
         }
@@ -754,10 +755,10 @@ impl App {
     }
 
     fn save_config_state(&mut self) {
-        if let Some(ref config_state_handler) = self.config_state_handler {
-            if let Err(err) = self.config_state.write_entry(config_state_handler) {
-                log::error!("failed to save config_state: {}", err);
-            }
+        if let Some(ref config_state_handler) = self.config_state_handler
+            && let Err(err) = self.config_state.write_entry(config_state_handler)
+        {
+            log::error!("failed to save config_state: {}", err);
         }
     }
 
@@ -777,10 +778,10 @@ impl App {
             Some(DialogPage::PromptSaveQuit(ref _entities)) => {
                 let mut unsaved = Vec::new();
                 for entity in self.tab_model.iter() {
-                    if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
-                        if tab.changed() {
-                            unsaved.push(entity);
-                        }
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity)
+                        && tab.changed()
+                    {
+                        unsaved.push(entity);
                     }
                 }
                 if unsaved.is_empty() {
@@ -960,16 +961,16 @@ impl App {
             }
 
             'tabs: for entity in self.tab_model.iter() {
-                if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
-                    if let Some(path) = &tab.path_opt {
-                        for (_, project_path) in self.projects.iter() {
-                            if path.starts_with(&project_path) {
-                                // Do not watch tabs inside of already watched projects
-                                continue 'tabs;
-                            }
+                if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity)
+                    && let Some(path) = &tab.path_opt
+                {
+                    for (_, project_path) in self.projects.iter() {
+                        if path.starts_with(project_path) {
+                            // Do not watch tabs inside of already watched projects
+                            continue 'tabs;
                         }
-                        new_paths.insert((path.to_path_buf(), RecursiveMode::NonRecursive));
                     }
+                    new_paths.insert((path.to_path_buf(), RecursiveMode::NonRecursive));
                 }
             }
 
@@ -1485,7 +1486,7 @@ impl Application for App {
 
         let mut theme_names =
             Vec::with_capacity(SYNTAX_SYSTEM.get().unwrap().theme_set.themes.len());
-        for (theme_name, _theme) in SYNTAX_SYSTEM.get().unwrap().theme_set.themes.iter() {
+        for theme_name in SYNTAX_SYSTEM.get().unwrap().theme_set.themes.keys() {
             theme_names.push(theme_name.to_string());
         }
 
@@ -1503,7 +1504,8 @@ impl Application for App {
             .author("System76")
             .comments(fl!("comment"))
             .license("GPL-3.0-only")
-            .developers([("Jeremy Soller", "jeremy@system76.com")])
+            .license_url("https://spdx.org/licenses/GPL-3.0-only")
+            .developers([("System76", "info@system76.com")])
             .links([
                 (fl!("repository"), "https://github.com/pop-os/cosmic-edit"),
                 (
@@ -1693,9 +1695,7 @@ impl Application for App {
     }
 
     fn dialog(&self) -> Option<Element<'_, Self::Message>> {
-        let Some(ref dialog) = self.dialog_page_opt else {
-            return None;
-        };
+        let dialog = self.dialog_page_opt.as_ref()?;
 
         let cosmic_theme::Spacing { space_xxs, .. } = self.core().system_theme().cosmic().spacing;
 
@@ -1978,21 +1978,21 @@ impl Application for App {
                 return self.update_config();
             }
             Message::FindNext => {
-                if !self.find_search_value.is_empty() {
-                    if let Some(Tab::Editor(tab)) = self.active_tab() {
-                        //TODO: do not compile find regex on every search?
-                        match self.config.find_regex(&self.find_search_value) {
-                            Ok(regex) => {
-                                tab.search(&regex, true, self.config.find_wrap_around);
-                            }
-                            Err(err) => {
-                                //TODO: put regex error in find box
-                                log::warn!(
-                                    "failed to compile regex {:?}: {}",
-                                    self.find_search_value,
-                                    err
-                                );
-                            }
+                if !self.find_search_value.is_empty()
+                    && let Some(Tab::Editor(tab)) = self.active_tab()
+                {
+                    //TODO: do not compile find regex on every search?
+                    match self.config.find_regex(&self.find_search_value) {
+                        Ok(regex) => {
+                            tab.search(&regex, true, self.config.find_wrap_around);
+                        }
+                        Err(err) => {
+                            //TODO: put regex error in find box
+                            log::warn!(
+                                "failed to compile regex {:?}: {}",
+                                self.find_search_value,
+                                err
+                            );
                         }
                     }
                 }
@@ -2001,21 +2001,21 @@ impl Application for App {
                 return self.update_focus();
             }
             Message::FindPrevious => {
-                if !self.find_search_value.is_empty() {
-                    if let Some(Tab::Editor(tab)) = self.active_tab() {
-                        //TODO: do not compile find regex on every search?
-                        match self.config.find_regex(&self.find_search_value) {
-                            Ok(regex) => {
-                                tab.search(&regex, false, self.config.find_wrap_around);
-                            }
-                            Err(err) => {
-                                //TODO: put regex error in find box
-                                log::warn!(
-                                    "failed to compile regex {:?}: {}",
-                                    self.find_search_value,
-                                    err
-                                );
-                            }
+                if !self.find_search_value.is_empty()
+                    && let Some(Tab::Editor(tab)) = self.active_tab()
+                {
+                    //TODO: do not compile find regex on every search?
+                    match self.config.find_regex(&self.find_search_value) {
+                        Ok(regex) => {
+                            tab.search(&regex, false, self.config.find_wrap_around);
+                        }
+                        Err(err) => {
+                            //TODO: put regex error in find box
+                            log::warn!(
+                                "failed to compile regex {:?}: {}",
+                                self.find_search_value,
+                                err
+                            );
                         }
                     }
                 }
@@ -2024,27 +2024,27 @@ impl Application for App {
                 return self.update_focus();
             }
             Message::FindReplace => {
-                if !self.find_search_value.is_empty() {
-                    if let Some(Tab::Editor(tab)) = self.active_tab() {
-                        //TODO: do not compile find regex on every search?
-                        match self.config.find_regex(&self.find_search_value) {
-                            Ok(regex) => {
-                                //TODO: support captures
-                                tab.replace(
-                                    &regex,
-                                    &self.find_replace_value,
-                                    self.config.find_wrap_around,
-                                );
-                                return self.update(Message::TabChanged(self.tab_model.active()));
-                            }
-                            Err(err) => {
-                                //TODO: put regex error in find box
-                                log::warn!(
-                                    "failed to compile regex {:?}: {}",
-                                    self.find_search_value,
-                                    err
-                                );
-                            }
+                if !self.find_search_value.is_empty()
+                    && let Some(Tab::Editor(tab)) = self.active_tab()
+                {
+                    //TODO: do not compile find regex on every search?
+                    match self.config.find_regex(&self.find_search_value) {
+                        Ok(regex) => {
+                            //TODO: support captures
+                            tab.replace(
+                                &regex,
+                                &self.find_replace_value,
+                                self.config.find_wrap_around,
+                            );
+                            return self.update(Message::TabChanged(self.tab_model.active()));
+                        }
+                        Err(err) => {
+                            //TODO: put regex error in find box
+                            log::warn!(
+                                "failed to compile regex {:?}: {}",
+                                self.find_search_value,
+                                err
+                            );
                         }
                     }
                 }
@@ -2053,27 +2053,27 @@ impl Application for App {
                 return self.update_focus();
             }
             Message::FindReplaceAll => {
-                if !self.find_search_value.is_empty() {
-                    if let Some(Tab::Editor(tab)) = self.active_tab() {
-                        //TODO: do not compile find regex on every search?
-                        match self.config.find_regex(&self.find_search_value) {
-                            Ok(regex) => {
-                                //TODO: support captures
-                                {
-                                    let mut editor = tab.editor.lock().unwrap();
-                                    editor.set_cursor(cosmic_text::Cursor::new(0, 0));
-                                }
-                                while tab.replace(&regex, &self.find_replace_value, false) {}
-                                return self.update(Message::TabChanged(self.tab_model.active()));
+                if !self.find_search_value.is_empty()
+                    && let Some(Tab::Editor(tab)) = self.active_tab()
+                {
+                    //TODO: do not compile find regex on every search?
+                    match self.config.find_regex(&self.find_search_value) {
+                        Ok(regex) => {
+                            //TODO: support captures
+                            {
+                                let mut editor = tab.editor.lock().unwrap();
+                                editor.set_cursor(cosmic_text::Cursor::new(0, 0));
                             }
-                            Err(err) => {
-                                //TODO: put regex error in find box
-                                log::warn!(
-                                    "failed to compile regex {:?}: {}",
-                                    self.find_search_value,
-                                    err
-                                );
-                            }
+                            while tab.replace(&regex, &self.find_replace_value, false) {}
+                            return self.update(Message::TabChanged(self.tab_model.active()));
+                        }
+                        Err(err) => {
+                            //TODO: put regex error in find box
+                            log::warn!(
+                                "failed to compile regex {:?}: {}",
+                                self.find_search_value,
+                                err
+                            );
                         }
                     }
                 }
@@ -2213,18 +2213,14 @@ impl Application for App {
                 // Reload tabs that changed
                 let mut tab_reload = Vec::new();
                 for entity in self.tab_model.iter() {
-                    if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
-                        if let Some(path) = &tab.path_opt {
-                            if event.paths.contains(path) {
-                                if tab.changed() {
-                                    log::warn!(
-                                        "file changed externally before being saved: {:?}",
-                                        path
-                                    );
-                                } else {
-                                    tab_reload.push(entity);
-                                }
-                            }
+                    if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity)
+                        && let Some(path) = &tab.path_opt
+                        && event.paths.contains(path)
+                    {
+                        if tab.changed() {
+                            log::warn!("file changed externally before being saved: {:?}", path);
+                        } else {
+                            tab_reload.push(entity);
                         }
                     }
                 }
@@ -2322,7 +2318,7 @@ impl Application for App {
                 {
                     for (_, project_path) in self.projects.iter() {
                         for path in event.paths.iter() {
-                            if let Ok(prefix) = path.strip_prefix(&project_path) {
+                            if let Ok(prefix) = path.strip_prefix(project_path) {
                                 // Manually ignore project .git folders
                                 //TODO: use logic from ignore crate somehow?
                                 if prefix.starts_with(".git") {
@@ -2392,10 +2388,10 @@ impl Application for App {
                 {
                     let mut close = Vec::new();
                     for entity in self.tab_model.iter() {
-                        if let Some(Tab::GitDiff(other_tab)) = self.tab_model.data::<Tab>(entity) {
-                            if other_tab.diff.path == diff.path {
-                                close.push(entity);
-                            }
+                        if let Some(Tab::GitDiff(other_tab)) = self.tab_model.data::<Tab>(entity)
+                            && other_tab.diff.path == diff.path
+                        {
+                            close.push(entity);
                         }
                     }
                     for entity in close {
@@ -2719,10 +2715,10 @@ impl Application for App {
                                 tab.path_opt = Some(paths.remove(0));
                                 title_opt = Some(tab.title());
                                 tab.save();
-                                if let Some(path) = tab.path_opt.clone() {
-                                    if let Ok(canonical) = fs::canonicalize(&path) {
-                                        self.add_to_recents(&canonical);
-                                    }
+                                if let Some(path) = tab.path_opt.clone()
+                                    && let Ok(canonical) = fs::canonicalize(&path)
+                                {
+                                    self.add_to_recents(&canonical);
                                 }
                             }
                             let mut tasks = Vec::new();
@@ -2906,13 +2902,7 @@ impl Application for App {
                     .tab_model
                     .position(self.tab_model.active())
                     .and_then(|i| (i as usize).checked_sub(1))
-                    .unwrap_or_else(|| {
-                        self.tab_model
-                            .iter()
-                            .count()
-                            .checked_sub(1)
-                            .unwrap_or_default()
-                    });
+                    .unwrap_or_else(|| self.tab_model.iter().count().saturating_sub(1));
 
                 let entity = self.tab_model.iter().nth(pos);
                 if let Some(entity) = entity {
