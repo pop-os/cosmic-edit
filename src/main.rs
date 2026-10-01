@@ -2628,7 +2628,6 @@ impl Application for App {
             Message::RevertAllChanges => {
                 if let Some(Tab::Editor(tab)) = self.active_tab_mut() {
                     tab.reload();
-
                     return self.update(Message::TabChanged(self.tab_model.active()));
                 }
             }
@@ -2650,10 +2649,14 @@ impl Application for App {
                         }
                     }
                 }
+                let mut tasks = Vec::new();
                 if let Some(title) = title_opt {
                     self.tab_model.text_set(self.tab_model.active(), title);
+                    tasks.push(self.update_nav_bar_changed(entity));
+                    tasks.push(self.update_titles());
                 }
-                return self.update_dialogs();
+                tasks.push(self.update_dialogs());
+                return Task::batch(tasks);
             }
             Message::SaveAll => {
                 let entities: Vec<_> = self.tab_model.iter().collect();
@@ -2672,7 +2675,10 @@ impl Application for App {
                         }
                     }
                 }
-                return self.update_dialogs();
+                let mut tasks = Vec::new();
+                tasks.push(self.update_titles());
+                tasks.push(self.update_dialogs());
+                return Task::batch(tasks);
             }
             Message::SaveAsDialog(entity_opt) => {
                 if self.dialog_opt.is_none() {
@@ -2719,12 +2725,14 @@ impl Application for App {
                                     }
                                 }
                             }
+                            let mut tasks = Vec::new();
                             if let Some(title) = title_opt {
                                 self.tab_model.text_set(entity, title);
-                                let _ = self.update_nav_bar_changed(entity);
-                                let _ = self.update_titles();
+                                tasks.push(self.update_nav_bar_changed(entity));
+                                tasks.push(self.update_titles());
                             }
-                            return self.update_dialogs();
+                            tasks.push(self.update_dialogs());
+                            return Task::batch(tasks);
                         }
                     }
                 }
