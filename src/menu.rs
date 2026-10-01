@@ -12,7 +12,11 @@ use cosmic::{
         responsive_menu_bar, segmented_button,
     },
 };
-use std::{collections::HashMap, path::PathBuf, sync::LazyLock};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    sync::LazyLock,
+};
 
 use crate::{Action, Config, ConfigState, Message, fl};
 
@@ -60,7 +64,7 @@ fn truncate_middle(value: &str, max_chars: usize) -> String {
     )
 }
 
-fn format_recent_menu_path(path: &PathBuf, home_dir_opt: Option<&PathBuf>) -> String {
+fn format_recent_menu_path(path: &Path, home_dir_opt: Option<&PathBuf>) -> String {
     const ELLIPSIS: &str = "...";
 
     let display = if let Some(home_dir) = home_dir_opt {
@@ -163,7 +167,7 @@ pub fn menu_bar<'a>(
     config: &Config,
     config_state: &ConfigState,
     key_binds: &HashMap<KeyBind, Action>,
-    projects: &Vec<(String, PathBuf)>,
+    projects: &[(String, PathBuf)],
     has_selection: bool,
 ) -> Element<'a, Message> {
     //TODO: port to libcosmic

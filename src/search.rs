@@ -54,10 +54,10 @@ impl ProjectSearchResult {
                             }
                         };
 
-                        if let Some(file_type) = entry.file_type() {
-                            if file_type.is_dir() {
-                                continue;
-                            }
+                        if let Some(file_type) = entry.file_type()
+                            && file_type.is_dir()
+                        {
+                            continue;
                         }
 
                         let entry_path = entry.path();

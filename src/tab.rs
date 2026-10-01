@@ -26,6 +26,7 @@ fn editor_text(editor: &ViEditor<'static, 'static>) -> String {
     })
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum Tab {
     Editor(EditorTab),
     GitDiff(GitDiffTab),
@@ -355,7 +356,7 @@ impl EditorTab {
                     .filter_map(|m| {
                         if cursor.line != start_line
                             || m.start() >= cursor.index
-                            || m.start() < cursor.index && wrapped == true
+                            || m.start() < cursor.index && wrapped
                         {
                             Some((m.start(), m.len()))
                         } else {
@@ -432,7 +433,7 @@ impl EditorTab {
                             if cursor.line != start_line
                                 || m.start() > cursor.index
                                 || m.start() == cursor.index && current_selection == Selection::None
-                                || m.start() < cursor.index && wrapped == true
+                                || m.start() < cursor.index && wrapped
                             {
                                 Some((m.start(), m.end()))
                             } else {
@@ -475,7 +476,7 @@ impl EditorTab {
                             if cursor.line != start_line
                                 || m.start() < cursor.index
                                 || m.start() == cursor.index && current_selection == Selection::None
-                                || m.start() > cursor.index && wrapped == true
+                                || m.start() > cursor.index && wrapped
                             {
                                 Some((m.start(), m.end()))
                             } else {
