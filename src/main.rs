@@ -88,6 +88,20 @@ pub fn monospace_attrs() -> cosmic_text::Attrs<'static> {
     cosmic_text::Attrs::new().family(Family::Monospace)
 }
 
+/// Canonicalizes a path, falling back to an absolute one for files that do not exist yet
+pub fn canonicalize_or_absolute(path: &Path) -> Option<PathBuf> {
+    match fs::canonicalize(path) {
+        Ok(ok) => Some(ok),
+        Err(err) => match path::absolute(path) {
+            Ok(ok) => Some(ok),
+            Err(_) => {
+                log::error!("failed to canonicalize {:?}: {}", path, err);
+                None
+            }
+        },
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(all(unix, not(target_os = "redox")))]
     match fork::daemon(true, true) {
@@ -669,16 +683,7 @@ impl App {
     fn new_tab(&mut self, path_opt: Option<PathBuf>) -> Option<NewTab> {
         match path_opt {
             Some(path) => {
-                let canonical = match fs::canonicalize(&path) {
-                    Ok(ok) => ok,
-                    Err(err) => match path::absolute(&path) {
-                        Ok(ok) => ok,
-                        Err(_) => {
-                            log::error!("failed to canonicalize {:?}: {}", path, err);
-                            return None;
-                        }
-                    },
-                };
+                let canonical = canonicalize_or_absolute(&path)?;
 
                 //TODO: allow files to be open multiple times
                 let mut activate_opt = None;
@@ -841,7 +846,7 @@ impl App {
                                 }
                             }
                             ProjectNode::File { path, .. } => {
-                                if path == &tab_path {
+                                if canonicalize_or_absolute(path).as_ref() == Some(&tab_path) {
                                     active_id = id;
                                     break;
                                 }
