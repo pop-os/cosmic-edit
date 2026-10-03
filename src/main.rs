@@ -2610,7 +2610,7 @@ impl Application for App {
                     }
                 }
                 if let Some(title) = title_opt {
-                    self.tab_model.text_set(self.tab_model.active(), title);
+                    self.tab_model.text_set(entity, title);
                 }
                 return self.update_dialogs();
             }
@@ -2665,24 +2665,38 @@ impl Application for App {
                 self.dialog_opt = None;
                 match result {
                     DialogResult::Cancel => {}
-                    DialogResult::Open(mut paths) => {
-                        if !paths.is_empty() {
-                            let mut title_opt = None;
-                            if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                                tab.path_opt = Some(paths.remove(0));
-                                title_opt = Some(tab.title());
-                                tab.save();
-                                if let Some(path) = tab.path_opt.clone()
-                                    && let Ok(canonical) = fs::canonicalize(&path)
-                                {
-                                    self.add_to_recents(&canonical);
-                                }
-                            }
-                            if let Some(title) = title_opt {
-                                self.tab_model.text_set(entity, title);
-                            }
+                    DialogResult::Open(paths) => {
+                        let Some(path) = paths.into_iter().next() else {
                             return self.update_dialogs();
+                        };
+                        let path = canonicalize_or_absolute(&path).unwrap_or(path);
+
+                        // Switch to the tab that already has this file instead of opening it twice
+                        let open_elsewhere = self.tab_model.iter().find(|other| {
+                            *other != entity
+                                && matches!(
+                                    self.tab_model.data::<Tab>(*other),
+                                    Some(Tab::Editor(tab)) if tab.path_opt.as_ref() == Some(&path)
+                                )
+                        });
+                        if let Some(other) = open_elsewhere {
+                            self.tab_model.activate(other);
+                            return Task::batch([self.update_dialogs(), self.update_tab()]);
                         }
+
+                        let mut title_opt = None;
+                        if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                            tab.path_opt = Some(path.clone());
+                            title_opt = Some(tab.title());
+                            tab.save();
+                            if let Ok(canonical) = fs::canonicalize(&path) {
+                                self.add_to_recents(&canonical);
+                            }
+                        }
+                        if let Some(title) = title_opt {
+                            self.tab_model.text_set(entity, title);
+                        }
+                        return self.update_dialogs();
                     }
                 }
             }
