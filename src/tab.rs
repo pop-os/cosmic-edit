@@ -463,6 +463,75 @@ impl EditorTab {
         }
         false
     }
+
+    pub fn get_occurrences_before_cursor(
+        &self,
+        search_input: &str,
+        case_sensitivity: bool,
+        regex: Option<regex::Regex>,
+    ) -> u16 {
+        let cursor = self.editor.lock().unwrap().cursor();
+        let cursor_line = cursor.line;
+        let cursor_char_index = cursor.index;
+
+        self.editor.lock().unwrap().with_buffer(|buffer| {
+            let occurrences = buffer.lines[..=cursor_line]
+                .iter()
+                .enumerate()
+                .map(|(idx, line)| {
+                    let mut line_str = line.text();
+                    if idx == cursor_line {
+                        line_str = &line_str[..cursor_char_index];
+                    }
+
+                    if let Some(reg) = &regex {
+                        reg.find_iter(&line_str).count()
+                    } else {
+                        if case_sensitivity {
+                            line_str.matches(search_input).count()
+                        } else {
+                            let line_lower = line_str.to_lowercase();
+                            let search_lower = search_input.to_lowercase();
+                            line_lower.matches(&search_lower).count()
+                        }
+                    }
+                })
+                .sum::<usize>() as u16 + 1;
+
+            occurrences
+        })
+    }
+
+    pub fn get_total_occurrences(
+        &self,
+        search_input: &str,
+        case_sensitivity: bool,
+        regex: Option<regex::Regex>,
+    ) -> u16 {
+        if search_input.is_empty() {
+            return 0;
+        }
+
+        self.editor.lock().unwrap().with_buffer(|buffer| {
+            return buffer
+                .lines
+                .iter()
+                .map(|line| {
+                    if let Some(reg) = &regex {
+                        reg.find_iter(line.text()).count()
+                    } else {
+                        if case_sensitivity {
+                            line.text().matches(search_input).count()
+                        } else {
+                            let line_lower = line.text().to_lowercase();
+                            let search_lower = search_input.to_lowercase();
+                            line_lower.matches(&search_lower).count()
+                        }
+                    }
+                })
+                .sum::<usize>() as u16;
+        })
+    }
 }
 
 /// Includes parent name in tab title
