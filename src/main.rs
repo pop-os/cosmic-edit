@@ -1305,13 +1305,10 @@ impl App {
             .theme_names
             .iter()
             .position(|theme_name| theme_name == &self.config.syntax_theme_light);
-        let font_selected = {
-            let mut font_system = font_system().write().unwrap();
-            let current_font_name = font_system.raw().db().family_name(&Family::Monospace);
-            self.font_names
-                .iter()
-                .position(|font_name| font_name == current_font_name)
-        };
+        let font_selected = self
+            .font_names
+            .iter()
+            .position(|font_name| font_name == &self.config.font_name);
         let font_size_selected = self
             .font_sizes
             .iter()
