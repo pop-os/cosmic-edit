@@ -1208,7 +1208,8 @@ impl App {
             fl!("project-search"),
             self.project_search_value.clone(),
         )
-        .id(self.project_search_id.clone());
+        .id(self.project_search_id.clone())
+        .capture_escape(false);
 
         let items = match &self.project_search_result {
             Some(project_search_result) => {
@@ -3212,7 +3213,8 @@ impl Application for App {
                             .on_press(Message::FindSearchValueChanged(String::new()))
                             .class(style::Button::Icon)
                             .into(),
-                    );
+                    )
+                    .capture_escape(false);
             let find_widget = widget::row::with_children(vec![
                 find_input.into(),
                 widget::tooltip(
@@ -3259,7 +3261,8 @@ impl Application for App {
                         .on_press(Message::FindReplaceValueChanged(String::new()))
                         .class(style::Button::Icon)
                         .into(),
-                );
+                )
+                .capture_escape(false);
                 let replace_widget = widget::row::with_children(vec![
                     replace_input.into(),
                     widget::tooltip(
