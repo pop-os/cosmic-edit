@@ -496,7 +496,8 @@ impl EditorTab {
                         }
                     }
                 })
-                .sum::<usize>() as u16 + 1;
+                .sum::<usize>() as u16
+                + 1;
 
             occurrences
         })
