@@ -88,6 +88,20 @@ pub fn monospace_attrs() -> cosmic_text::Attrs<'static> {
     cosmic_text::Attrs::new().family(Family::Monospace)
 }
 
+/// Canonicalizes a path, falling back to an absolute one for files that do not exist yet
+pub fn canonicalize_or_absolute(path: &Path) -> Option<PathBuf> {
+    match fs::canonicalize(path) {
+        Ok(ok) => Some(ok),
+        Err(err) => match path::absolute(path) {
+            Ok(ok) => Some(ok),
+            Err(_) => {
+                log::error!("failed to canonicalize {:?}: {}", path, err);
+                None
+            }
+        },
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(all(unix, not(target_os = "redox")))]
     match fork::daemon(true, true) {
@@ -669,16 +683,7 @@ impl App {
     fn new_tab(&mut self, path_opt: Option<PathBuf>) -> Option<NewTab> {
         match path_opt {
             Some(path) => {
-                let canonical = match fs::canonicalize(&path) {
-                    Ok(ok) => ok,
-                    Err(err) => match path::absolute(&path) {
-                        Ok(ok) => ok,
-                        Err(_) => {
-                            log::error!("failed to canonicalize {:?}: {}", path, err);
-                            return None;
-                        }
-                    },
-                };
+                let canonical = canonicalize_or_absolute(&path)?;
 
                 //TODO: allow files to be open multiple times
                 let mut activate_opt = None;
@@ -841,7 +846,7 @@ impl App {
                                 }
                             }
                             ProjectNode::File { path, .. } => {
-                                if path == &tab_path {
+                                if canonicalize_or_absolute(path).as_ref() == Some(&tab_path) {
                                     active_id = id;
                                     break;
                                 }
@@ -1301,13 +1306,10 @@ impl App {
             .theme_names
             .iter()
             .position(|theme_name| theme_name == &self.config.syntax_theme_light);
-        let font_selected = {
-            let mut font_system = font_system().write().unwrap();
-            let current_font_name = font_system.raw().db().family_name(&Family::Monospace);
-            self.font_names
-                .iter()
-                .position(|font_name| font_name == current_font_name)
-        };
+        let font_selected = self
+            .font_names
+            .iter()
+            .position(|font_name| font_name == &self.config.font_name);
         let font_size_selected = self
             .font_sizes
             .iter()
@@ -2606,7 +2608,7 @@ impl Application for App {
                     }
                 }
                 if let Some(title) = title_opt {
-                    self.tab_model.text_set(self.tab_model.active(), title);
+                    self.tab_model.text_set(entity, title);
                 }
                 return self.update_dialogs();
             }
@@ -2661,24 +2663,38 @@ impl Application for App {
                 self.dialog_opt = None;
                 match result {
                     DialogResult::Cancel => {}
-                    DialogResult::Open(mut paths) => {
-                        if !paths.is_empty() {
-                            let mut title_opt = None;
-                            if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
-                                tab.path_opt = Some(paths.remove(0));
-                                title_opt = Some(tab.title());
-                                tab.save();
-                                if let Some(path) = tab.path_opt.clone()
-                                    && let Ok(canonical) = fs::canonicalize(&path)
-                                {
-                                    self.add_to_recents(&canonical);
-                                }
-                            }
-                            if let Some(title) = title_opt {
-                                self.tab_model.text_set(entity, title);
-                            }
+                    DialogResult::Open(paths) => {
+                        let Some(path) = paths.into_iter().next() else {
                             return self.update_dialogs();
+                        };
+                        let path = canonicalize_or_absolute(&path).unwrap_or(path);
+
+                        // Switch to the tab that already has this file instead of opening it twice
+                        let open_elsewhere = self.tab_model.iter().find(|other| {
+                            *other != entity
+                                && matches!(
+                                    self.tab_model.data::<Tab>(*other),
+                                    Some(Tab::Editor(tab)) if tab.path_opt.as_ref() == Some(&path)
+                                )
+                        });
+                        if let Some(other) = open_elsewhere {
+                            self.tab_model.activate(other);
+                            return Task::batch([self.update_dialogs(), self.update_tab()]);
                         }
+
+                        let mut title_opt = None;
+                        if let Some(Tab::Editor(tab)) = self.tab_model.data_mut::<Tab>(entity) {
+                            tab.path_opt = Some(path.clone());
+                            title_opt = Some(tab.title());
+                            tab.save();
+                            if let Ok(canonical) = fs::canonicalize(&path) {
+                                self.add_to_recents(&canonical);
+                            }
+                        }
+                        if let Some(title) = title_opt {
+                            self.tab_model.text_set(entity, title);
+                        }
+                        return self.update_dialogs();
                     }
                 }
             }
