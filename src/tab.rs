@@ -137,6 +137,8 @@ impl EditorTab {
         let mut editor = self.editor.lock().unwrap();
         let mut font_system = font_system().write().unwrap();
         let mut editor = editor.borrow_with(font_system.raw());
+
+        // Reload saved files from disk
         if let Some(path) = &self.path_opt {
             // Save scroll
             let scroll = editor.with_buffer(|buffer| buffer.scroll());
@@ -207,8 +209,39 @@ impl EditorTab {
 
             // Restore scroll
             editor.with_buffer_mut(|buffer| buffer.set_scroll(scroll));
-        } else {
-            log::warn!("tried to reload with no path");
+        }
+        
+        // Reset unsaved files to empty
+        else {
+
+            // Store the entire operation
+            editor.start_change();
+
+            // Grab everything in the buffer
+            let cursor_start: Cursor = cosmic_text::Cursor::new(0, 0);
+            let cursor_end = editor.with_buffer(|buffer| {
+                let last_line = buffer.lines.len().saturating_sub(1);
+                cosmic_text::Cursor::new(
+                    last_line,
+                    buffer
+                        .lines
+                        .get(last_line)
+                        .map(|line| line.text().len())
+                        .unwrap_or(0),
+                )
+            });
+
+            // Delete everything in the buffer
+            editor.delete_range(cursor_start, cursor_end);
+
+            // Adjust cursor to the start
+            let mut cursor = editor.cursor();
+            cursor.line = 0;
+            cursor.index = 0;
+            editor.set_cursor(cursor);
+            editor.finish_change();
+            editor.set_changed(false);
+
         }
     }
 
