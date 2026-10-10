@@ -363,6 +363,7 @@ pub enum Message {
     FindReplaceAll,
     FindReplaceValueChanged(String),
     FindSearchValueChanged(String),
+    TotalOccurrencesCalculated(u16),
     FindUseRegex(bool),
     FindWrapAround(bool),
     Focus(window::Id),
@@ -480,6 +481,7 @@ pub struct App {
     find_search_id: widget::Id,
     find_search_value: String,
     find_search_current_index: u16,
+    find_search_total_occurrences: u16,
     git_project_status: Option<Vec<(String, PathBuf, Vec<GitStatus>)>>,
     projects: Vec<(String, PathBuf)>,
     project_search_id: widget::Id,
@@ -1378,6 +1380,45 @@ impl App {
         ])
         .into()
     }
+    
+    fn update_search_occurrence_text(&mut self) -> Option<cosmic::prelude::Task<cosmic::Action<Message>>> {
+        if self.find_search_value.is_empty() {
+            return None;
+        }
+
+        if !self.find_opt.is_some() {
+            return None;
+        }
+
+        let Some(Tab::Editor(tab)) = self.active_tab() else {
+            return None;
+        };
+
+        let regex = if self.config.find_use_regex {
+            self.config.find_regex(&self.find_search_value).ok()
+        } else {
+            None
+        };
+
+        let current_index = tab.get_occurrences_before_cursor(
+            &self.find_search_value,
+            self.config.find_case_sensitive,
+            regex.clone(),
+        );
+
+        let calculation_future = tab.get_total_occurrences_task(
+            &self.find_search_value,
+            self.config.find_case_sensitive,
+            regex,
+        );
+
+        self.find_search_current_index = current_index;
+
+        // TODO: Also run this when the contents of tab changes.
+        return Some(Task::perform(calculation_future, |result| {
+            Message::TotalOccurrencesCalculated(result).into()
+        }));
+    }
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -1499,6 +1540,7 @@ impl Application for App {
             find_replace_id: widget::Id::unique(),
             find_replace_value: String::new(),
             find_search_current_index: 1,
+            find_search_total_occurrences: 0,
             find_search_id: widget::Id::unique(),
             find_search_value: String::new(),
             git_project_status: None,
@@ -2065,20 +2107,12 @@ impl Application for App {
             Message::FindSearchValueChanged(value) => {
                 self.find_search_value = value;
 
-                if !self.find_search_value.is_empty()
-                    && let Some(Tab::Editor(tab)) = self.active_tab()
-                {
-                    let regex = if self.config.find_use_regex {
-                        self.config.find_regex(&self.find_search_value).ok()
-                    } else {
-                        None
-                    };
-                    self.find_search_current_index = tab.get_occurrences_before_cursor(
-                        &self.find_search_value,
-                        self.config.find_case_sensitive,
-                        regex,
-                    );
+                if let Some(calculation_task) = self.update_search_occurrence_text() {
+                    return calculation_task;
                 }
+            }
+            Message::TotalOccurrencesCalculated(result) => {
+                self.find_search_total_occurrences = result;
             }
             Message::FindUseRegex(find_use_regex) => {
                 config_set!(find_use_regex, find_use_regex);
@@ -2793,6 +2827,10 @@ impl Application for App {
                         title.push_str(" \u{2022}");
                     }
                     self.tab_model.text_set(entity, title);
+                    
+                    if let Some(calculation_task) = self.update_search_occurrence_text() {
+                        return calculation_task;
+                    }
                 }
             }
             Message::TabClose(entity) => {
@@ -3239,12 +3277,8 @@ impl Application for App {
             let mut total_occurrences = 0;
             if !self.find_search_value.is_empty() {
                 let regex = self.config.find_regex(&self.find_search_value).ok();
-                if let Some(Tab::Editor(tab)) = self.active_tab() {
-                    total_occurrences = tab.get_total_occurrences(
-                        &self.find_search_value,
-                        self.config.find_case_sensitive,
-                        regex.clone(),
-                    );
+                if let Some(Tab::Editor(_)) = self.active_tab() {
+                    total_occurrences = self.find_search_total_occurrences;
                 }
                 if self.config.find_use_regex && !regex.is_some() {
                     trailing_ui.push(

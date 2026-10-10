@@ -466,7 +466,7 @@ impl EditorTab {
 
     pub fn get_occurrences_before_cursor(
         &self,
-        search_input: &str,
+        search_input: &String,
         case_sensitivity: bool,
         regex: Option<regex::Regex>,
     ) -> u16 {
@@ -503,35 +503,49 @@ impl EditorTab {
         })
     }
 
-    pub fn get_total_occurrences(
+    pub fn get_total_occurrences_task(
         &self,
         search_input: &str,
         case_sensitivity: bool,
         regex: Option<regex::Regex>,
-    ) -> u16 {
-        if search_input.is_empty() {
-            return 0;
-        }
+    ) -> impl Future<Output = u16> + Send + 'static {
+        let lines: Vec<String> = if search_input.is_empty() {
+            Vec::new()
+        } else {
+            self.editor.lock().unwrap().with_buffer(|buffer| {
+                buffer
+                    .lines
+                    .iter()
+                    .map(|line| line.text().to_string())
+                    .collect()
+            })
+        };
 
-        self.editor.lock().unwrap().with_buffer(|buffer| {
-            return buffer
-                .lines
-                .iter()
-                .map(|line| {
-                    if let Some(reg) = &regex {
-                        reg.find_iter(line.text()).count()
-                    } else {
-                        if case_sensitivity {
-                            line.text().matches(search_input).count()
+        let search_string = search_input.to_string();
+        async move {
+            if search_string.is_empty() || lines.is_empty() {
+                return 0;
+            }
+
+            tokio::task::spawn_blocking(move || {
+                lines
+                    .iter()
+                    .map(|line| {
+                        if let Some(reg) = &regex {
+                            reg.find_iter(line).count()
+                        } else if case_sensitivity {
+                            line.matches(&search_string).count()
                         } else {
-                            let line_lower = line.text().to_lowercase();
-                            let search_lower = search_input.to_lowercase();
+                            let line_lower = line.to_lowercase();
+                            let search_lower = search_string.to_lowercase();
                             line_lower.matches(&search_lower).count()
                         }
-                    }
-                })
-                .sum::<usize>() as u16;
-        })
+                    })
+                    .sum::<usize>() as u16
+            })
+            .await
+            .unwrap_or(0)
+        }
     }
 }
 
