@@ -363,6 +363,7 @@ pub enum Message {
     FindReplaceAll,
     FindReplaceValueChanged(String),
     FindSearchValueChanged(String),
+    TotalOccurrencesCalculated(u16),
     FindUseRegex(bool),
     FindWrapAround(bool),
     Focus(window::Id),
@@ -479,6 +480,8 @@ pub struct App {
     find_replace_value: String,
     find_search_id: widget::Id,
     find_search_value: String,
+    find_search_occurrences_before_cursor: u16,
+    find_search_total_occurrences: u16,
     git_project_status: Option<Vec<(String, PathBuf, Vec<GitStatus>)>>,
     projects: Vec<(String, PathBuf)>,
     project_search_id: widget::Id,
@@ -1378,6 +1381,45 @@ impl App {
         ])
         .into()
     }
+    
+    fn update_search_occurrence_text(&mut self) -> Option<cosmic::prelude::Task<cosmic::Action<Message>>> {
+        if self.find_search_value.is_empty() {
+            return None;
+        }
+
+        if !self.find_opt.is_some() {
+            return None;
+        }
+
+        let Some(Tab::Editor(tab)) = self.active_tab() else {
+            return None;
+        };
+
+        let regex = if self.config.find_use_regex {
+            self.config.find_regex(&self.find_search_value).ok()
+        } else {
+            None
+        };
+
+        let current_index = tab.get_occurrences_before_cursor(
+            &self.find_search_value,
+            self.config.find_case_sensitive,
+            regex.clone(),
+        );
+
+        let calculation_future = tab.get_total_occurrences_task(
+            &self.find_search_value,
+            self.config.find_case_sensitive,
+            regex,
+        );
+
+        self.find_search_occurrences_before_cursor = current_index;
+
+        // TODO: Also run this when the contents of tab changes.
+        return Some(Task::perform(calculation_future, |result| {
+            Message::TotalOccurrencesCalculated(result).into()
+        }));
+    }
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -1498,6 +1540,8 @@ impl Application for App {
             find_opt: None,
             find_replace_id: widget::Id::unique(),
             find_replace_value: String::new(),
+            find_search_occurrences_before_cursor: 1,
+            find_search_total_occurrences: 0,
             find_search_id: widget::Id::unique(),
             find_search_value: String::new(),
             git_project_status: None,
@@ -1946,7 +1990,6 @@ impl Application for App {
                             tab.search(&regex, true, self.config.find_wrap_around);
                         }
                         Err(err) => {
-                            //TODO: put regex error in find box
                             log::warn!(
                                 "failed to compile regex {:?}: {}",
                                 self.find_search_value,
@@ -1954,6 +1997,17 @@ impl Application for App {
                             );
                         }
                     }
+
+                    let regex = if self.config.find_use_regex {
+                        self.config.find_regex(&self.find_search_value).ok()
+                    } else {
+                        None
+                    };
+                    self.find_search_occurrences_before_cursor = tab.get_occurrences_before_cursor(
+                        &self.find_search_value,
+                        self.config.find_case_sensitive,
+                        regex,
+                    );
                 }
 
                 // Focus correct input
@@ -1969,7 +2023,6 @@ impl Application for App {
                             tab.search(&regex, false, self.config.find_wrap_around);
                         }
                         Err(err) => {
-                            //TODO: put regex error in find box
                             log::warn!(
                                 "failed to compile regex {:?}: {}",
                                 self.find_search_value,
@@ -1977,6 +2030,17 @@ impl Application for App {
                             );
                         }
                     }
+
+                    let regex = if self.config.find_use_regex {
+                        self.config.find_regex(&self.find_search_value).ok()
+                    } else {
+                        None
+                    };
+                    self.find_search_occurrences_before_cursor = tab.get_occurrences_before_cursor(
+                        &self.find_search_value,
+                        self.config.find_case_sensitive,
+                        regex,
+                    );
                 }
 
                 // Focus correct input
@@ -1998,7 +2062,6 @@ impl Application for App {
                             return self.update(Message::TabChanged(self.tab_model.active()));
                         }
                         Err(err) => {
-                            //TODO: put regex error in find box
                             log::warn!(
                                 "failed to compile regex {:?}: {}",
                                 self.find_search_value,
@@ -2027,7 +2090,6 @@ impl Application for App {
                             return self.update(Message::TabChanged(self.tab_model.active()));
                         }
                         Err(err) => {
-                            //TODO: put regex error in find box
                             log::warn!(
                                 "failed to compile regex {:?}: {}",
                                 self.find_search_value,
@@ -2045,6 +2107,13 @@ impl Application for App {
             }
             Message::FindSearchValueChanged(value) => {
                 self.find_search_value = value;
+
+                if let Some(calculation_task) = self.update_search_occurrence_text() {
+                    return calculation_task;
+                }
+            }
+            Message::TotalOccurrencesCalculated(result) => {
+                self.find_search_total_occurrences = result;
             }
             Message::FindUseRegex(find_use_regex) => {
                 config_set!(find_use_regex, find_use_regex);
@@ -2759,6 +2828,10 @@ impl Application for App {
                         title.push_str(" \u{2022}");
                     }
                     self.tab_model.text_set(entity, title);
+                    
+                    if let Some(calculation_task) = self.update_search_occurrence_text() {
+                        return calculation_task;
+                    }
                 }
             }
             Message::TabClose(entity) => {
@@ -3190,11 +3263,52 @@ impl Application for App {
             None => {}
         }
 
+        // This adds UI for the find/replace drawer.
         if let Some(FindField {
             replace,
             has_focus: _,
         }) = &self.find_opt
         {
+            let mut trailing_ui = vec![
+                button::custom(icon_cache_get("edit-clear-symbolic", 16))
+                    .on_press(Message::FindSearchValueChanged(String::new()))
+                    .class(style::Button::Icon)
+                    .into(),
+            ];
+
+            let mut total_occurrences = 0;
+            if !self.find_search_value.is_empty() {
+                let regex = self.config.find_regex(&self.find_search_value).ok();
+                if let Some(Tab::Editor(_)) = self.active_tab() {
+                    total_occurrences = self.find_search_total_occurrences;
+                }
+                if self.config.find_use_regex && !regex.is_some() {
+                    trailing_ui.push(
+                        widget::text(fl!("invalid-regex"))
+                            .class(theme::style::Text::Custom(|_| {
+                                iced::core::widget::text::Style {
+                                    color: Some(cosmic::iced::Color::from_rgb(
+                                        1.0f32, 0.0f32, 0.0f32,
+                                    )),
+                                    ..Default::default()
+                                }
+                            }))
+                            .into(),
+                    );
+                } else {
+                    let label_text = if total_occurrences > 0 {
+                        fl!(
+                            "x-of-y",
+                            current = self.find_search_occurrences_before_cursor.clamp(1, total_occurrences),
+                            total = total_occurrences
+                        )
+                    } else {
+                        fl!("no-results")
+                    };
+                    trailing_ui.push(widget::text(label_text).into());
+                }
+            }
+
             let find_input =
                 widget::text_input::text_input(fl!("find-placeholder"), &self.find_search_value)
                     .id(self.find_search_id.clone())
@@ -3209,9 +3323,9 @@ impl Application for App {
                     .on_focus(Message::FindFocused(true))
                     .width(Length::Fixed(320.0))
                     .trailing_icon(
-                        button::custom(icon_cache_get("edit-clear-symbolic", 16))
-                            .on_press(Message::FindSearchValueChanged(String::new()))
-                            .class(style::Button::Icon)
+                        widget::row::with_children(trailing_ui)
+                            .align_y(Alignment::Center)
+                            .spacing(space_xxs)
                             .into(),
                     )
                     .capture_escape(false);
@@ -3219,7 +3333,11 @@ impl Application for App {
                 find_input.into(),
                 widget::tooltip(
                     button::custom(icon_cache_get("go-up-symbolic", 16))
-                        .on_press(Message::FindPrevious)
+                        .on_press_maybe(if total_occurrences > 0 {
+                            Some(Message::FindPrevious)
+                        } else {
+                            None
+                        })
                         .padding(space_xxs)
                         .class(style::Button::Icon),
                     widget::text::body(fl!("find-previous")),
@@ -3228,7 +3346,11 @@ impl Application for App {
                 .into(),
                 widget::tooltip(
                     button::custom(icon_cache_get("go-down-symbolic", 16))
-                        .on_press(Message::FindNext)
+                        .on_press_maybe(if total_occurrences > 0 {
+                            Some(Message::FindNext)
+                        } else {
+                            None
+                        })
                         .padding(space_xxs)
                         .class(style::Button::Icon),
                     widget::text::body(fl!("find-next")),
