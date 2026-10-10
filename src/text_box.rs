@@ -1036,6 +1036,13 @@ where
             shell.publish(on_focus.clone());
         }
 
+        if let Event::Keyboard(KeyEvent::KeyPressed { .. }) = event
+            && state.is_focused
+        {
+            if let Some(on_changed) = &self.on_changed {
+                shell.publish(on_changed.clone());
+            }
+        }
         match event {
             Event::Keyboard(KeyEvent::KeyPressed {
                 modified_key: Key::Named(key),

@@ -480,7 +480,7 @@ pub struct App {
     find_replace_value: String,
     find_search_id: widget::Id,
     find_search_value: String,
-    find_search_current_index: u16,
+    find_search_occurrences_before_cursor: u16,
     find_search_total_occurrences: u16,
     git_project_status: Option<Vec<(String, PathBuf, Vec<GitStatus>)>>,
     projects: Vec<(String, PathBuf)>,
@@ -1412,7 +1412,7 @@ impl App {
             regex,
         );
 
-        self.find_search_current_index = current_index;
+        self.find_search_occurrences_before_cursor = current_index;
 
         // TODO: Also run this when the contents of tab changes.
         return Some(Task::perform(calculation_future, |result| {
@@ -1539,7 +1539,7 @@ impl Application for App {
             find_opt: None,
             find_replace_id: widget::Id::unique(),
             find_replace_value: String::new(),
-            find_search_current_index: 1,
+            find_search_occurrences_before_cursor: 1,
             find_search_total_occurrences: 0,
             find_search_id: widget::Id::unique(),
             find_search_value: String::new(),
@@ -2002,7 +2002,7 @@ impl Application for App {
                     } else {
                         None
                     };
-                    self.find_search_current_index = tab.get_occurrences_before_cursor(
+                    self.find_search_occurrences_before_cursor = tab.get_occurrences_before_cursor(
                         &self.find_search_value,
                         self.config.find_case_sensitive,
                         regex,
@@ -2035,7 +2035,7 @@ impl Application for App {
                     } else {
                         None
                     };
-                    self.find_search_current_index = tab.get_occurrences_before_cursor(
+                    self.find_search_occurrences_before_cursor = tab.get_occurrences_before_cursor(
                         &self.find_search_value,
                         self.config.find_case_sensitive,
                         regex,
@@ -3262,6 +3262,7 @@ impl Application for App {
             None => {}
         }
 
+        // This adds UI for the find/replace drawer.
         if let Some(FindField {
             replace,
             has_focus: _,
@@ -3297,7 +3298,7 @@ impl Application for App {
                     let label_text = if total_occurrences > 0 {
                         fl!(
                             "x-of-y",
-                            current = self.find_search_current_index.clamp(1, total_occurrences),
+                            current = self.find_search_occurrences_before_cursor.clamp(1, total_occurrences),
                             total = total_occurrences
                         )
                     } else {
