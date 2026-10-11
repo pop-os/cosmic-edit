@@ -76,6 +76,11 @@ static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
 static LINE_NUMBER_CACHE: OnceLock<Mutex<LineNumberCache>> = OnceLock::new();
 static SWASH_CACHE: OnceLock<Mutex<SwashCache>> = OnceLock::new();
 static SYNTAX_SYSTEM: OnceLock<SyntaxSystem> = OnceLock::new();
+static SEARCH_OCCURRENCE_SIGNALER: OnceLock<Mutex<tokio::sync::mpsc::UnboundedSender<()>>> =
+    OnceLock::new();
+static SEARCH_OCCURRENCE_RECEIVER: OnceLock<
+    tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<()>>,
+> = OnceLock::new();
 
 pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
     let mut icon_cache = ICON_CACHE.get().unwrap().lock().unwrap();
@@ -139,6 +144,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             theme_set,
         }
     });
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    SEARCH_OCCURRENCE_SIGNALER.get_or_init(|| Mutex::new(tx));
+    SEARCH_OCCURRENCE_RECEIVER.get_or_init(|| tokio::sync::Mutex::new(rx));
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
 
@@ -363,7 +371,8 @@ pub enum Message {
     FindReplaceAll,
     FindReplaceValueChanged(String),
     FindSearchValueChanged(String),
-    TotalOccurrencesCalculated(u16),
+    FindSearchOccurrenceResults(u16),
+    CalculateSearchOccurrences,
     FindUseRegex(bool),
     FindWrapAround(bool),
     Focus(window::Id),
@@ -1380,44 +1389,11 @@ impl App {
         ])
         .into()
     }
-    
-    fn update_search_occurrence_text(&mut self) -> Option<cosmic::prelude::Task<cosmic::Action<Message>>> {
-        if self.find_search_value.is_empty() {
-            return None;
+
+    fn request_search_occurrence_update(&mut self) {
+        if let Some(tx) = SEARCH_OCCURRENCE_SIGNALER.get() {
+            let _ = tx.lock().unwrap().send(());
         }
-
-        if !self.find_opt.is_some() {
-            return None;
-        }
-
-        let Some(Tab::Editor(tab)) = self.active_tab() else {
-            return None;
-        };
-
-        let regex = if self.config.find_use_regex {
-            self.config.find_regex(&self.find_search_value).ok()
-        } else {
-            None
-        };
-
-        let current_index = tab.get_occurrences_before_cursor(
-            &self.find_search_value,
-            self.config.find_case_sensitive,
-            regex.clone(),
-        );
-
-        let calculation_future = tab.get_total_occurrences_task(
-            &self.find_search_value,
-            self.config.find_case_sensitive,
-            regex,
-        );
-
-        self.find_search_occurrences_before_cursor = current_index;
-
-        // TODO: Also run this when the contents of tab changes.
-        return Some(Task::perform(calculation_future, |result| {
-            Message::TotalOccurrencesCalculated(result).into()
-        }));
     }
 }
 
@@ -1977,6 +1953,7 @@ impl Application for App {
             }
             Message::FindCaseSensitive(find_case_sensitive) => {
                 config_set!(find_case_sensitive, find_case_sensitive);
+                self.request_search_occurrence_update();
                 return self.update_config();
             }
             Message::FindNext => {
@@ -2107,15 +2084,48 @@ impl Application for App {
             Message::FindSearchValueChanged(value) => {
                 self.find_search_value = value;
 
-                if let Some(calculation_task) = self.update_search_occurrence_text() {
-                    return calculation_task;
-                }
+                self.request_search_occurrence_update();
             }
-            Message::TotalOccurrencesCalculated(result) => {
+            Message::CalculateSearchOccurrences => {
+                if self.find_search_value.is_empty() {
+                    return Task::none();
+                }
+
+                if !self.find_opt.is_some() {
+                    return Task::none();
+                }
+
+                let Some(Tab::Editor(tab)) = self.active_tab() else {
+                    return Task::none();
+                };
+
+                let regex = if self.config.find_use_regex {
+                    self.config.find_regex(&self.find_search_value).ok()
+                } else {
+                    None
+                };
+                let current_index = tab.get_occurrences_before_cursor(
+                    &self.find_search_value,
+                    self.config.find_case_sensitive,
+                    regex.clone(),
+                );
+                let calculation_future = tab.get_total_occurrences_task(
+                    &self.find_search_value,
+                    self.config.find_case_sensitive,
+                    regex,
+                );
+                self.find_search_occurrences_before_cursor = current_index;
+
+                return Task::perform(calculation_future, |result| {
+                    Message::FindSearchOccurrenceResults(result).into()
+                });
+            }
+            Message::FindSearchOccurrenceResults(result) => {
                 self.find_search_total_occurrences = result;
             }
             Message::FindUseRegex(find_use_regex) => {
                 config_set!(find_use_regex, find_use_regex);
+                self.request_search_occurrence_update();
                 return self.update_config();
             }
             Message::FindWrapAround(find_wrap_around) => {
@@ -2827,10 +2837,8 @@ impl Application for App {
                         title.push_str(" \u{2022}");
                     }
                     self.tab_model.text_set(entity, title);
-                    
-                    if let Some(calculation_task) = self.update_search_occurrence_text() {
-                        return calculation_task;
-                    }
+
+                    self.request_search_occurrence_update();
                 }
             }
             Message::TabClose(entity) => {
@@ -3298,7 +3306,9 @@ impl Application for App {
                     let label_text = if total_occurrences > 0 {
                         fl!(
                             "x-of-y",
-                            current = self.find_search_occurrences_before_cursor.clamp(1, total_occurrences),
+                            current = self
+                                .find_search_occurrences_before_cursor
+                                .clamp(1, total_occurrences),
                             total = total_occurrences
                         )
                     } else {
@@ -3453,8 +3463,28 @@ impl Application for App {
         struct ConfigSubscription;
         struct ConfigStateSubscription;
         struct ThemeSubscription;
+        struct FindDebounceSubscription;
 
         let mut subscriptions = vec![
+            Subscription::run_with(TypeId::of::<FindDebounceSubscription>(), |_| {
+                stream::channel(
+                    1,
+                    |mut output: futures::channel::mpsc::Sender<Message>| async move {
+                        let mut rx = SEARCH_OCCURRENCE_RECEIVER.get().unwrap().lock().await;
+
+                        while rx.recv().await.is_some() {
+                            while tokio::time::timeout(
+                                std::time::Duration::from_millis(400),
+                                rx.recv(),
+                            )
+                            .await
+                            .is_ok()
+                            {}
+                            let _ = output.send(Message::CalculateSearchOccurrences).await;
+                        }
+                    },
+                )
+            }),
             event::listen_with(|event, status, window_id| match event {
                 event::Event::Keyboard(keyboard::Event::KeyPressed {
                     modifiers,
