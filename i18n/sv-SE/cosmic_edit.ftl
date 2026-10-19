@@ -26,7 +26,7 @@ project-search = Projektsök
 
 ## Fråga om ändringarna sparas
 
-prompt-save-changes-title = Spara ändringar innan nedstängning?
+prompt-save-changes-title = Spara ändringar innan stängning?
 prompt-unsaved-changes = Du har osparade ändringar. Om du fortsätter utan att spara, kommer dessa ändringar att gå förlorade.
 cancel = Avbryt
 discard = Förkasta ändringar
@@ -82,7 +82,7 @@ save = Spara
 save-as = Spara som...
 revert-all-changes = Återställ alla ändringar
 menu-document-statistics = Dokumentstatistik...
-document-type = Dokument typ...
+document-type = Dokumenttyp...
 encoding = Kodning...
 menu-git-management = Githantering...
 print = Skriv ut
@@ -96,7 +96,7 @@ redo = Gör om
 cut = Klipp ut
 copy = Kopiera
 paste = Klistra in
-select-all = Välj alla
+select-all = Markera allt
 find = Sök
 find-in-project = Sök i projekt...
 spell-check = Stavningskontroll...
