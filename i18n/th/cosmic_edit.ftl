@@ -4,3 +4,4 @@ dark = มืด
 light = สว่าง
 replace = แทนที่
 appearance = ลักษณะ
+save = บันทึก
