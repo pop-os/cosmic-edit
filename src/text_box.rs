@@ -351,28 +351,24 @@ where
     ) -> mouse::Interaction {
         let state = tree.state.downcast_ref::<State>();
 
-        let scrollbar_dragging = matches!(
-            state.dragging,
-            Some(Dragging::ScrollbarV { .. } | Dragging::ScrollbarH { .. })
-        );
-        if scrollbar_dragging {
+        if let Some(Dragging::ScrollbarV { .. } | Dragging::ScrollbarH { .. }) = &state.dragging {
             return mouse::Interaction::Grabbing;
         }
 
-        if let Some(scrollbar_v_rect) = state.scrollbar_v_rect.get() {
-            if let Some(p) = cursor_position.position_in(layout.bounds()) {
-                let x = p.x - self.padding.left;
-                if x >= scrollbar_v_rect.x && x < (scrollbar_v_rect.x + scrollbar_v_rect.width) {
-                    return mouse::Interaction::Grab;
-                }
+        if let Some(scrollbar_v_rect) = state.scrollbar_v_rect.get()
+            && let Some(p) = cursor_position.position_in(layout.bounds())
+        {
+            let x = p.x - self.padding.left;
+            if x >= scrollbar_v_rect.x && x < (scrollbar_v_rect.x + scrollbar_v_rect.width) {
+                return mouse::Interaction::Grab;
             }
         }
-        if let Some(scrollbar_h_rect) = state.scrollbar_h_rect.get() {
-            if let Some(p) = cursor_position.position_in(layout.bounds()) {
-                let y = p.y - self.padding.bottom;
-                if y >= scrollbar_h_rect.y && y < (scrollbar_h_rect.y + scrollbar_h_rect.height) {
-                    return mouse::Interaction::Grab;
-                }
+        if let Some(scrollbar_h_rect) = state.scrollbar_h_rect.get()
+            && let Some(p) = cursor_position.position_in(layout.bounds())
+        {
+            let y = p.y - self.padding.bottom;
+            if y >= scrollbar_h_rect.y && y < (scrollbar_h_rect.y + scrollbar_h_rect.height) {
+                return mouse::Interaction::Grab;
             }
         }
 
