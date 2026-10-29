@@ -759,7 +759,7 @@ where
                                 }
 
                                 custom_renderer.rectangle(
-                                    0,
+                                    scroll_x as i32,
                                     run.line_top as i32,
                                     (image_w - editor_offset_x) as u32,
                                     metrics.line_height as u32,
