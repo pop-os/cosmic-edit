@@ -66,6 +66,9 @@ replace-all = Replace all
 case-sensitive = Case sensitive
 use-regex = Use regex
 wrap-around = Wrap around
+x-of-y = { $current } of { $total }
+no-results = No results
+invalid-regex = Invalid regex
 
 # Menu
 

@@ -78,6 +78,11 @@ static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
 static LINE_NUMBER_CACHE: OnceLock<Mutex<LineNumberCache>> = OnceLock::new();
 static SWASH_CACHE: OnceLock<Mutex<SwashCache>> = OnceLock::new();
 static SYNTAX_SYSTEM: OnceLock<SyntaxSystem> = OnceLock::new();
+static SEARCH_OCCURRENCE_SIGNALER: OnceLock<Mutex<tokio::sync::mpsc::UnboundedSender<()>>> =
+    OnceLock::new();
+static SEARCH_OCCURRENCE_RECEIVER: OnceLock<
+    tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<()>>,
+> = OnceLock::new();
 
 pub fn icon_cache_get(name: &'static str, size: u16) -> icon::Icon {
     let mut icon_cache = ICON_CACHE.get().unwrap().lock().unwrap();
@@ -143,6 +148,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             theme_set,
         }
     });
+    let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+    SEARCH_OCCURRENCE_SIGNALER.get_or_init(|| Mutex::new(tx));
+    SEARCH_OCCURRENCE_RECEIVER.get_or_init(|| tokio::sync::Mutex::new(rx));
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
 
@@ -367,6 +375,8 @@ pub enum Message {
     FindReplaceAll,
     FindReplaceValueChanged(String),
     FindSearchValueChanged(String),
+    FindSearchOccurrenceResults(u16),
+    CalculateSearchOccurrences,
     FindUseRegex(bool),
     FindWrapAround(bool),
     Focus(window::Id),
@@ -483,6 +493,8 @@ pub struct App {
     find_replace_value: String,
     find_search_id: widget::Id,
     find_search_value: String,
+    find_search_occurrences_before_cursor: u16,
+    find_search_total_occurrences: u16,
     git_project_status: Option<Vec<(String, PathBuf, Vec<GitStatus>)>>,
     projects: Vec<(String, PathBuf)>,
     project_search_id: widget::Id,
@@ -1381,6 +1393,12 @@ impl App {
         ])
         .into()
     }
+
+    fn request_search_occurrence_update(&mut self) {
+        if let Some(tx) = SEARCH_OCCURRENCE_SIGNALER.get() {
+            let _ = tx.lock().unwrap().send(());
+        }
+    }
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -1501,6 +1519,8 @@ impl Application for App {
             find_opt: None,
             find_replace_id: widget::Id::unique(),
             find_replace_value: String::new(),
+            find_search_occurrences_before_cursor: 1,
+            find_search_total_occurrences: 0,
             find_search_id: widget::Id::unique(),
             find_search_value: String::new(),
             git_project_status: None,
@@ -1937,6 +1957,7 @@ impl Application for App {
             }
             Message::FindCaseSensitive(find_case_sensitive) => {
                 config_set!(find_case_sensitive, find_case_sensitive);
+                self.request_search_occurrence_update();
                 return self.update_config();
             }
             Message::FindNext => {
@@ -1949,7 +1970,6 @@ impl Application for App {
                             tab.search(&regex, true, self.config.find_wrap_around);
                         }
                         Err(err) => {
-                            //TODO: put regex error in find box
                             log::warn!(
                                 "failed to compile regex {:?}: {}",
                                 self.find_search_value,
@@ -1957,6 +1977,17 @@ impl Application for App {
                             );
                         }
                     }
+
+                    let regex = if self.config.find_use_regex {
+                        self.config.find_regex(&self.find_search_value).ok()
+                    } else {
+                        None
+                    };
+                    self.find_search_occurrences_before_cursor = tab.get_occurrences_before_cursor(
+                        &self.find_search_value,
+                        self.config.find_case_sensitive,
+                        regex,
+                    );
                 }
 
                 // Focus correct input
@@ -1972,7 +2003,6 @@ impl Application for App {
                             tab.search(&regex, false, self.config.find_wrap_around);
                         }
                         Err(err) => {
-                            //TODO: put regex error in find box
                             log::warn!(
                                 "failed to compile regex {:?}: {}",
                                 self.find_search_value,
@@ -1980,6 +2010,17 @@ impl Application for App {
                             );
                         }
                     }
+
+                    let regex = if self.config.find_use_regex {
+                        self.config.find_regex(&self.find_search_value).ok()
+                    } else {
+                        None
+                    };
+                    self.find_search_occurrences_before_cursor = tab.get_occurrences_before_cursor(
+                        &self.find_search_value,
+                        self.config.find_case_sensitive,
+                        regex,
+                    );
                 }
 
                 // Focus correct input
@@ -2001,7 +2042,6 @@ impl Application for App {
                             return self.update(Message::TabChanged(self.tab_model.active()));
                         }
                         Err(err) => {
-                            //TODO: put regex error in find box
                             log::warn!(
                                 "failed to compile regex {:?}: {}",
                                 self.find_search_value,
@@ -2030,7 +2070,6 @@ impl Application for App {
                             return self.update(Message::TabChanged(self.tab_model.active()));
                         }
                         Err(err) => {
-                            //TODO: put regex error in find box
                             log::warn!(
                                 "failed to compile regex {:?}: {}",
                                 self.find_search_value,
@@ -2048,9 +2087,49 @@ impl Application for App {
             }
             Message::FindSearchValueChanged(value) => {
                 self.find_search_value = value;
+
+                self.request_search_occurrence_update();
+            }
+            Message::CalculateSearchOccurrences => {
+                if self.find_search_value.is_empty() {
+                    return Task::none();
+                }
+
+                if !self.find_opt.is_some() {
+                    return Task::none();
+                }
+
+                let Some(Tab::Editor(tab)) = self.active_tab() else {
+                    return Task::none();
+                };
+
+                let regex = if self.config.find_use_regex {
+                    self.config.find_regex(&self.find_search_value).ok()
+                } else {
+                    None
+                };
+                let current_index = tab.get_occurrences_before_cursor(
+                    &self.find_search_value,
+                    self.config.find_case_sensitive,
+                    regex.clone(),
+                );
+                let calculation_future = tab.get_total_occurrences_task(
+                    &self.find_search_value,
+                    self.config.find_case_sensitive,
+                    regex,
+                );
+                self.find_search_occurrences_before_cursor = current_index;
+
+                return Task::perform(calculation_future, |result| {
+                    Message::FindSearchOccurrenceResults(result).into()
+                });
+            }
+            Message::FindSearchOccurrenceResults(result) => {
+                self.find_search_total_occurrences = result;
             }
             Message::FindUseRegex(find_use_regex) => {
                 config_set!(find_use_regex, find_use_regex);
+                self.request_search_occurrence_update();
                 return self.update_config();
             }
             Message::FindWrapAround(find_wrap_around) => {
@@ -2762,6 +2841,8 @@ impl Application for App {
                         title.push_str(" \u{2022}");
                     }
                     self.tab_model.text_set(entity, title);
+
+                    self.request_search_occurrence_update();
                 }
             }
             Message::TabClose(entity) => {
@@ -3193,11 +3274,54 @@ impl Application for App {
             None => {}
         }
 
+        // This adds UI for the find/replace drawer.
         if let Some(FindField {
             replace,
             has_focus: _,
         }) = &self.find_opt
         {
+            let mut trailing_ui = vec![
+                button::custom(icon_cache_get("edit-clear-symbolic", 16))
+                    .on_press(Message::FindSearchValueChanged(String::new()))
+                    .class(style::Button::Icon)
+                    .into(),
+            ];
+
+            let mut total_occurrences = 0;
+            if !self.find_search_value.is_empty() {
+                let regex = self.config.find_regex(&self.find_search_value).ok();
+                if let Some(Tab::Editor(_)) = self.active_tab() {
+                    total_occurrences = self.find_search_total_occurrences;
+                }
+                if self.config.find_use_regex && !regex.is_some() {
+                    trailing_ui.push(
+                        widget::text(fl!("invalid-regex"))
+                            .class(theme::style::Text::Custom(|_| {
+                                iced::core::widget::text::Style {
+                                    color: Some(cosmic::iced::Color::from_rgb(
+                                        1.0f32, 0.0f32, 0.0f32,
+                                    )),
+                                    ..Default::default()
+                                }
+                            }))
+                            .into(),
+                    );
+                } else {
+                    let label_text = if total_occurrences > 0 {
+                        fl!(
+                            "x-of-y",
+                            current = self
+                                .find_search_occurrences_before_cursor
+                                .clamp(1, total_occurrences),
+                            total = total_occurrences
+                        )
+                    } else {
+                        fl!("no-results")
+                    };
+                    trailing_ui.push(widget::text(label_text).into());
+                }
+            }
+
             let find_input =
                 widget::text_input::text_input(fl!("find-placeholder"), &self.find_search_value)
                     .id(self.find_search_id.clone())
@@ -3212,16 +3336,20 @@ impl Application for App {
                     .on_focus(Message::FindFocused(true))
                     .width(Length::Fixed(320.0))
                     .trailing_icon(
-                        button::custom(icon_cache_get("edit-clear-symbolic", 16))
-                            .on_press(Message::FindSearchValueChanged(String::new()))
-                            .class(style::Button::Icon)
+                        widget::row::with_children(trailing_ui)
+                            .align_y(Alignment::Center)
+                            .spacing(space_xxs)
                             .into(),
                     );
             let find_widget = widget::row::with_children(vec![
                 find_input.into(),
                 widget::tooltip(
                     button::custom(icon_cache_get("go-up-symbolic", 16))
-                        .on_press(Message::FindPrevious)
+                        .on_press_maybe(if total_occurrences > 0 {
+                            Some(Message::FindPrevious)
+                        } else {
+                            None
+                        })
                         .padding(space_xxs)
                         .class(style::Button::Icon),
                     widget::text::body(fl!("find-previous")),
@@ -3230,7 +3358,11 @@ impl Application for App {
                 .into(),
                 widget::tooltip(
                     button::custom(icon_cache_get("go-down-symbolic", 16))
-                        .on_press(Message::FindNext)
+                        .on_press_maybe(if total_occurrences > 0 {
+                            Some(Message::FindNext)
+                        } else {
+                            None
+                        })
                         .padding(space_xxs)
                         .class(style::Button::Icon),
                     widget::text::body(fl!("find-next")),
@@ -3335,8 +3467,28 @@ impl Application for App {
         struct ConfigSubscription;
         struct ConfigStateSubscription;
         struct ThemeSubscription;
+        struct FindDebounceSubscription;
 
         let mut subscriptions = vec![
+            Subscription::run_with(TypeId::of::<FindDebounceSubscription>(), |_| {
+                stream::channel(
+                    1,
+                    |mut output: futures::channel::mpsc::Sender<Message>| async move {
+                        let mut rx = SEARCH_OCCURRENCE_RECEIVER.get().unwrap().lock().await;
+
+                        while rx.recv().await.is_some() {
+                            while tokio::time::timeout(
+                                std::time::Duration::from_millis(400),
+                                rx.recv(),
+                            )
+                            .await
+                            .is_ok()
+                            {}
+                            let _ = output.send(Message::CalculateSearchOccurrences).await;
+                        }
+                    },
+                )
+            }),
             event::listen_with(|event, status, window_id| match event {
                 event::Event::Keyboard(keyboard::Event::KeyPressed {
                     modifiers,
