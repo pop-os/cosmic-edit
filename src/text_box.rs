@@ -352,7 +352,24 @@ where
         let state = tree.state.downcast_ref::<State>();
 
         if let Some(Dragging::ScrollbarV { .. } | Dragging::ScrollbarH { .. }) = &state.dragging {
-            return mouse::Interaction::Idle;
+            return mouse::Interaction::Grabbing;
+        }
+
+        if let Some(scrollbar_v_rect) = state.scrollbar_v_rect.get()
+            && let Some(p) = cursor_position.position_in(layout.bounds())
+        {
+            let x = p.x - self.padding.left;
+            if x >= scrollbar_v_rect.x && x < (scrollbar_v_rect.x + scrollbar_v_rect.width) {
+                return mouse::Interaction::Grab;
+            }
+        }
+        if let Some(scrollbar_h_rect) = state.scrollbar_h_rect.get()
+            && let Some(p) = cursor_position.position_in(layout.bounds())
+        {
+            let y = p.y - self.padding.bottom;
+            if y >= scrollbar_h_rect.y && y < (scrollbar_h_rect.y + scrollbar_h_rect.height) {
+                return mouse::Interaction::Grab;
+            }
         }
 
         if let Some(p) = cursor_position.position_in(layout.bounds()) {
@@ -401,7 +418,8 @@ where
             - self.padding.x() as i32
             - scrollbar_size;
         let view_h = cmp::min(viewport.height as i32, layout.bounds().height as i32)
-            - self.padding.y() as i32;
+            - self.padding.y() as i32
+            - scrollbar_size;
 
         let scale_factor = style.scale_factor as f32;
         let metrics = self.metrics.scale(scale_factor);
@@ -737,7 +755,7 @@ where
                                 }
 
                                 custom_renderer.rectangle(
-                                    0,
+                                    scroll_x as i32,
                                     run.line_top as i32,
                                     (image_w - editor_offset_x) as u32,
                                     metrics.line_height as u32,
