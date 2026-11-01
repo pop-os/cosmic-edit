@@ -38,6 +38,7 @@ impl AppTheme {
 #[derive(Clone, CosmicConfigEntry, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Config {
     pub app_theme: AppTheme,
+    pub append_txt: bool,
     pub auto_indent: bool,
     pub find_case_sensitive: bool,
     pub find_use_regex: bool,
@@ -58,6 +59,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             app_theme: AppTheme::System,
+            append_txt: false,
             auto_indent: true,
             find_case_sensitive: false,
             find_use_regex: false,
