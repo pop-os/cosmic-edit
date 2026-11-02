@@ -1927,6 +1927,21 @@ impl Application for App {
                 }
             }
             Message::Find(find_opt) => {
+                let mut selection_opt: Option<String> = None;
+                if let Some(Tab::Editor(tab)) = self.active_tab() {
+                    let editor = tab.editor.lock().unwrap();
+                    selection_opt = editor.copy_selection();
+                }
+
+                if let Some(selection) = selection_opt {
+                    let trimmed_selection = selection.trim_matches(['\r', '\n']);
+
+                    // only change the value if the selection is on one line
+                    if !trimmed_selection.is_empty() && !trimmed_selection.contains('\n') {
+                        self.find_search_value = trimmed_selection.to_string();
+                    }
+                }
+
                 self.find_opt = find_opt.map(|f| FindField {
                     replace: f,
                     has_focus: true,
