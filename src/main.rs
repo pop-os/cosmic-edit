@@ -29,6 +29,8 @@ use cosmic_text::{Cursor, Edit, Family, Selection, SwashCache, SyntaxSystem, ViM
 use notify::{RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use std::hash::Hash;
+#[cfg(all(unix, not(target_os = "redox")))]
+use std::io::IsTerminal;
 use std::{
     any::TypeId,
     collections::{HashMap, HashSet},
@@ -90,12 +92,14 @@ pub fn monospace_attrs() -> cosmic_text::Attrs<'static> {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(all(unix, not(target_os = "redox")))]
-    match fork::daemon(true, true) {
-        Ok(fork::Fork::Child) => (),
-        Ok(fork::Fork::Parent(_child_pid)) => process::exit(0),
-        Err(err) => {
-            eprintln!("failed to daemonize: {:?}", err);
-            process::exit(1);
+    if std::io::stdin().is_terminal() {
+        match fork::daemon(true, true) {
+            Ok(fork::Fork::Child) => (),
+            Ok(fork::Fork::Parent(_child_pid)) => process::exit(0),
+            Err(err) => {
+                eprintln!("failed to daemonize: {:?}", err);
+                process::exit(1);
+            }
         }
     }
 
