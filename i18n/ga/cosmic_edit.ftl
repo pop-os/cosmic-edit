@@ -45,9 +45,9 @@ settings = Socruithe
 
 ### Appearance
 
-appearance = Dealramh
+appearance = Cuma
 theme = Téama
-match-desktop = Meaitseáil deasc
+match-desktop = Meaitseáil leis an deasc
 dark = Dorcha
 light = Solas
 syntax-dark = Comhréir dorcha
