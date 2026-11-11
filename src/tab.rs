@@ -14,6 +14,11 @@ use std::{
 
 use crate::{Config, SYNTAX_SYSTEM, fl, git::GitDiff};
 
+fn removes_empty_lines(regex: &Regex, replace: &str) -> bool {
+    let pattern = regex.as_str();
+    replace.is_empty() && pattern.starts_with('^') && pattern.ends_with('$') && regex.is_match("")
+}
+
 fn editor_text(editor: &ViEditor<'static, 'static>) -> String {
     editor.with_buffer(|buffer| {
         let mut text = String::new();
@@ -328,9 +333,9 @@ impl EditorTab {
                 end.index = index + len;
 
                 editor.start_change();
-                // if index = 0 and len = 0, we are targeting and deleting an empty line
-                // we'll move either cursor or end to delete the newline
-                if index == 0 && len == 0 {
+                if removes_empty_lines(regex, replace)
+                    && editor.with_buffer(|buffer| buffer.lines[cursor.line].text().is_empty())
+                {
                     if cursor.line > 0 {
                         // move the cursor up one line
                         cursor.line -= 1;
@@ -364,6 +369,37 @@ impl EditorTab {
             }
         }
         false
+    }
+
+    pub fn replace_all(&self, regex: &Regex, replace: &str) {
+        let mut editor = self.editor.lock().unwrap();
+        let remove_empty_lines = removes_empty_lines(regex, replace);
+        editor.start_change();
+        for line in (0..editor.with_buffer(|buffer| buffer.lines.len())).rev() {
+            let text = editor.with_buffer(|buffer| buffer.lines[line].text().to_string());
+            let new_text = regex.replace_all(&text, regex::NoExpand(replace));
+            if remove_empty_lines
+                && new_text.is_empty()
+                && editor.with_buffer(|buffer| buffer.lines.len()) > 1
+            {
+                let (start, end) = if line > 0 {
+                    let prev_end = editor.with_buffer(|buffer| buffer.lines[line - 1].text().len());
+                    (
+                        Cursor::new(line - 1, prev_end),
+                        Cursor::new(line, text.len()),
+                    )
+                } else {
+                    (Cursor::new(0, 0), Cursor::new(1, 0))
+                };
+                editor.delete_range(start, end);
+            } else if new_text != text.as_str() {
+                editor.delete_range(Cursor::new(line, 0), Cursor::new(line, text.len()));
+                editor.insert_at(Cursor::new(line, 0), &new_text, None);
+            }
+        }
+        editor.set_cursor(Cursor::new(0, 0));
+        editor.set_selection(Selection::None);
+        editor.finish_change();
     }
 
     pub fn zoom_adj(&self) -> i8 {
