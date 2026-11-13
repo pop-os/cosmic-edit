@@ -7,7 +7,7 @@ use regex::Regex;
 use std::{
     fs,
     io::{self, Write},
-    path::{self, PathBuf},
+    path::PathBuf,
     process::{Command, Stdio},
     sync::{Arc, Mutex},
 };
@@ -105,16 +105,7 @@ impl EditorTab {
         let mut editor = self.editor.lock().unwrap();
         let mut font_system = font_system().write().unwrap();
         let mut editor = editor.borrow_with(font_system.raw());
-        let absolute = match fs::canonicalize(&path) {
-            Ok(ok) => ok,
-            Err(err) => match path::absolute(&path) {
-                Ok(ok) => ok,
-                Err(_) => {
-                    log::error!("failed to canonicalize {:?}: {}", path, err);
-                    path
-                }
-            },
-        };
+        let absolute = crate::canonicalize_or_absolute(&path).unwrap_or(path);
         match editor.load_text(&absolute, self.attrs.clone()) {
             Ok(()) => {
                 log::info!("opened {:?}", absolute);
