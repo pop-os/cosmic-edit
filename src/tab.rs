@@ -463,6 +463,90 @@ impl EditorTab {
         }
         false
     }
+
+    pub fn get_occurrences_before_cursor(
+        &self,
+        search_input: &String,
+        case_sensitivity: bool,
+        regex: Option<regex::Regex>,
+    ) -> u16 {
+        let cursor = self.editor.lock().unwrap().cursor();
+        let cursor_line = cursor.line;
+        let cursor_char_index = cursor.index;
+
+        self.editor.lock().unwrap().with_buffer(|buffer| {
+            let occurrences = buffer.lines[..=cursor_line]
+                .iter()
+                .enumerate()
+                .map(|(idx, line)| {
+                    let mut line_str = line.text();
+                    if idx == cursor_line {
+                        line_str = &line_str[..cursor_char_index];
+                    }
+
+                    if let Some(reg) = &regex {
+                        reg.find_iter(&line_str).count()
+                    } else {
+                        if case_sensitivity {
+                            line_str.matches(search_input).count()
+                        } else {
+                            let line_lower = line_str.to_lowercase();
+                            let search_lower = search_input.to_lowercase();
+                            line_lower.matches(&search_lower).count()
+                        }
+                    }
+                })
+                .sum::<usize>() as u16
+                + 1;
+
+            occurrences
+        })
+    }
+
+    pub fn get_total_occurrences_task(
+        &self,
+        search_input: &str,
+        case_sensitivity: bool,
+        regex: Option<regex::Regex>,
+    ) -> impl Future<Output = u16> + Send + 'static {
+        let lines: Vec<String> = if search_input.is_empty() {
+            Vec::new()
+        } else {
+            self.editor.lock().unwrap().with_buffer(|buffer| {
+                buffer
+                    .lines
+                    .iter()
+                    .map(|line| line.text().to_string())
+                    .collect()
+            })
+        };
+
+        let search_string = search_input.to_string();
+        async move {
+            if search_string.is_empty() || lines.is_empty() {
+                return 0;
+            }
+
+            tokio::task::spawn_blocking(move || {
+                lines
+                    .iter()
+                    .map(|line| {
+                        if let Some(reg) = &regex {
+                            reg.find_iter(line).count()
+                        } else if case_sensitivity {
+                            line.matches(&search_string).count()
+                        } else {
+                            let line_lower = line.to_lowercase();
+                            let search_lower = search_string.to_lowercase();
+                            line_lower.matches(&search_lower).count()
+                        }
+                    })
+                    .sum::<usize>() as u16
+            })
+            .await
+            .unwrap_or(0)
+        }
+    }
 }
 
 /// Includes parent name in tab title
