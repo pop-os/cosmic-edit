@@ -2857,9 +2857,16 @@ impl Application for App {
                     return self.update(Message::TabActivate(entity));
                 }
             }
-            Message::TabSetCursor(entity, cursor) => {
+            Message::TabSetCursor(entity, mut cursor) => {
                 if let Some(Tab::Editor(tab)) = self.tab_model.data::<Tab>(entity) {
                     let mut editor = tab.editor.lock().unwrap();
+                    editor.with_buffer(|buffer| {
+                        cursor.line = cursor.line.min(buffer.lines.len().saturating_sub(1));
+                        cursor.index = buffer
+                            .lines
+                            .get(cursor.line)
+                            .map_or(0, |line| line.text().floor_char_boundary(cursor.index));
+                    });
                     editor.set_cursor(cursor);
                 }
             }
