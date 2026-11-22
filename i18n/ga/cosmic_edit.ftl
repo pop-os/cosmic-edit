@@ -96,7 +96,7 @@ quit = Scoir
 
 ## Edit
 
-edit = Eagar
+edit = Cuir in eagar
 undo = Cuir ar ceal
 redo = Déan arís
 cut = Gearr
