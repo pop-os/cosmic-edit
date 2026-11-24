@@ -47,7 +47,7 @@ settings = Instellingen
 
 appearance = Uiterlijk
 theme = Thema
-match-desktop = Systeemstandaard
+match-desktop = Aan desktop aanpassen
 dark = Donker
 light = Licht
 syntax-dark = Donkere syntaxis

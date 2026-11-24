@@ -96,7 +96,7 @@ quit = Quitter
 
 ## Edit
 
-edit = Édition
+edit = Modifier
 undo = Annuler
 redo = Rétablir
 cut = Couper
