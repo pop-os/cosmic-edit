@@ -62,12 +62,15 @@ impl EditorTab {
         buffer.set_size(Some(0.0), Some(0.0));
         buffer.set_text("", &attrs, Shaping::Advanced, None);
 
-        let editor = SyntaxEditor::new(
-            Arc::new(buffer),
-            SYNTAX_SYSTEM.get().unwrap(),
-            config.syntax_theme(),
-        )
-        .unwrap();
+        let syntax_system = SYNTAX_SYSTEM.get().unwrap();
+        let buffer = Arc::new(buffer);
+        let editor = SyntaxEditor::new(buffer.clone(), syntax_system, config.syntax_theme())
+            .or_else(|| {
+                let dark = config.app_theme.theme().theme_type.is_dark();
+                let theme = if dark { "COSMIC Dark" } else { "COSMIC Light" };
+                SyntaxEditor::new(buffer, syntax_system, theme)
+            })
+            .unwrap();
 
         let mut tab = Self {
             path_opt: None,
