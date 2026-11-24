@@ -2022,11 +2022,7 @@ impl Application for App {
                     match self.config.find_regex(&self.find_search_value) {
                         Ok(regex) => {
                             //TODO: support captures
-                            {
-                                let mut editor = tab.editor.lock().unwrap();
-                                editor.set_cursor(cosmic_text::Cursor::new(0, 0));
-                            }
-                            while tab.replace(&regex, &self.find_replace_value, false) {}
+                            tab.replace_all(&regex, &self.find_replace_value);
                             return self.update(Message::TabChanged(self.tab_model.active()));
                         }
                         Err(err) => {
