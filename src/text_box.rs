@@ -38,6 +38,7 @@ use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{LINE_NUMBER_CACHE, SWASH_CACHE, line_number::LineNumberKey};
 
@@ -763,6 +764,64 @@ where
                                 );
                             }
                         });
+                    }
+
+                    // Draw selection for double-click
+                    if matches!(editor.selection(), Selection::Word(_)) {
+                        let bounds_opt = editor.selection_bounds();
+                        if let Some((start, end)) = bounds_opt
+                            && start.line == end.line
+                        {
+                            editor.with_buffer(|buf| {
+                                let selection =
+                                    &buf.lines[start.line].text()[start.index..end.index];
+                                let mut selection_indices = selection.unicode_word_indices();
+                                if selection_indices.next().map(|(_, w)| w) != Some(selection)
+                                    || selection_indices.next().is_some()
+                                {
+                                    return;
+                                }
+
+                                let highlight_color = editor.selection_color();
+
+                                for run in buf.layout_runs() {
+                                    let run_text = buf.lines[run.line_i].text();
+                                    let run_indices = run_text.unicode_word_indices();
+
+                                    for (idx, word) in run_indices {
+                                        if word == selection {
+                                            if run.line_i == start.line
+                                                && (start.index < idx + word.len()
+                                                    && idx < end.index)
+                                            {
+                                                continue;
+                                            }
+
+                                            for (x, width) in run.highlight(
+                                                Cursor::new(run.line_i, idx),
+                                                Cursor::new(run.line_i, idx + word.len()),
+                                            ) {
+                                                let min = x as i32;
+                                                let max = (x + width) as i32;
+
+                                                custom_renderer.rectangle(
+                                                    min,
+                                                    run.line_top as i32,
+                                                    cmp::max(0, max - min) as u32,
+                                                    run.line_height as u32,
+                                                    cosmic_text::Color::rgba(
+                                                        highlight_color.r(),
+                                                        highlight_color.g(),
+                                                        highlight_color.b(),
+                                                        80,
+                                                    ),
+                                                );
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        };
                     }
 
                     // Draw editor selection, cursor, etc.
